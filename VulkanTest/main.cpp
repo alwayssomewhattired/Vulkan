@@ -10,10 +10,14 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/hash.hpp>
-#define STB_IMAGE_IMPLEMENTATION
+//#define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 #define TINYOBJLOADER_IMPLEMENTATION
 #include <tiny_obj_loader.h>
+//#define TINYGLTF_IMPLEMENTATION
+//#define STB_IMAGE_IMPLEMENTATION
+//#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include "tiny_gltf.h"
 
 #include <iostream>
 #include <stdexcept>
@@ -29,6 +33,8 @@
 #include <chrono>
 #include <unordered_map>
 #include <cmath>
+
+#include "ModelLoad.h"
 
 const uint32_t WIDTH = 800;
 const uint32_t HEIGHT = 600;
@@ -122,27 +128,10 @@ namespace std {
 	};
 }
 
-
+// get rid of these two vvv
 std::vector<Vertex> vertices;
 std::vector<uint32_t> indices;
 
-
-//const std::vector<Vertex> vertices = {
-//	{{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
-//	{{0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
-//	{{0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
-//	{{-0.5f, 0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}},
-//
-//	{{-0.5f, -0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
-//	{{0.5f, -0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
-//	{{0.5f, 0.5f, -0.5f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
-//	{{-0.5f, 0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}}
-//};
-//
-//const std::vector<uint16_t> indices = {
-//	0, 1, 2, 2, 3, 0,
-//	4, 5, 6, 6, 7, 4
-//};
 
 
 class HelloTriangleApplication
@@ -297,6 +286,7 @@ private:
 		createTextureImage();
 		createTextureImageView();
 		createTextureSampler();
+		createModel();
 		loadModel();
 		createVertexBuffer();
 		createIndexBuffer();
@@ -414,6 +404,25 @@ private:
 			1, &barrier);
 
 		endSingleTimeCommands(commandBuffer);
+	}
+
+	std::unique_ptr<ModelLoad> model;
+
+	// loads .glb file
+	void createModel() {
+		model = std::make_unique<ModelLoad>(device, physicalDevice, commandPool, graphicsQueue, 
+			[&](VkDeviceSize size,
+				VkBufferUsageFlags usage,
+				VkMemoryPropertyFlags properties,
+				VkBuffer &buffer,
+				VkDeviceMemory& memory) 
+			{ createBuffer(size, usage, properties, buffer, memory); }, 
+			[&](VkBuffer srcBuffer,
+				VkBuffer dstBuffer,
+				VkDeviceSize size) 
+			{ copyBuffer(srcBuffer, dstBuffer, size); });
+
+		model->loadModel("models/myroom.glb");
 	}
 
 
@@ -987,15 +996,27 @@ private:
 
 		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
 
-		VkBuffer vertexBuffers[] = { vertexBuffer };
+		// new stuff
+		VkBuffer vertexBuffers[] = { model->vertexBuffer };
 		VkDeviceSize offsets[] = { 0 };
 		vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
 
-		vkCmdBindIndexBuffer(commandBuffer, indexBuffer, 0, VK_INDEX_TYPE_UINT32);
+		vkCmdBindIndexBuffer(commandBuffer, model->indexBuffer, 0, VK_INDEX_TYPE_UINT32);
 
-		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSets[currentFrame], 0, nullptr);
+		vkCmdDrawIndexed(commandBuffer, model->indexCount, 1, 0, 0, 0);
 
-		vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
+
+
+		// old stuff
+		//VkBuffer vertexBuffers[] = { vertexBuffer };
+		//VkDeviceSize offsets[] = { 0 };
+		//vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
+
+		//vkCmdBindIndexBuffer(commandBuffer, indexBuffer, 0, VK_INDEX_TYPE_UINT32);
+
+		//vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSets[currentFrame], 0, nullptr);
+
+		//vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
 
 		vkCmdEndRenderPass(commandBuffer);
 
