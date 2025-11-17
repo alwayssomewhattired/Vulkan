@@ -1,8 +1,9 @@
-#define TINYGLTF_IMPLEMENTATION
-#define TINYGLTF_NO_STB_IMAGE
-#define TINYGLTF_NO_STB_IMAGE_WRITE
-#include "tiny_gltf.h"
 
+
+#include <stb_image.h>
+#include <stb_image_write.h>
+#include "tinygltf_config.h"
+#include <tiny_gltf.h>
 
 #include "ModelLoad.h"
 #include <cstdint>
@@ -58,7 +59,7 @@ ModelLoad::ModelLoad(
 		const auto& idxView = model.bufferViews[idxAccessor.bufferView];
 		const auto& idxBuffer = model.buffers[idxView.buffer];
 
-		const uint32_t* idxData = reinterpret_cast<const uint32_t*>(&idxBuffer.data[idxView.byteOffset, idxAccessor.byteOffset]);
+		const uint32_t* idxData = reinterpret_cast<const uint32_t*>(&idxBuffer.data[idxView.byteOffset + idxAccessor.byteOffset]);
 
 		indices.resize(idxAccessor.count);
 		memcpy(indices.data(), idxData, indices.size() * sizeof(uint32_t));
@@ -111,8 +112,8 @@ ModelLoad::ModelLoad(
 			indexSize,
 			VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
 			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-			stagingVb,
-			stagingVm
+			stagingIb,
+			stagingIm
 		);
 
 		vkMapMemory(device, stagingIm, 0, indexSize, 0, &mapped);
