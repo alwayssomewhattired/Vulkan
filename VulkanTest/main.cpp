@@ -4,12 +4,14 @@
 #include <GLFW/glfw3.h>
 #define GLFW_EXPOSE_NATIVE_WIN32
 #include <GLFW/glfw3native.h>
-#define GLM_FORCE_RADIANS
-#define GLM_FORCE_DEPTH_ZERO_TO_ONE
-#define GLM_ENABLE_EXPERIMENTAL
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtx/hash.hpp>
+//#define GLM_FORCE_RADIANS
+//#define GLM_FORCE_DEPTH_ZERO_TO_ONE
+//#define GLM_ENABLE_EXPERIMENTAL
+//#include <glm/glm.hpp>
+//#include <glm/gtc/matrix_transform.hpp>
+//#include <glm/gtx/hash.hpp>
+
+#include "MathConfig.hpp"
 
 #include <stb_image.h>
 #include <stb_image_write.h>
@@ -29,9 +31,10 @@
 #include <chrono>
 #include <unordered_map>
 #include <cmath>
+#include <memory>
 
 #include "ModelLoad.h"
-#include <memory>
+#include "Camera.h"
 
 const uint32_t WIDTH = 800;
 const uint32_t HEIGHT = 600;
@@ -128,6 +131,11 @@ namespace std {
 std::vector<Vertex> vertices;
 std::vector<uint32_t> indices;
 
+
+// camera globals
+Camera camera;
+double lastX = 400, lastY = 300;
+bool firstMouse = true;
 
 
 class HelloTriangleApplication
@@ -418,7 +426,7 @@ private:
 				VkDeviceSize size) 
 			{ copyBuffer(srcBuffer, dstBuffer, size); });
 
-		model->loadModel("models/myroom.glb");
+		model->loadModel("models/untitled.glb");
 	}
 
 
@@ -702,7 +710,9 @@ private:
 			VkDescriptorBufferInfo bufferInfo{};
 			bufferInfo.buffer = uniformBuffers[i];
 			bufferInfo.offset = 0;
-			bufferInfo.range = sizeof(UniformBufferObject);
+			
+			// use 'UnifromBufferOject' when used for picking up an object vvv
+			bufferInfo.range = sizeof(Camera::CameraUBO);
 
 			VkDescriptorImageInfo imageInfo{};
 			imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
@@ -737,18 +747,56 @@ private:
 	std::vector<void*> uniformBuffersMapped;
 
 	void createUniformBuffers() {
-		VkDeviceSize bufferSize = sizeof(UniformBufferObject);
 
+		VkDeviceSize bufferSize = sizeof(Camera::CameraUBO);
+
+		// swapchain or frames in flight?
 		uniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
 		uniformBuffersMemory.resize(MAX_FRAMES_IN_FLIGHT);
 		uniformBuffersMapped.resize(MAX_FRAMES_IN_FLIGHT);
 
 		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-			createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-				uniformBuffers[i], uniformBuffersMemory[i]);
+
+			VkBufferCreateInfo bufferInfo{};
+			bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+			bufferInfo.size = bufferSize;
+			bufferInfo.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
+			bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+			if (vkCreateBuffer(device, &bufferInfo, nullptr, &uniformBuffers[i]) != VK_SUCCESS)
+				throw std::runtime_error("failed to create uniform buffer!");
+
+			VkMemoryRequirements memRequirements;
+			vkGetBufferMemoryRequirements(device, uniformBuffers[i], &memRequirements);
+
+			VkMemoryAllocateInfo allocInfo{};
+			allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+			allocInfo.allocationSize = memRequirements.size;
+			allocInfo.memoryTypeIndex = findMemoryType(memRequirements.memoryTypeBits,
+				VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+
+			if (vkAllocateMemory(device, &allocInfo, nullptr, &uniformBuffersMemory[i]) != VK_SUCCESS)
+				throw std::runtime_error("failed to allocate uniform buffer memory");
+
+			vkBindBufferMemory(device, uniformBuffers[i], uniformBuffersMemory[i], 0);
 
 			vkMapMemory(device, uniformBuffersMemory[i], 0, bufferSize, 0, &uniformBuffersMapped[i]);
 		}
+
+
+		// this stuff is for when user selects an object vvv
+		//VkDeviceSize bufferSize = sizeof(UniformBufferObject);
+
+		//uniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
+		//uniformBuffersMemory.resize(MAX_FRAMES_IN_FLIGHT);
+		//uniformBuffersMapped.resize(MAX_FRAMES_IN_FLIGHT);
+
+		//for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+		//	createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+		//		uniformBuffers[i], uniformBuffersMemory[i]);
+
+		//	vkMapMemory(device, uniformBuffersMemory[i], 0, bufferSize, 0, &uniformBuffersMapped[i]);
+		//}
 	}
 
 	VkDescriptorSetLayout descriptorSetLayout;
@@ -779,18 +827,31 @@ private:
 	}
 
 	void updateUniformBuffer(uint32_t currentImage) {
-		static auto startTime = std::chrono::high_resolution_clock::now();
 
-		auto currentTime = std::chrono::high_resolution_clock::now();
-		float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
-
-		UniformBufferObject ubo{};
-		ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-		ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-		ubo.proj = glm::perspective(glm::radians(45.0f), swapChainExtent.width / (float)swapChainExtent.height, 0.1f, 10.0f);
+		Camera::CameraUBO ubo;
+		ubo.view = camera.GetViewMatrix();
+		ubo.proj = glm::perspective(glm::radians(45.0f), swapChainExtent.width / (float)swapChainExtent.height, 0.1f, 100.0f);
 		ubo.proj[1][1] *= -1;
 
 		memcpy(uniformBuffersMapped[currentImage], &ubo, sizeof(ubo));
+
+
+
+		// this is for when user selects an item
+		// //
+		// //
+		//static auto startTime = std::chrono::high_resolution_clock::now();
+
+		//auto currentTime = std::chrono::high_resolution_clock::now();
+		//float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
+
+		//UniformBufferObject ubo{};
+		//ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+		//ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+		//ubo.proj = glm::perspective(glm::radians(45.0f), swapChainExtent.width / (float)swapChainExtent.height, 0.1f, 10.0f);
+		//ubo.proj[1][1] *= -1;
+
+		//memcpy(uniformBuffersMapped[currentImage], &ubo, sizeof(ubo));
 	}
 
 
@@ -1900,12 +1961,41 @@ private:
 
 	}
 
+	static void cursor_position_callback(GLFWwindow* window, double xpos, double ypos) {
+		if (firstMouse)
+			lastX = xpos; lastY = ypos; firstMouse = false;
+
+		float xoffset = float(xpos - lastX);
+		float yoffset = float(lastY - ypos); // reversed: y ranges top->bottom
+		lastX = xpos; lastY = ypos;
+
+		camera.ProcessMouseMovement(xoffset, yoffset);
+	}
 
 	void mainLoop()
 	{
+		glfwSetCursorPosCallback(window, cursor_position_callback);
+		glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+
 		while (!glfwWindowShouldClose(window))
 		{
+			float currentFrame = (float)glfwGetTime();
+			static float lastFrame = currentFrame;
+			float deltaTime = currentFrame - lastFrame;
+			lastFrame = currentFrame;
+
 			glfwPollEvents();
+
+			if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) camera.ProcessKeyboard(Camera_Movement::FORWARD, deltaTime);
+			if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) camera.ProcessKeyboard(Camera_Movement::BACKWARD, deltaTime);
+			if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) camera.ProcessKeyboard(Camera_Movement::LEFT, deltaTime);
+			if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) camera.ProcessKeyboard(Camera_Movement::RIGHT, deltaTime);
+			// Now after updating camera, we write UBO for current swapchain image
+			Camera::CameraUBO ubo{};
+			ubo.view = camera.GetViewMatrix();
+			ubo.proj = glm::perspective(glm::radians(45.0f), swapChainExtent.width / (float)swapChainExtent.height, 0.1f, 100.0f);
+			ubo.proj[1][1] *= -1.0f;
+
 			drawFrame();
 		}
 

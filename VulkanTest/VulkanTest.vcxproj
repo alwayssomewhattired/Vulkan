@@ -131,7 +131,9 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Camera.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="MathConfig.hpp" />
     <ClCompile Include="ModelLoad.cpp" />
     <ClCompile Include="stb_impl.cpp" />
     <ClCompile Include="tinygltf_impl.cpp" />
@@ -145,6 +147,7 @@
     <None Include="shaders\shader.vert" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Camera.h" />
     <ClInclude Include="ModelLoad.h" />
     <ClInclude Include="tinygltf_config.h" />
   </ItemGroup>
