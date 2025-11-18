@@ -39,7 +39,7 @@
 		float velocity = MovementSpeed * dt;
 
 		if (dir == Camera_Movement::FORWARD) Position += GetFront() * velocity;
-		if (dir == Camera_Movement::BACKWARD) Position - +GetFront() * velocity;
+		if (dir == Camera_Movement::BACKWARD) Position -= GetFront() * velocity;
 		if (dir == Camera_Movement::LEFT) Position -= GetRight() * velocity;
 		if (dir == Camera_Movement::RIGHT) Position += GetRight() * velocity;
 	}

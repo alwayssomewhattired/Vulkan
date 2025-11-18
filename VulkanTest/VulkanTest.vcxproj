@@ -140,6 +140,7 @@
     <ClCompile Include="tinygltf_stub.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="Triangle.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\compile.bat" />
@@ -150,6 +151,7 @@
     <ClInclude Include="Camera.h" />
     <ClInclude Include="ModelLoad.h" />
     <ClInclude Include="tinygltf_config.h" />
+    <ClInclude Include="Triangle.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

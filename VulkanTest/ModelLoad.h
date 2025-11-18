@@ -1,6 +1,7 @@
 #pragma once
 
 #include <tiny_gltf.h>
+#include "MathConfig.hpp"
 
 #include <iostream>
 #include <stdexcept>
@@ -27,6 +28,8 @@ public:
 	VkDeviceMemory indexMemory;
 
 	uint32_t indexCount;
+
+	glm::mat4 modelMatrix = glm::mat4(1.0f);
 
 
 private:

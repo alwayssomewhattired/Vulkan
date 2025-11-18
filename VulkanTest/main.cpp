@@ -4,12 +4,6 @@
 #include <GLFW/glfw3.h>
 #define GLFW_EXPOSE_NATIVE_WIN32
 #include <GLFW/glfw3native.h>
-//#define GLM_FORCE_RADIANS
-//#define GLM_FORCE_DEPTH_ZERO_TO_ONE
-//#define GLM_ENABLE_EXPERIMENTAL
-//#include <glm/glm.hpp>
-//#include <glm/gtc/matrix_transform.hpp>
-//#include <glm/gtx/hash.hpp>
 
 #include "MathConfig.hpp"
 
@@ -40,7 +34,7 @@ const uint32_t WIDTH = 800;
 const uint32_t HEIGHT = 600;
 const int MAX_FRAMES_IN_FLIGHT = 2;
 
-const std::string MODEL_PATH = "models/viking_room.obj";
+//const std::string MODEL_PATH = "models/viking_room.obj";
 const std::string TEXTURE_PATH = "textures/Metal055C_8K-PNG_Color.png";
 const std::vector<const char*> validationLayers = {
 	"VK_LAYER_KHRONOS_validation"
@@ -116,6 +110,15 @@ struct Vertex {
 	}
 };
 
+const std::vector<Vertex> triangleVertices = {
+{{ 0.0f, -0.5f, 0.0f }, {1.0f, 0.0f, 0.0f}},
+{{ 0.5f,  0.5f, 0.0f }, {0.0f, 1.0f, 0.0f}},
+{{-0.5f,  0.5f, 0.0f }, {0.0f, 0.0f, 1.0f}}
+
+};
+
+// triangle indices
+std::vector<uint32_t> indices;
 
 namespace std {
 	template<> struct hash<Vertex> {
@@ -127,14 +130,14 @@ namespace std {
 	};
 }
 
-// get rid of these two vvv
-std::vector<Vertex> vertices;
-std::vector<uint32_t> indices;
+//std::vector<Vertex> vertices;
+
 
 
 // camera globals
 Camera camera;
-double lastX = 400, lastY = 300;
+bool cameraEnabled = true;
+double lastX = 0, lastY = 0;
 bool firstMouse = true;
 
 
@@ -220,6 +223,9 @@ private:
 
 		window = glfwCreateWindow(WIDTH, HEIGHT, "Vulkan", nullptr, nullptr);
 		glfwSetWindowUserPointer(window, this);
+		glfwSetKeyCallback(window, keyCallback);
+		glfwSetCursorPosCallback(window, mouse_callback);
+		glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 		glfwSetFramebufferSizeCallback(window, framebufferResizeCallback);
 	}
 
@@ -291,14 +297,56 @@ private:
 		createTextureImageView();
 		createTextureSampler();
 		createModel();
-		//loadModel();
-		//createVertexBuffer();
+
+		// for triangle
+		createVertexBuffer();
+	  // incorporate for triangle in the future
 		//createIndexBuffer();
+
 		createUniformBuffers();
 		createDescriptorPool();
 		createDescriptorSets();
 		createCommandBuffers();
 		createSyncObjects();
+	}
+
+
+	// CALLBACKS
+	//
+	//
+	static void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
+		HelloTriangleApplication* app = reinterpret_cast<HelloTriangleApplication*>(glfwGetWindowUserPointer(window));
+		if (app)
+			app->onKey(key, scancode, action, mods);
+	}
+
+	void onKey(int key, int scancode, int action, int mods) {
+		if (key == GLFW_KEY_P && action == GLFW_PRESS) {
+			cameraEnabled = !cameraEnabled;
+
+			if (cameraEnabled)
+				glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+			else
+				glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+		}
+	}
+
+
+	static void mouse_callback(GLFWwindow* window, double xpos, double ypos) {
+
+		if (firstMouse) {
+			lastX = (float)xpos;
+			lastY = (float)ypos;
+			firstMouse = false;
+		}
+
+		float xoffset = (float)xpos - lastX;
+		float yoffset = lastY - (float)ypos; // reversed y
+
+		lastX = (float)xpos;
+		lastY = (float)ypos;
+
+		camera.ProcessMouseMovement(xoffset, yoffset);
 	}
 
 
@@ -338,8 +386,6 @@ private:
 		barrier.subresourceRange.baseArrayLayer = 0;
 		barrier.subresourceRange.layerCount = 1;
 		barrier.subresourceRange.levelCount = 1;
-
-		//endSingleTimeCommands(commandBuffer);
 
 		int32_t mipWidth = texWidth;
 		int32_t mipHeight = texHeight;
@@ -427,46 +473,6 @@ private:
 			{ copyBuffer(srcBuffer, dstBuffer, size); });
 
 		model->loadModel("models/untitled.glb");
-	}
-
-
-	void loadModel() {
-		//tinyobj::attrib_t attrib;
-		//std::vector<tinyobj::shape_t> shapes;
-		//std::vector<tinyobj::material_t> materials;
-		//std::string err;
-		//std::string warn;
-		//if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, MODEL_PATH.c_str())) {
-		//	throw std::runtime_error(err);
-		//}
-
-		//for (const auto& shape : shapes) {
-		//	for (const auto& index : shape.mesh.indices) {
-		//		Vertex vertex{};
-		//		std::unordered_map<Vertex, uint32_t> uniqueVertices{};
-
-		//		vertex.pos = {
-		//			attrib.vertices[3 * index.vertex_index + 0],
-		//			attrib.vertices[3 * index.vertex_index + 1],
-		//			attrib.vertices[3 * index.vertex_index + 2]
-		//		};
-
-		//		vertex.texCoord = {
-		//			attrib.texcoords[2 * index.texcoord_index + 0],
-		//			1.0f - attrib.texcoords[2 * index.texcoord_index + 1]
-		//		};
-
-		//		vertex.color = { 1.0f, 1.0f, 1.0f };
-
-		//		if (uniqueVertices.count(vertex) == 0) {
-		//			uniqueVertices[vertex] = static_cast<uint32_t>(vertices.size());
-		//			vertices.push_back(vertex);
-		//		}
-
-		//		indices.push_back(uniqueVertices[vertex]);
-
-		//	}
-		//}
 	}
 
 
@@ -859,8 +865,9 @@ private:
 	VkDeviceMemory indexBufferMemory;
 
 	void createIndexBuffer() {
-		VkDeviceSize bufferSize = sizeof(indices[0]) * indices.size();
 
+		// render triangle
+		VkDeviceSize bufferSize = sizeof(triangleVertices[0]) * triangleVertices.size();
 		VkBuffer stagingBuffer;
 		VkDeviceMemory stagingBufferMemory;
 		createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
@@ -868,7 +875,7 @@ private:
 
 		void* data;
 		vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data);
-		memcpy(data, indices.data(), (size_t)bufferSize);
+		memcpy(data, triangleVertices.data(), (size_t)bufferSize);
 		vkUnmapMemory(device, stagingBufferMemory);
 
 		createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
@@ -877,7 +884,8 @@ private:
 		copyBuffer(stagingBuffer, indexBuffer, bufferSize);
 
 		vkDestroyBuffer(device, stagingBuffer, nullptr);
-		vkFreeMemory(device, stagingBufferMemory, nullptr);
+		vkFreeMemory(device, stagingBufferMemory, nullptr); 
+
 	}
 
 
@@ -927,27 +935,31 @@ private:
 		endSingleTimeCommands(commandBuffer);
 	}
 
-	VkBuffer vertexBuffer;
-	VkDeviceMemory vertexBufferMemory;
+	VkBuffer triangleVertexBuffer;
+	VkDeviceMemory triangleVertexBufferMemory;
 
 	void createVertexBuffer() {
-		VkDeviceSize bufferSize = sizeof(vertices[0]) * vertices.size();
 
+		// TRIANGLE
+		//
+		//
 		VkBuffer stagingBuffer;
 		VkDeviceMemory stagingBufferMemory;
-		createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+		VkDeviceSize triangleBufferSize = sizeof(triangleVertices[0]) * triangleVertices.size();
+		void* data;
+
+		createBuffer(triangleBufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
 			stagingBuffer, stagingBufferMemory);
 		// execution stops error
 
-		void* data;
-		vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data);
-		memcpy(data, vertices.data(), (size_t)bufferSize);
+		vkMapMemory(device, stagingBufferMemory, 0, triangleBufferSize, 0, &data);
+		memcpy(data, triangleVertices.data(), (size_t)triangleBufferSize);
 		vkUnmapMemory(device, stagingBufferMemory);
 
-		createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-			vertexBuffer, vertexBufferMemory);
+		createBuffer(triangleBufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+			triangleVertexBuffer, triangleVertexBufferMemory);
 
-		copyBuffer(stagingBuffer, vertexBuffer, bufferSize);
+		copyBuffer(stagingBuffer, triangleVertexBuffer, triangleBufferSize);
 
 		vkDestroyBuffer(device, stagingBuffer, nullptr);
 		vkFreeMemory(device, stagingBufferMemory, nullptr);
@@ -1067,7 +1079,19 @@ private:
 
 		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSets[currentFrame], 0, nullptr);
 
+		vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &model->modelMatrix);
+
 		vkCmdDrawIndexed(commandBuffer, model->indexCount, 1, 0, 0, 0);
+
+
+		VkBuffer triangleVertexBuffers[] = { triangleVertexBuffer };
+		VkDeviceSize triangleOffsets[] = { 0 };
+		vkCmdBindVertexBuffers(commandBuffer, 0, 1, triangleVertexBuffers, triangleOffsets);
+
+		glm::mat4 triangleModel = glm::mat4(1.0f);
+		vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &triangleModel);
+
+		vkCmdDraw(commandBuffer, 3, 1, 0, 0);
 
 		vkCmdEndRenderPass(commandBuffer);
 
@@ -1344,7 +1368,6 @@ private:
 		fragShaderStageInfo.module = fragShaderModule;
 		fragShaderStageInfo.pName = "main";
 
-		// possibly make this global vvv
 		VkPipelineShaderStageCreateInfo shaderStages[] = { vertShaderStageInfo, fragShaderStageInfo };
 
 		auto bindingDescription = Vertex::getBindingDescription();
@@ -1432,12 +1455,17 @@ private:
 		colorBlending.blendConstants[2] = 0.0f;
 		colorBlending.blendConstants[3] = 0.0f;
 
+		VkPushConstantRange pushConstantRange{};
+		pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+		pushConstantRange.offset = 0;
+		pushConstantRange.size = sizeof(glm::mat4);
+
 		VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
 		pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 		pipelineLayoutInfo.setLayoutCount = 1;
 		pipelineLayoutInfo.pSetLayouts = &descriptorSetLayout;
-		pipelineLayoutInfo.pushConstantRangeCount = 0;
-		pipelineLayoutInfo.pPushConstantRanges = nullptr;
+		pipelineLayoutInfo.pushConstantRangeCount = 1;
+		pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange;
 
 		if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS)
 			throw std::runtime_error("failed to create pipeline layout!");
@@ -1974,8 +2002,6 @@ private:
 
 	void mainLoop()
 	{
-		glfwSetCursorPosCallback(window, cursor_position_callback);
-		glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
 		while (!glfwWindowShouldClose(window))
 		{
@@ -2026,8 +2052,8 @@ private:
 		vkDestroyBuffer(device, indexBuffer, nullptr);
 		vkFreeMemory(device, indexBufferMemory, nullptr);
 
-		vkDestroyBuffer(device, vertexBuffer, nullptr);
-		vkFreeMemory(device, vertexBufferMemory, nullptr);
+		vkDestroyBuffer(device, triangleVertexBuffer, nullptr);
+		vkFreeMemory(device, triangleVertexBufferMemory, nullptr);
 
 		vkDestroyPipeline(device, graphicsPipeline, nullptr);
 		vkDestroyPipelineLayout(device, pipelineLayout, nullptr);

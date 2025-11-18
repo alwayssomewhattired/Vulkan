@@ -1,11 +1,17 @@
 #version 450
 
-// this is for when user presses item vvv
+// triangle mode vvv
+//
+//
 //layout(binding = 0) uniform UniformBufferObject {
- //   mat4 model;
- //   mat4 view;
- //   mat4 proj;
+//    mat4 model;
+//    mat4 view;
+//    mat4 proj;
 //} ubo;
+
+layout(push_constant) uniform PushConsts {
+    mat4 model;
+} pc;
 
 layout(set = 0, binding = 0) uniform CameraUBO {
     mat4 view;
@@ -20,9 +26,20 @@ layout(location = 0) out vec3 fragColor;
 layout(location = 1) out vec2 fragTextCoord;
  
 void main() {
+//
+//
+//triangle mode
+//
+//
     //gl_Position = ubo.proj * ubo.view * ubo.model * vec4(inPosition, 1.0);
-    mat4 model = mat4(1.0);
-    gl_Position = camera.proj * camera.view * model * vec4(inPosition, 1.0);
+    //
+    //
+    // cameramode
+    //
+    //
+    //mat4 model = mat4(1.0);
+    //gl_Position = camera.proj * camera.view * model * vec4(inPosition, 1.0);
+    gl_Position = camera.proj * camera.view * pc.model * vec4(inPosition, 1.0);
     fragColor = inColor;
     fragTextCoord = inTextCoord;
 }
