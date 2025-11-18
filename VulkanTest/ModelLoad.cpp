@@ -33,6 +33,7 @@ ModelLoad::ModelLoad(
 {}
 
 	void ModelLoad::loadModel(const std::string& path) {
+
 		tinygltf::TinyGLTF loader;
 		tinygltf::Model model;
 		std::string err, warn;
@@ -43,7 +44,29 @@ ModelLoad::ModelLoad(
 		if (!err.empty()) std::cout << "Err: " << err << "\n";
 		if (!ret) throw std::runtime_error("Failed to load glb file");
 
-		const auto& mesh = model.meshes[0];
+		if (model.meshes.empty()) {
+			throw std::runtime_error("Model has no meshes!");
+		}
+
+		int scene = model.defaultScene;
+		const tinygltf::Scene& sceneObj = model.scenes[scene];
+
+		const tinygltf::Mesh* meshPtr = nullptr;
+
+		for (int nodeIndex : sceneObj.nodes) {
+			const tinygltf::Node& node = model.nodes[nodeIndex];
+
+			if (node.mesh >= 0) {
+				meshPtr = &model.meshes[node.mesh];
+			}
+
+		}
+
+		if (!meshPtr)
+			throw std::runtime_error("No mesh found in GLB");
+
+		const tinygltf::Mesh& mesh = *meshPtr;
+
 		const auto& primitive = mesh.primitives[0];
 
 		const auto& posAccessor = model.accessors[primitive.attributes.at("POSITION")];
@@ -70,6 +93,7 @@ ModelLoad::ModelLoad(
 
 		VkBuffer stagingVb;
 		VkDeviceMemory stagingVm;
+
 
 		// staging buffer
 		createBufferFn(
