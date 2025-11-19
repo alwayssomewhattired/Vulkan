@@ -14,6 +14,8 @@
 #include <iostream>
 #include <string.h>
 
+#include "Vertex.h"
+
 
 
 ModelLoad::ModelLoad(
@@ -33,6 +35,7 @@ ModelLoad::ModelLoad(
 {}
 
 	void ModelLoad::loadModel(const std::string& path) {
+
 
 		tinygltf::TinyGLTF loader;
 		tinygltf::Model model;
@@ -74,13 +77,63 @@ ModelLoad::ModelLoad(
 		const auto& posBuffer = model.buffers[posView.buffer];
 
 		const float* posData = reinterpret_cast<const float*>(&posBuffer.data[posView.byteOffset + posAccessor.byteOffset]);
+		size_t vertexCount = posAccessor.count;
 
-		vertices.resize(posAccessor.count * 3);
-		memcpy(vertices.data(), posData, vertices.size() * sizeof(float));
+		vertices.resize(vertexCount);
+
+		for (size_t i = 0; i < vertexCount; i++) {
+			vertices[i].pos = glm::vec3(
+				posData[i * 3 + 0],
+				posData[i * 3 + 1],
+				posData[i * 3 + 2]
+			);
+
+			// deafault color (white)
+			vertices[i].color = glm::vec3(1.0f);
+		}
+
+		// checking texcoords
+		bool hasTexcoords = primitive.attributes.find("TEXCOORD_0") != primitive.attributes.end();
+
+		if (hasTexcoords) {
+			const auto& texAccessor = model.accessors[primitive.attributes.at("TEXCOORD_0")];
+			
+			if (texAccessor.type != TINYGLTF_TYPE_VEC2 || texAccessor.componentType != TINYGLTF_COMPONENT_TYPE_FLOAT)
+				throw std::runtime_error("Unsupported TEXCOORD_0 format!");
+
+			const auto& texView = model.bufferViews[texAccessor.bufferView];
+			const auto& texBuffer = model.buffers[texView.buffer];
+
+			if (texView.byteOffset + texAccessor.byteOffset + texAccessor.count * 2 * sizeof(float) > texBuffer.data.size())
+				throw std::runtime_error("texcoords too large!");
+
+			const float* texData = reinterpret_cast<const float*>(
+				&texBuffer.data[texView.byteOffset + texAccessor.byteOffset]
+				);
+
+			for (size_t i = 0; i < vertexCount; i++) {
+
+				vertices[i].texCoord = glm::vec2(
+					texData[i * 2 + 0],
+					1.0f - texData[i * 2 + 1] // flip y
+				);
+
+			}
+		}
+		else {
+			for (size_t i = 0; i < vertexCount; i++) {
+				vertices[i].texCoord = glm::vec2(0.0f);
+			}
+		}
 
 		const auto& idxAccessor = model.accessors[primitive.indices];
 		const auto& idxView = model.bufferViews[idxAccessor.bufferView];
 		const auto& idxBuffer = model.buffers[idxView.buffer];
+
+		if (idxAccessor.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT)
+			std::cout << "convert\n";
+		else if (idxAccessor.componentType != TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT)
+			throw std::runtime_error("Unsupported index type!");
 
 		const uint32_t* idxData = reinterpret_cast<const uint32_t*>(&idxBuffer.data[idxView.byteOffset + idxAccessor.byteOffset]);
 
@@ -89,12 +142,12 @@ ModelLoad::ModelLoad(
 
 		indexCount = static_cast<uint32_t>(indices.size());
 
-		VkDeviceSize vertexSize = sizeof(float) * vertices.size();
+		VkDeviceSize vertexSize = sizeof(Vertex) * vertices.size();
 
 		VkBuffer stagingVb;
 		VkDeviceMemory stagingVm;
 
-
+		
 		// staging buffer
 		createBufferFn(
 			vertexSize,

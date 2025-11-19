@@ -29,10 +29,12 @@
 
 #include "ModelLoad.h"
 #include "Camera.h"
+#include "Vertex.h"
 
 const uint32_t WIDTH = 800;
 const uint32_t HEIGHT = 600;
 const int MAX_FRAMES_IN_FLIGHT = 2;
+bool renderTriangle = true;
 
 //const std::string MODEL_PATH = "models/viking_room.obj";
 const std::string TEXTURE_PATH = "textures/Metal055C_8K-PNG_Color.png";
@@ -69,47 +71,6 @@ void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT
 		func(instance, debugMessenger, pAllocator);
 }
 
-
-struct Vertex {
-	glm::vec3 pos;
-	glm::vec3 color;
-	glm::vec2 texCoord;
-
-	bool operator==(const Vertex& other) const {
-		return pos == other.pos && color == other.color && texCoord == other.texCoord;
-	}
-
-
-	static VkVertexInputBindingDescription getBindingDescription() {
-		VkVertexInputBindingDescription bindingDescription{};
-		bindingDescription.binding = 0;
-		bindingDescription.stride = sizeof(Vertex);
-		bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-
-		return bindingDescription;
-	}
-
-	static std::array<VkVertexInputAttributeDescription, 3> getAttributeDescriptions() {
-		std::array<VkVertexInputAttributeDescription, 3> attributeDescriptions{};
-		attributeDescriptions[0].binding = 0;
-		attributeDescriptions[0].location = 0;
-		attributeDescriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
-		attributeDescriptions[0].offset = offsetof(Vertex, pos);
-
-		attributeDescriptions[1].binding = 0;
-		attributeDescriptions[1].location = 1;
-		attributeDescriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
-		attributeDescriptions[1].offset = offsetof(Vertex, color);
-
-		attributeDescriptions[2].binding = 0;
-		attributeDescriptions[2].location = 2;
-		attributeDescriptions[2].format = VK_FORMAT_R32G32_SFLOAT;
-		attributeDescriptions[2].offset = offsetof(Vertex, texCoord);
-
-		return attributeDescriptions;
-	}
-};
-
 const std::vector<Vertex> triangleVertices = {
 {{ 0.0f, -0.5f, 0.0f }, {1.0f, 0.0f, 0.0f}},
 {{ 0.5f,  0.5f, 0.0f }, {0.0f, 1.0f, 0.0f}},
@@ -129,9 +90,6 @@ namespace std {
 		}
 	};
 }
-
-//std::vector<Vertex> vertices;
-
 
 
 // camera globals
@@ -321,6 +279,7 @@ private:
 	}
 
 	void onKey(int key, int scancode, int action, int mods) {
+		// camera toggle doesn't work just yet
 		if (key == GLFW_KEY_P && action == GLFW_PRESS) {
 			cameraEnabled = !cameraEnabled;
 
@@ -329,6 +288,11 @@ private:
 			else
 				glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 		}
+		else if (key == GLFW_KEY_T && action == GLFW_PRESS)
+			if (renderTriangle)
+				renderTriangle = false;
+			else
+				renderTriangle = true;
 	}
 
 
@@ -460,7 +424,7 @@ private:
 	// loads .glb file
 	void createModel() {
 		
-		model = std::make_unique<ModelLoad>(device, physicalDevice, commandPool, graphicsQueue, 
+		model = std::make_unique<ModelLoad>(device, physicalDevice, commandPool, graphicsQueue,
 			[&](VkDeviceSize size,
 				VkBufferUsageFlags usage,
 				VkMemoryPropertyFlags properties,
@@ -1068,30 +1032,36 @@ private:
 		vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
 		vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+		if (!renderTriangle) {
 
-		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
+			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
 
-		VkBuffer vertexBuffers[] = { model->vertexBuffer };
-		VkDeviceSize offsets[] = { 0 };
-		vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
+			VkBuffer vertexBuffers[] = { model->vertexBuffer };
+			VkDeviceSize offsets[] = { 0 };
+			vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
 
-		vkCmdBindIndexBuffer(commandBuffer, model->indexBuffer, 0, VK_INDEX_TYPE_UINT32);
+			vkCmdBindIndexBuffer(commandBuffer, model->indexBuffer, 0, VK_INDEX_TYPE_UINT32);
 
-		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSets[currentFrame], 0, nullptr);
+			vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSets[currentFrame], 0, nullptr);
 
-		vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &model->modelMatrix);
+			vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &model->modelMatrix);
 
-		vkCmdDrawIndexed(commandBuffer, model->indexCount, 1, 0, 0, 0);
+			vkCmdDrawIndexed(commandBuffer, model->indexCount, 1, 0, 0, 0);
+		}
+		else {
+			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
 
+			VkBuffer triangleVertexBuffers[] = { triangleVertexBuffer };
+			VkDeviceSize triangleOffsets[] = { 0 };
+			vkCmdBindVertexBuffers(commandBuffer, 0, 1, triangleVertexBuffers, triangleOffsets);
 
-		VkBuffer triangleVertexBuffers[] = { triangleVertexBuffer };
-		VkDeviceSize triangleOffsets[] = { 0 };
-		vkCmdBindVertexBuffers(commandBuffer, 0, 1, triangleVertexBuffers, triangleOffsets);
+			vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSets[currentFrame], 0, nullptr);
 
-		glm::mat4 triangleModel = glm::mat4(1.0f);
-		vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &triangleModel);
+			glm::mat4 triangleModel = glm::mat4(1.0f);
+			vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &triangleModel);
 
-		vkCmdDraw(commandBuffer, 3, 1, 0, 0);
+			vkCmdDraw(commandBuffer, 3, 1, 0, 0);
+		}
 
 		vkCmdEndRenderPass(commandBuffer);
 
@@ -1499,6 +1469,14 @@ private:
 		pipelineInfo.subpass = 0;
 		pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 		pipelineInfo.basePipelineIndex = -1;
+
+		auto attr = Vertex::getAttributeDescriptions();
+		for (size_t i = 0; i < attr.size(); ++i) {
+			std::cout << "attr[" << i << "] location=" << attr[i].location
+				<< " binding=" << attr[i].binding
+				<< " offset=" << attr[i].offset << "\n";
+		}
+
 
 		if (vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &graphicsPipeline) != VK_SUCCESS)
 			throw std::runtime_error("failed to create graphics pipeline!");
@@ -1921,7 +1899,6 @@ private:
 		// signals 'imageAvailableSemaphores[currentFrame]' when ready
 		// acquires next swapchain image (swapchain holds images, not imageviews)
 		VkResult result = vkAcquireNextImageKHR(device, swapChain, UINT64_MAX, imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, &imageIndex);
-		// swapchain error checking
 		if (result == VK_ERROR_OUT_OF_DATE_KHR) {
 			recreateSwapChain();
 			return;
@@ -1929,7 +1906,6 @@ private:
 		else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
 			throw std::runtime_error("failed to acquire swap chain image");
 
-		// wait if swapchain image is already in use
 		if (imagesInFlight[imageIndex] != VK_NULL_HANDLE)
 		{
 			vkWaitForFences(device, 1, &imagesInFlight[imageIndex], VK_TRUE, UINT64_MAX);
@@ -1989,6 +1965,8 @@ private:
 
 	}
 
+
+	// callback inside the class
 	static void cursor_position_callback(GLFWwindow* window, double xpos, double ypos) {
 		if (firstMouse)
 			lastX = xpos; lastY = ypos; firstMouse = false;
