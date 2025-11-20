@@ -68,6 +68,29 @@ ModelLoad::ModelLoad(
 		if (!meshPtr)
 			throw std::runtime_error("No mesh found in GLB");
 
+		// scaling
+
+		int cubeNodeIndex = -1;
+		for (int i = 0; i < model.nodes.size(); i++) {
+			if (model.nodes[i].name == "Cube") {
+				cubeNodeIndex = i;
+				break;
+			}
+		}
+
+		if (cubeNodeIndex >= 0) {
+			tinygltf::Node& node = model.nodes[cubeNodeIndex];
+			if (node.scale.empty())
+				node.scale = { 1.0, 1.0, 1.0 };
+
+			node.scale[0] *= 0.01;
+			node.scale[1] *= 0.01;
+			node.scale[2] *= 0.01;
+			
+		}
+
+		//
+
 		const tinygltf::Mesh& mesh = *meshPtr;
 
 		const auto& primitive = mesh.primitives[0];
@@ -129,11 +152,6 @@ ModelLoad::ModelLoad(
 		const auto& idxAccessor = model.accessors[primitive.indices];
 		const auto& idxView = model.bufferViews[idxAccessor.bufferView];
 		const auto& idxBuffer = model.buffers[idxView.buffer];
-
-		if (idxAccessor.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT)
-			std::cout << "convert\n";
-		else if (idxAccessor.componentType != TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT)
-			throw std::runtime_error("Unsupported index type!");
 
 		const uint32_t* idxData = reinterpret_cast<const uint32_t*>(&idxBuffer.data[idxView.byteOffset + idxAccessor.byteOffset]);
 

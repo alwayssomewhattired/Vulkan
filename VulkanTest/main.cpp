@@ -34,9 +34,8 @@
 const uint32_t WIDTH = 800;
 const uint32_t HEIGHT = 600;
 const int MAX_FRAMES_IN_FLIGHT = 2;
-bool renderTriangle = true;
+bool renderTriangle = false;
 
-//const std::string MODEL_PATH = "models/viking_room.obj";
 const std::string TEXTURE_PATH = "textures/Metal055C_8K-PNG_Color.png";
 const std::vector<const char*> validationLayers = {
 	"VK_LAYER_KHRONOS_validation"
@@ -437,7 +436,7 @@ private:
 				VkDeviceSize size) 
 			{ copyBuffer(srcBuffer, dstBuffer, size); });
 
-		model->loadModel("models/untitled.glb");
+		model->loadModel("models/thedeathofallionceloved.glb");
 	}
 
 
@@ -658,19 +657,14 @@ private:
 			throw std::runtime_error("failed to create descriptor pool!");
 	}
 
-	//struct ModelUBO {
-	//	alignas(16) glm::mat4 model;
-	//	alignas(16) glm::mat4 view;
-	//	alignas(16) glm::mat4 proj;
-	//};
-
 	struct ModelUBO {
-		glm::mat4 model;
+		alignas(16) glm::mat4 model;
 	};
 
 	std::vector<VkDescriptorSet> descriptorSets;
 
 	void createDescriptorSets() {
+
 
 		descriptorSets.resize(MAX_FRAMES_IN_FLIGHT);
 		std::vector<VkDescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT, descriptorSetLayout);
@@ -700,7 +694,7 @@ private:
 			imageInfo.imageView = textureImageView;
 			imageInfo.sampler = textureSampler;
 
-			std::array<VkWriteDescriptorSet, 2> descriptorWrites{};
+			std::array<VkWriteDescriptorSet, 3> descriptorWrites{};
 			descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 			descriptorWrites[0].dstSet = descriptorSets[i];
 			descriptorWrites[0].dstBinding = 0;
@@ -717,6 +711,7 @@ private:
 			descriptorWrites[1].descriptorCount = 1;
 			descriptorWrites[1].pBufferInfo = &modelBufferInfo;
 
+			// there is no third element of descriptorWrites
 			descriptorWrites[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 			descriptorWrites[2].dstSet = descriptorSets[i];
 			descriptorWrites[2].dstBinding = 2;
@@ -846,31 +841,6 @@ private:
 
 		if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &descriptorSetLayout) != VK_SUCCESS)
 			throw std::runtime_error("failed to create descriptor set layout!");
-
-
-		// temp
-		//VkDescriptorSetLayoutBinding uboLayoutBinding{};
-		//uboLayoutBinding.binding = 0;
-		//uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		//uboLayoutBinding.descriptorCount = 1;
-		//uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-		//uboLayoutBinding.pImmutableSamplers = nullptr;
-
-		//VkDescriptorSetLayoutBinding samplerLayoutBinding{};
-		//samplerLayoutBinding.binding = 1;
-		//samplerLayoutBinding.descriptorCount = 1;
-		//samplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		//samplerLayoutBinding.pImmutableSamplers = nullptr;
-		//samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-
-		//std::array<VkDescriptorSetLayoutBinding, 2> bindings = { uboLayoutBinding, samplerLayoutBinding };
-		//VkDescriptorSetLayoutCreateInfo layoutInfo{};
-		//layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-		//layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
-		//layoutInfo.pBindings = bindings.data();
-
-		//if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &descriptorSetLayout) != VK_SUCCESS)
-		//	throw std::runtime_error("failed to create descriptor set layout");
 	}
 
 	void updateUniformBuffer(uint32_t currentImage) {
@@ -881,19 +851,6 @@ private:
 		ubo.proj[1][1] *= -1;
 
 		memcpy(uniformBuffersMapped[currentImage], &ubo, sizeof(ubo));
-
-		//static auto startTime = std::chrono::high_resolution_clock::now();
-
-		//auto currentTime = std::chrono::high_resolution_clock::now();
-		//float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
-
-		//ModelUBO ubo{};
-		//ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-		//ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-		//ubo.proj = glm::perspective(glm::radians(45.0f), swapChainExtent.width / (float)swapChainExtent.height, 0.1f, 10.0f);
-		//ubo.proj[1][1] *= -1;
-
-		//memcpy(uniformBuffersMapped[currentImage], &ubo, sizeof(ubo));
 	}
 
 	void updateModelBuffer(uint32_t currentImage) {
@@ -902,11 +859,18 @@ private:
 		float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
 
 		ModelUBO modelUbo{};
-		modelUbo.model = glm::rotate(glm::mat4(1.0f),
-			time * glm::radians(90.0f),
-			glm::vec3(0.0f, 0.0f, 1.0f));
+
+		// item view (tilted, rotating)
+		//modelUbo.model = glm::rotate(glm::mat4(1.0f),
+		//	time * glm::radians(90.0f),
+		//	glm::vec3(0.0f, 0.0f, 1.0f));
+
+		// normal view (straight, unchanging)
+		modelUbo.model = glm::mat4(1.0f);
+
 
 		memcpy(modelUniformBuffersMapped[currentImage], &modelUbo, sizeof(modelUbo));
+
 	}
 
 
@@ -1021,6 +985,7 @@ private:
 	size_t swapChainImageCount = swapChainImages.size();
 
 	void createSyncObjects() {
+
 		imageAvailableSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
 		renderFinishedSemaphores.resize(swapChainImageCount);
 		imagesInFlight.resize(swapChainImageCount, VK_NULL_HANDLE);
@@ -1065,6 +1030,7 @@ private:
 	std::vector<VkCommandBuffer> commandBuffers;
 
 	void createCommandBuffers() {
+
 		commandBuffers.resize(swapChainImageCount);
 
 		VkCommandBufferAllocateInfo allocInfo{};
@@ -1131,9 +1097,8 @@ private:
 
 			vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSets[currentFrame], 0, nullptr);
 
-			vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &model->modelMatrix);
-
-
+			//30
+			//std::cout << "count: " << model->indexCount << "\n";
 			vkCmdDrawIndexed(commandBuffer, model->indexCount, 1, 0, 0, 0);
 		}
 		else {
@@ -1145,10 +1110,6 @@ private:
 			vkCmdBindVertexBuffers(commandBuffer, 0, 1, triangleVertexBuffers, triangleOffsets);
 
 			vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSets[currentFrame], 0, nullptr);
-
-			glm::mat4 triangleModel = glm::mat4(1.0f);
-			vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &triangleModel);
-
 
 			vkCmdDraw(commandBuffer, 3, 1, 0, 0);
 		}
@@ -1478,7 +1439,8 @@ private:
 		rasterizer.rasterizerDiscardEnable = VK_FALSE;
 		rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
 		rasterizer.lineWidth = 1.0f;
-		rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
+		//rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
+		rasterizer.cullMode = VK_CULL_MODE_NONE;
 		rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
 		rasterizer.depthBiasEnable = VK_FALSE;
 		rasterizer.depthBiasConstantFactor = 0.0f;
@@ -1559,14 +1521,6 @@ private:
 		pipelineInfo.subpass = 0;
 		pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 		pipelineInfo.basePipelineIndex = -1;
-
-		auto attr = Vertex::getAttributeDescriptions();
-		for (size_t i = 0; i < attr.size(); ++i) {
-			std::cout << "attr[" << i << "] location=" << attr[i].location
-				<< " binding=" << attr[i].binding
-				<< " offset=" << attr[i].offset << "\n";
-		}
-
 
 		if (vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &graphicsPipeline) != VK_SUCCESS)
 			throw std::runtime_error("failed to create graphics pipeline!");
@@ -1984,6 +1938,7 @@ private:
 		uint32_t imageIndex;
 
 		updateUniformBuffer(currentFrame);
+		updateModelBuffer(currentFrame);
 
 
 		// signals 'imageAvailableSemaphores[currentFrame]' when ready
