@@ -95,27 +95,26 @@ ModelLoad::ModelLoad(
 
 		const auto& primitive = mesh.primitives[0];
 
+		// POSITION
+		//
 		const auto& posAccessor = model.accessors[primitive.attributes.at("POSITION")];
 		const auto& posView = model.bufferViews[posAccessor.bufferView];
 		const auto& posBuffer = model.buffers[posView.buffer];
 
-		const float* posData = reinterpret_cast<const float*>(&posBuffer.data[posView.byteOffset + posAccessor.byteOffset]);
-		size_t vertexCount = posAccessor.count;
+		const size_t posOffsetInBuffer = posView.byteOffset + posAccessor.byteOffset;
+		const size_t posStride = posView.byteStride ? posView.byteStride : (3 * sizeof(float));
+		const unsigned char* base = posBuffer.data.data() + posOffsetInBuffer;
 
+		vertexCount = posAccessor.count;
 		vertices.resize(vertexCount);
 
-		for (size_t i = 0; i < vertexCount; i++) {
-			vertices[i].pos = glm::vec3(
-				posData[i * 3 + 0],
-				posData[i * 3 + 1],
-				posData[i * 3 + 2]
-			);
-
-			// deafault color (white)
-			vertices[i].color = glm::vec3(1.0f);
+		for (size_t i = 0; i < posAccessor.count; ++i) {
+			const float* p = reinterpret_cast<const float*>(base + i * posStride);
+			vertices[i].pos = glm::vec3(p[0], p[1], p[2]);
 		}
 
-		// checking texcoords
+		// TEXCOORDS
+		//
 		bool hasTexcoords = primitive.attributes.find("TEXCOORD_0") != primitive.attributes.end();
 
 		if (hasTexcoords) {
@@ -127,40 +126,54 @@ ModelLoad::ModelLoad(
 			const auto& texView = model.bufferViews[texAccessor.bufferView];
 			const auto& texBuffer = model.buffers[texView.buffer];
 
-			if (texView.byteOffset + texAccessor.byteOffset + texAccessor.count * 2 * sizeof(float) > texBuffer.data.size())
-				throw std::runtime_error("texcoords too large!");
+			const  size_t texOffsetInBuffer = texView.byteOffset + texAccessor.byteOffset;
+			const size_t texStride = texView.byteStride ? texView.byteStride : (2 * sizeof(float));
+			const unsigned char* texBase = texBuffer.data.data() + texOffsetInBuffer;
+			size_t texCount = texAccessor.count;
 
-			const float* texData = reinterpret_cast<const float*>(
-				&texBuffer.data[texView.byteOffset + texAccessor.byteOffset]
-				);
-
-			for (size_t i = 0; i < vertexCount; i++) {
-
-				vertices[i].texCoord = glm::vec2(
-					texData[i * 2 + 0],
-					1.0f - texData[i * 2 + 1] // flip y
-				);
-
+			size_t common = std::min(vertexCount, texCount);
+			for (size_t i = 0; i < common; ++i) {
+				const float* t = reinterpret_cast<const float*>(texBase + i * texStride);
+				vertices[i].texCoord = glm::vec2(t[0], 1.0f - t[1]);
 			}
-		}
-		else {
-			for (size_t i = 0; i < vertexCount; i++) {
-				vertices[i].texCoord = glm::vec2(0.0f);
-			}
+
+			for (size_t i = common; i < vertexCount; ++i) vertices[i].texCoord = glm::vec2(0.0f);
+
 		}
 
+		// INDICES
+		//
 		const auto& idxAccessor = model.accessors[primitive.indices];
 		const auto& idxView = model.bufferViews[idxAccessor.bufferView];
 		const auto& idxBuffer = model.buffers[idxView.buffer];
-
-		const uint32_t* idxData = reinterpret_cast<const uint32_t*>(&idxBuffer.data[idxView.byteOffset + idxAccessor.byteOffset]);
+		
+		const size_t idxOffsetInBuffer = idxView.byteOffset + idxAccessor.byteOffset;
+		const unsigned char* idxBase = idxBuffer.data.data() + idxOffsetInBuffer;
 
 		indices.resize(idxAccessor.count);
-		memcpy(indices.data(), idxData, indices.size() * sizeof(uint32_t));
+
+		if (idxAccessor.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT) {
+			const uint16_t* src = reinterpret_cast<const uint16_t*>(idxBase);
+			for (size_t i = 0; i < idxAccessor.count; ++i) indices[i] = static_cast<uint32_t>(src[i]);
+			indexType = VK_INDEX_TYPE_UINT32; // remember this for vkCmdBindIndexBuffer or vkCmdDrawIndexed
+		}
+		else if (idxAccessor.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT) {
+			const uint32_t* src = reinterpret_cast<const uint32_t*>(idxBase);
+			for (size_t i = 0; i < idxAccessor.count; ++i) indices[i] = src[i];
+			indexType = VK_INDEX_TYPE_UINT32;
+		}
+		else if (idxAccessor.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE) {
+			const uint8_t* src = reinterpret_cast<const uint8_t*>(idxBase);
+			for (size_t i = 0; i < idxAccessor.count; ++i) indices[i] = static_cast<uint32_t>(src[i]);
+			indexType = VK_INDEX_TYPE_UINT32; // no uint8 in Vulkan so we must expand it to 16 or 32 when uploading
+		}
+		else
+			throw std::runtime_error("Unsupported index component type");
+
 
 		indexCount = static_cast<uint32_t>(indices.size());
 
-		VkDeviceSize vertexSize = sizeof(Vertex) * vertices.size();
+		VkDeviceSize vertexSize = sizeof(uint32_t) * vertices.size();
 
 		VkBuffer stagingVb;
 		VkDeviceMemory stagingVm;
@@ -198,7 +211,7 @@ ModelLoad::ModelLoad(
 
 		// indices
 
-		VkDeviceSize indexSize = sizeof(uint32_t) * indices.size();
+		VkDeviceSize indexSize = (indexType == VK_INDEX_TYPE_UINT16 ? sizeof(uint16_t) : sizeof(uint32_t)) * indices.size();
 
 		VkBuffer stagingIb;
 		VkDeviceMemory stagingIm;
@@ -211,9 +224,18 @@ ModelLoad::ModelLoad(
 			stagingIm
 		);
 
-		vkMapMemory(device, stagingIm, 0, indexSize, 0, &mapped);
-		memcpy(mapped, indices.data(), static_cast<size_t>(indexSize));
-		vkUnmapMemory(device, stagingIm);
+		if (indexType == VK_INDEX_TYPE_UINT16)
+		{
+			std::vector<uint16_t> tmp(indices.begin(), indices.end());
+			vkMapMemory(device, stagingIm, 0, indexSize, 0, &mapped);
+			memcpy(mapped, tmp.data(), indexSize);
+			vkUnmapMemory(device, stagingIm);
+		}
+		else {
+			vkMapMemory(device, stagingIm, 0, indexSize, 0, &mapped);
+			memcpy(mapped, indices.data(), indexSize);
+			vkUnmapMemory(device, stagingIm);
+		}
 
 		createBufferFn(
 			indexSize,
@@ -227,5 +249,8 @@ ModelLoad::ModelLoad(
 
 		vkDestroyBuffer(device, stagingIb, nullptr);
 		vkFreeMemory(device, stagingIm, nullptr);
+
+
+
 	}
 

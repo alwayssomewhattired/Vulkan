@@ -24,9 +24,6 @@ struct Vertex {
 
     static std::array<VkVertexInputAttributeDescription, 3> getAttributeDescriptions() {
         std::array<VkVertexInputAttributeDescription, 3> attr{};
-        //attr[0] = { 0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, pos) };
-        //attr[1] = { 0, 1, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, color) };
-        //attr[2] = { 0, 2, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, texCoord) };
 
         attr[0].location = 0;
         attr[0].binding = 0;

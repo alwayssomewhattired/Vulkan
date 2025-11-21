@@ -78,7 +78,7 @@ const std::vector<Vertex> triangleVertices = {
 };
 
 // triangle indices
-std::vector<uint32_t> indices;
+//std::vector<uint32_t> indices;
 
 namespace std {
 	template<> struct hash<Vertex> {
@@ -860,7 +860,7 @@ private:
 
 		ModelUBO modelUbo{};
 
-		// item view (tilted, rotating)
+		// item view (tilted, rotating)((bind to key 'p'))
 		//modelUbo.model = glm::rotate(glm::mat4(1.0f),
 		//	time * glm::radians(90.0f),
 		//	glm::vec3(0.0f, 0.0f, 1.0f));
@@ -1093,12 +1093,10 @@ private:
 			VkDeviceSize offsets[] = { 0 };
 			vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
 
-			vkCmdBindIndexBuffer(commandBuffer, model->indexBuffer, 0, VK_INDEX_TYPE_UINT32);
+			vkCmdBindIndexBuffer(commandBuffer, model->indexBuffer, 0, model->indexType);
 
 			vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSets[currentFrame], 0, nullptr);
 
-			//30
-			//std::cout << "count: " << model->indexCount << "\n";
 			vkCmdDrawIndexed(commandBuffer, model->indexCount, 1, 0, 0, 0);
 		}
 		else {

@@ -29,10 +29,13 @@ public:
 	VkBuffer indexBuffer;
 	VkDeviceMemory indexMemory;
 
+	size_t vertexCount;
 	uint32_t indexCount;
 
 	glm::mat4 modelMatrix = glm::translate(glm::mat4(1.0f), glm::vec3(0, 0, -3));
 
+	VkIndexType indexType;
+	
 
 private:
 	VkDevice device;
@@ -43,6 +46,7 @@ private:
 	std::function<void(VkDeviceSize, VkBufferUsageFlags, VkMemoryPropertyFlags, VkBuffer&, VkDeviceMemory&)> createBufferFn;
 	std::function<void(VkBuffer, VkBuffer, VkDeviceSize)> copyBufferFn;
 
+	// mesh vertices
 	std::vector<Vertex> vertices;
 	std::vector<uint32_t> indices;
 };
