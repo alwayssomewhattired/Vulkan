@@ -866,7 +866,9 @@ private:
 		//	glm::vec3(0.0f, 0.0f, 1.0f));
 
 		// normal view (straight, unchanging)
-		modelUbo.model = glm::mat4(1.0f);
+		modelUbo.model = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 4.0f));
+
+
 
 
 		memcpy(modelUniformBuffersMapped[currentImage], &modelUbo, sizeof(modelUbo));

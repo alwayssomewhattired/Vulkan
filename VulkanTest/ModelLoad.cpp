@@ -236,6 +236,5 @@ ModelLoad::ModelLoad(
 		vkDestroyBuffer(device, stagingIb, nullptr);
 		vkFreeMemory(device, stagingIm, nullptr);
 
-
 	}
 

@@ -15,7 +15,7 @@ public:
 
 	Camera(glm::vec3 startPos = { 0.0f, 1.6f, 5.0f },
 		float yaw = -90.f, float pitch = 0.0f,
-		float speed = 3.0f, float sensitivity = 0.1);
+		float speed = 6.0f, float sensitivity = 0.1);
 
 	glm::mat4 GetViewMatrix() const;
 
