@@ -1098,6 +1098,7 @@ private:
 			vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSets[currentFrame], 0, nullptr);
 
 			vkCmdDrawIndexed(commandBuffer, model->indexCount, 1, 0, 0, 0);
+			//vkCmdDraw(commandBuffer, model->vertexCount, 1, 0, 0);
 		}
 		else {
 			// triangle

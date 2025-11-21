@@ -68,27 +68,6 @@ ModelLoad::ModelLoad(
 		if (!meshPtr)
 			throw std::runtime_error("No mesh found in GLB");
 
-		// scaling
-
-		int cubeNodeIndex = -1;
-		for (int i = 0; i < model.nodes.size(); i++) {
-			if (model.nodes[i].name == "Cube") {
-				cubeNodeIndex = i;
-				break;
-			}
-		}
-
-		if (cubeNodeIndex >= 0) {
-			tinygltf::Node& node = model.nodes[cubeNodeIndex];
-			if (node.scale.empty())
-				node.scale = { 1.0, 1.0, 1.0 };
-
-			node.scale[0] *= 0.01;
-			node.scale[1] *= 0.01;
-			node.scale[2] *= 0.01;
-			
-		}
-
 		//
 
 		const tinygltf::Mesh& mesh = *meshPtr;
@@ -104,13 +83,19 @@ ModelLoad::ModelLoad(
 		const size_t posOffsetInBuffer = posView.byteOffset + posAccessor.byteOffset;
 		const size_t posStride = posView.byteStride ? posView.byteStride : (3 * sizeof(float));
 		const unsigned char* base = posBuffer.data.data() + posOffsetInBuffer;
-
+		std::cout << "posStride: " << posStride << "\n";
 		vertexCount = posAccessor.count;
 		vertices.resize(vertexCount);
 
-		for (size_t i = 0; i < posAccessor.count; ++i) {
+		for (size_t i = 0; i < vertexCount; ++i) {
 			const float* p = reinterpret_cast<const float*>(base + i * posStride);
 			vertices[i].pos = glm::vec3(p[0], p[1], p[2]);
+		}
+
+		// COLOR
+		//
+		for (size_t i = 0; i < vertexCount; ++i) {
+			vertices[i].color = glm::vec3(1.0f); // default color (white)
 		}
 
 		// TEXCOORDS
@@ -173,7 +158,7 @@ ModelLoad::ModelLoad(
 
 		indexCount = static_cast<uint32_t>(indices.size());
 
-		VkDeviceSize vertexSize = sizeof(uint32_t) * vertices.size();
+		VkDeviceSize vertexSize = sizeof(Vertex) * vertices.size();
 
 		VkBuffer stagingVb;
 		VkDeviceMemory stagingVm;
@@ -191,6 +176,7 @@ ModelLoad::ModelLoad(
 		void* mapped;
 		vkMapMemory(device, stagingVm, 0, vertexSize, 0, &mapped);
 		memcpy(mapped, vertices.data(), static_cast<size_t>(vertexSize));
+		unsigned char* data = reinterpret_cast<unsigned char*>(mapped);
 		vkUnmapMemory(device, stagingVm);
 
 		createBufferFn(
@@ -249,7 +235,6 @@ ModelLoad::ModelLoad(
 
 		vkDestroyBuffer(device, stagingIb, nullptr);
 		vkFreeMemory(device, stagingIm, nullptr);
-
 
 
 	}
