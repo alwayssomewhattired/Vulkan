@@ -279,7 +279,7 @@ private:
 	}
 
 	void onKey(int key, int scancode, int action, int mods) {
-		// camera toggle doesn't work just yet
+
 		if (key == GLFW_KEY_P && action == GLFW_PRESS) {
 			cameraEnabled = !cameraEnabled;
 
@@ -288,11 +288,15 @@ private:
 			else
 				glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 		}
-		else if (key == GLFW_KEY_T && action == GLFW_PRESS)
+		else if (key == GLFW_KEY_T && action == GLFW_PRESS) {
 			if (renderTriangle)
 				renderTriangle = false;
 			else
 				renderTriangle = true;
+		}
+		else if (key == GLFW_KEY_G && action == GLFW_PRESS) {
+			rotationEnabled = !rotationEnabled;
+		}
 	}
 
 
@@ -853,6 +857,8 @@ private:
 		memcpy(uniformBuffersMapped[currentImage], &ubo, sizeof(ubo));
 	}
 
+	bool rotationEnabled = false;
+
 	void updateModelBuffer(uint32_t currentImage) {
 		static auto startTime = std::chrono::high_resolution_clock::now();
 		auto currentTime = std::chrono::high_resolution_clock::now();
@@ -861,12 +867,15 @@ private:
 		ModelUBO modelUbo{};
 
 		// item view (tilted, rotating)((bind to key 'p'))
-		//modelUbo.model = glm::rotate(glm::mat4(1.0f),
-		//	time * glm::radians(90.0f),
-		//	glm::vec3(0.0f, 0.0f, 1.0f));
-
+		if (rotationEnabled) {
+			modelUbo.model = glm::rotate(glm::mat4(1.0f),
+				time * glm::radians(90.0f),
+				glm::vec3(0.0f, 0.0f, 1.0f));
+		}
+		else {
 		// normal view (straight, unchanging)
-		modelUbo.model = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 4.0f));
+			modelUbo.model = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 4.0f));
+		}
 
 
 

@@ -1,4 +1,5 @@
 CONTROLS
 
-'p' ||| camera toggle
+'p' ||| toggle cursor
 't' ||| toggle triangle
+'g' ||| toggle rotation
