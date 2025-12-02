@@ -143,8 +143,6 @@
     <ClCompile Include="Triangle.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="mandelbulb.frag" />
-    <None Include="mandelbulb.vert" />
     <None Include="shaders\compile.bat" />
     <None Include="shaders\shader.frag" />
     <None Include="shaders\shader.vert" />

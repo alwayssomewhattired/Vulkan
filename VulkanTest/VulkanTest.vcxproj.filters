@@ -46,8 +46,6 @@
     <None Include="shaders\compile.bat">
       <Filter>Source Files</Filter>
     </None>
-    <None Include="mandelbulb.frag" />
-    <None Include="mandelbulb.vert" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ModelLoad.h">
