@@ -296,12 +296,7 @@ private:
 				renderTriangle = true;
 		}
 		else if (key == GLFW_KEY_M && action == GLFW_PRESS) {
-			if (renderMandelbulb) {
-				renderMandelbulb == false;
-			}
-			else {
-				renderMandelbulb = true;
-			}
+			renderMandelbulb = !renderMandelbulb;
 		}
 		else if (key == GLFW_KEY_G && action == GLFW_PRESS) {
 			rotationEnabled = !rotationEnabled;
@@ -1259,11 +1254,9 @@ private:
 			vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSets[currentFrame], 0, nullptr);
 
 			vkCmdDrawIndexed(commandBuffer, model->indexCount, 1, 0, 0, 0);
-			//vkCmdDraw(commandBuffer, model->vertexCount, 1, 0, 0);
 		}
 		// mandelbulb
 		else if (!renderTriangle && renderMandelbulb) {
-
 			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, mandelbulbPipeline);
 
 			vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, mandelbulbPipelineLayout, 0, 1,
