@@ -665,8 +665,20 @@ private:
 		alignas(16) glm::mat4 model;
 	};
 
-	std::vector<VkDescriptorSet> descriptorSets;
+	struct MandelbulbUBO {
+		glm::mat4 invProjection;
+		glm::mat4 invView;
+		glm::vec3 camPos;
+		float time;
+		glm::vec2 resolution;
+		float power;
+		int maxIter;
+		float bail;
+		float pad; // pad to 16 byts if needed
+	};
 
+	std::vector<VkDescriptorSet> descriptorSets;
+	// GEOMETRY
 	void createDescriptorSets() {
 
 
@@ -693,12 +705,17 @@ private:
 			modelBufferInfo.offset = 0;			
 			modelBufferInfo.range = sizeof(ModelUBO);
 
+			VkDescriptorBufferInfo mandelbulbBufferInfo{};
+			mandelbulbBufferInfo.buffer = mandelbulbUniformBuffers[i];
+			mandelbulbBufferInfo.offset = 0;
+			mandelbulbBufferInfo.range = sizeof(MandelbulbUBO);
+
 			VkDescriptorImageInfo imageInfo{};
 			imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 			imageInfo.imageView = textureImageView;
 			imageInfo.sampler = textureSampler;
 
-			std::array<VkWriteDescriptorSet, 3> descriptorWrites{};
+			std::array<VkWriteDescriptorSet, 4> descriptorWrites{};
 			descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 			descriptorWrites[0].dstSet = descriptorSets[i];
 			descriptorWrites[0].dstBinding = 0;
@@ -715,19 +732,29 @@ private:
 			descriptorWrites[1].descriptorCount = 1;
 			descriptorWrites[1].pBufferInfo = &modelBufferInfo;
 
-			// there is no third element of descriptorWrites
 			descriptorWrites[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 			descriptorWrites[2].dstSet = descriptorSets[i];
-			descriptorWrites[2].dstBinding = 2;
+			descriptorWrites[2].dstBinding = 1; // matches mandelbulb shader binding
 			descriptorWrites[2].dstArrayElement = 0;
-			descriptorWrites[2].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+			descriptorWrites[2].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 			descriptorWrites[2].descriptorCount = 1;
-			descriptorWrites[2].pImageInfo = &imageInfo;
+			descriptorWrites[2].pBufferInfo = &mandelbulbBufferInfo;
+
+			descriptorWrites[3].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			descriptorWrites[3].dstSet = descriptorSets[i];
+			descriptorWrites[3].dstBinding = 3;
+			descriptorWrites[3].dstArrayElement = 0;
+			descriptorWrites[3].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+			descriptorWrites[3].descriptorCount = 1;
+			descriptorWrites[3].pImageInfo = &imageInfo;
 
 			vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
 
 		}
 	}
+
+
+	void createMandelbulbDescriptorSets
 
 
 	std::vector<VkBuffer> uniformBuffers;
@@ -738,13 +765,16 @@ private:
 	std::vector<VkDeviceMemory> modelUniformBuffersMemory;
 	std::vector<void*> modelUniformBuffersMapped;
 
+	std::vector<VkBuffer> mandelbulbUniformBuffers;
+	std::vector<VkDeviceMemory> mandelbulbUniformBuffersMemory;
+	std::vector<void*> mandelbulbUniformBuffersMapped;
 
 	void createUniformBuffers() {
 
 		VkDeviceSize bufferSize = sizeof(Camera::CameraUBO);
 		VkDeviceSize modelBufferSize = sizeof(ModelUBO);
+		VkDeviceSize mandelbulbBufferSize = sizeof(MandelbulbUBO);
 
-		// swapchain or frames in flight?
 		uniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
 		uniformBuffersMemory.resize(MAX_FRAMES_IN_FLIGHT);
 		uniformBuffersMapped.resize(MAX_FRAMES_IN_FLIGHT);
@@ -752,6 +782,10 @@ private:
 		modelUniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
 		modelUniformBuffersMemory.resize(MAX_FRAMES_IN_FLIGHT);
 		modelUniformBuffersMapped.resize(MAX_FRAMES_IN_FLIGHT);
+
+		mandelbulbUniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
+		mandelbulbUniformBuffersMemory.resize(MAX_FRAMES_IN_FLIGHT);
+		mandelbulbUniformBuffersMapped.resize(MAX_FRAMES_IN_FLIGHT);
 
 		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
 
@@ -809,6 +843,36 @@ private:
 			vkMapMemory(device, modelUniformBuffersMemory[i], 0, modelBufferSize, 0, &modelUniformBuffersMapped[i]);
 		}
 
+		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+
+			VkBufferCreateInfo mandelbulbBufferInfo{};
+			mandelbulbBufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+			mandelbulbBufferInfo.size = mandelbulbBufferSize;
+			mandelbulbBufferInfo.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
+			mandelbulbBufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+			if (vkCreateBuffer(device, &mandelbulbBufferInfo, nullptr, &mandelbulbUniformBuffers[i]) != VK_SUCCESS) {
+				throw std::runtime_error("failed to create mandelbulb uniform buffers\n");
+			}
+
+			VkMemoryRequirements mandelbulbMemRequirements;
+			vkGetBufferMemoryRequirements(device, mandelbulbUniformBuffers[i], &mandelbulbMemRequirements);
+
+			VkMemoryAllocateInfo mandelbulbAllocInfo{};
+			mandelbulbAllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+			mandelbulbAllocInfo.allocationSize = mandelbulbMemRequirements.size;
+			mandelbulbAllocInfo.memoryTypeIndex = findMemoryType(mandelbulbMemRequirements.memoryTypeBits,
+				VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+
+			if (vkAllocateMemory(device, &mandelbulbAllocInfo, nullptr, &mandelbulbUniformBuffersMemory[i]) != VK_SUCCESS) {
+				throw std::runtime_error("failed to allocate mandelbulb uniform buffer memory\n");
+			}
+
+			vkBindBufferMemory(device, mandelbulbUniformBuffers[i], mandelbulbUniformBuffersMemory[i], 0);
+
+			vkMapMemory(device, mandelbulbUniformBuffersMemory[i], 0, mandelbulbBufferSize, 0, &mandelbulbUniformBuffersMapped[i]);
+		}
+
 	}
 
 	VkDescriptorSetLayout descriptorSetLayout;
@@ -831,8 +895,8 @@ private:
 
 		VkDescriptorSetLayoutBinding samplerBinding{};
 		samplerBinding.binding = 2;
-		samplerBinding.descriptorCount = 1;
 		samplerBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		samplerBinding.descriptorCount = 1;
 		samplerBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 		samplerBinding.pImmutableSamplers = nullptr;
 
@@ -847,6 +911,36 @@ private:
 			throw std::runtime_error("failed to create descriptor set layout!");
 	}
 
+	VkDescriptorSetLayout mandelbulbDescriptorSetLayout;
+
+	void createMandelbulbDescriptorSetLayout() {
+
+		VkDescriptorSetLayoutBinding cameraBinding{};
+		cameraBinding.binding = 0;
+		cameraBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		cameraBinding.descriptorCount = 1;
+		cameraBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+		cameraBinding.pImmutableSamplers = nullptr;
+
+		VkDescriptorSetLayoutBinding mandelbulbBinding{};
+		mandelbulbBinding.binding = 2;
+		mandelbulbBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		mandelbulbBinding.descriptorCount = 1;
+		mandelbulbBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+		mandelbulbBinding.pImmutableSamplers = nullptr;
+
+		std::array<VkDescriptorSetLayoutBinding, 2> bindings = { cameraBinding, mandelbulbBinding };
+
+		VkDescriptorSetLayoutCreateInfo layoutInfo{};
+		layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+		layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
+		layoutInfo.pBindings = bindings.data();
+
+		if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &mandelbulbDescriptorSetLayout) != VK_SUCCESS)
+			throw std::runtime_error("failed to create mandelbulb descriptor set layout\n");
+	}
+
+
 	void updateUniformBuffer(uint32_t currentImage) {
 
 		Camera::CameraUBO ubo;
@@ -855,6 +949,36 @@ private:
 		ubo.proj[1][1] *= -1;
 
 		memcpy(uniformBuffersMapped[currentImage], &ubo, sizeof(ubo));
+	}
+
+	void updateMandelbulbUBO(uint32_t currentImage)
+	{
+		MandelbulbUBO ubo{};
+
+		// 1. Camera matrices
+		glm::mat4 view = camera.GetViewMatrix();
+		glm::mat4 proj = glm::perspective(glm::radians(45.0f), swapChainExtent.width / (float)swapChainExtent.height, 0.1f, 100.0f);
+		proj[1][1] *= -1; // Vulkan Y-flip
+
+		// 2. Inverse matrices for fractal shader
+		ubo.invView = glm::inverse(view);
+		ubo.invProjection = glm::inverse(proj);
+
+		// 3. Camera position (extract from view matrix)
+		ubo.camPos = camera.Position;
+
+		// 4. Resolution
+		ubo.resolution = glm::vec2(swapChainExtent.width, swapChainExtent.height);
+
+		// 5. Fractal params
+		ubo.power = 8.0f;
+		ubo.maxIter = 12;
+		ubo.bail = 2.0f;
+
+		// 6. Time (optional animation)
+		ubo.time = static_cast<float>(glfwGetTime());
+
+		memcpy(mandelbulbUniformBuffersMapped[currentImage], &ubo, sizeof(ubo));
 	}
 
 	bool rotationEnabled = false;
@@ -1538,6 +1662,133 @@ private:
 		vkDestroyShaderModule(device, fragShaderModule, nullptr);
 		vkDestroyShaderModule(device, vertShaderModule, nullptr);
 
+	}
+
+
+	VkPipelineLayout mandelbulbPipelineLayout;
+	VkPipeline mandelbulbPipeline;
+
+	void createMandelbulbPipeline() {
+
+		auto vertShaderCode = readFile("shaders/mandelbulb.vert.spv");
+		auto fragShaderCode = readFile("shaders/mandelbulb.frag.spv");
+
+		VkShaderModule vertShaderModule = createShaderModule(vertShaderCode);
+		VkShaderModule fragShaderModule = createShaderModule(fragShaderCode);
+
+		VkPipelineShaderStageCreateInfo vertStage{};
+		vertStage.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+		vertStage.stage = VK_SHADER_STAGE_VERTEX_BIT;
+		vertStage.module = vertShaderModule;
+		vertStage.pName = "main";
+
+		VkPipelineShaderStageCreateInfo fragStage{};
+		fragStage.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+		fragStage.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+		fragStage.module = fragShaderModule;
+		fragStage.pName = "main";
+
+		VkPipelineShaderStageCreateInfo shaderStages[] = { vertStage, fragStage };
+
+		// no vertex input because we want fullscreen triangle
+		VkPipelineVertexInputStateCreateInfo vertexInput{};
+		vertexInput.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+		vertexInput.vertexBindingDescriptionCount = 0;
+		vertexInput.pVertexBindingDescriptions = nullptr;
+		vertexInput.vertexAttributeDescriptionCount = 0;
+		vertexInput.pVertexAttributeDescriptions = nullptr;
+
+		VkPipelineInputAssemblyStateCreateInfo inputAssembly{};
+		inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+		inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+		inputAssembly.primitiveRestartEnable = VK_FALSE;
+
+		VkPipelineViewportStateCreateInfo viewportState{};
+		viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+		viewportState.viewportCount = 1;
+		viewportState.scissorCount = 1;
+
+		VkPipelineDynamicStateCreateInfo dynamicState{};
+		dynamicState.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+		dynamicState.dynamicStateCount = 2;
+		VkDynamicState dynamicStates[2] = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR };
+		dynamicState.pDynamicStates = dynamicStates;
+
+		VkPipelineRasterizationStateCreateInfo rasterizer{};
+		rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+		rasterizer.depthClampEnable = VK_FALSE;
+		rasterizer.rasterizerDiscardEnable = VK_FALSE;
+		rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
+		rasterizer.lineWidth = 1.0f;
+		//rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
+		rasterizer.cullMode = VK_CULL_MODE_NONE;
+		rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+		rasterizer.depthBiasEnable = VK_FALSE;
+		rasterizer.depthBiasConstantFactor = 0.0f;
+		rasterizer.depthBiasClamp = 0.0f;
+		rasterizer.depthBiasSlopeFactor = 0.0f;
+
+		VkPipelineMultisampleStateCreateInfo multisampling{};
+		multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+		multisampling.sampleShadingEnable = VK_TRUE;
+		multisampling.rasterizationSamples = msaaSamples;
+		multisampling.minSampleShading = .2f;
+		multisampling.pSampleMask = nullptr;
+		multisampling.alphaToCoverageEnable = VK_FALSE;
+		multisampling.alphaToOneEnable = VK_FALSE;
+
+		VkPipelineColorBlendAttachmentState colorBlendAttachment{};
+		colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+		colorBlendAttachment.blendEnable = VK_TRUE;
+		colorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+		colorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+		colorBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD;
+		colorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+		colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+		colorBlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD;
+
+		VkPipelineColorBlendStateCreateInfo colorBlending{};
+		colorBlending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+		colorBlending.logicOpEnable = VK_FALSE;
+		colorBlending.logicOp = VK_LOGIC_OP_COPY;
+		colorBlending.attachmentCount = 1;
+		colorBlending.pAttachments = &colorBlendAttachment;
+		colorBlending.blendConstants[0] - 0.0f;
+		colorBlending.blendConstants[1] = 0.0f;
+		colorBlending.blendConstants[2] = 0.0f;
+		colorBlending.blendConstants[3] = 0.0f;
+
+		VkPipelineLayoutCreateInfo layoutInfo{};
+		layoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+		layoutInfo.setLayoutCount = 1;
+		layoutInfo.pSetLayouts = &mandelbulbDescriptorSetLayout;
+		layoutInfo.pushConstantRangeCount = 0; // Raymarcher doesn't need push constants
+
+		if (vkCreatePipelineLayout(device, &layoutInfo, nullptr, &mandelbulbPipelineLayout) != VK_SUCCESS)
+			throw std::runtime_error("failed to create mandelbulb pipeline layout");
+
+		VkGraphicsPipelineCreateInfo pipelineInfo{};
+		pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+		pipelineInfo.stageCount = 2;
+		pipelineInfo.pStages = shaderStages;
+		pipelineInfo.pVertexInputState = &vertexInput;
+		pipelineInfo.pInputAssemblyState = &inputAssembly;
+		pipelineInfo.pViewportState = &viewportState;
+		pipelineInfo.pRasterizationState = &rasterizer;
+		pipelineInfo.pMultisampleState = &multisampling;
+		pipelineInfo.pDepthStencilState = nullptr; // disable depth for full-screen pass
+		pipelineInfo.pColorBlendState = &colorBlending;
+		pipelineInfo.pDynamicState = &dynamicState;
+
+		pipelineInfo.layout = mandelbulbPipelineLayout;
+		pipelineInfo.renderPass = renderPass;
+		pipelineInfo.subpass = 0;
+
+		if (vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &mandelbulbPipeline) != VK_SUCCESS)
+			throw std::runtime_error("failed to create mandelbulb graphics pipeline\n");
+
+		vkDestroyShaderModule(device, vertShaderModule, nullptr);
+		vkDestroyShaderModule(device, fragShaderModule, nullptr);
 	}
 
 

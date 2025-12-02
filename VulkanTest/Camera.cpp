@@ -35,6 +35,10 @@
 		return glm::normalize(glm::cross(GetFront(), glm::vec3(0, 1, 0)));
 	}
 
+	//glm::vec3 Camera::GetPosition() const {
+	//	return glm::vec3(glm::inverse(view)[3]);
+	//}
+
 	void Camera::ProcessKeyboard(Camera_Movement dir, float dt) {
 		float velocity = MovementSpeed * dt;
 

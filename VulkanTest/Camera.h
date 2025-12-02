@@ -23,6 +23,8 @@ public:
 
 	glm::vec3 GetRight() const;
 
+	//glm::vec3 GetPosition() const;
+
 	void ProcessKeyboard(Camera_Movement dir, float deltaTime);
 
 	void ProcessMouseMovement(float xoffset, float yoffset, bool constrainPitch = true);
