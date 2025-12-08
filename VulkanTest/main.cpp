@@ -496,6 +496,23 @@ private:
 		depthImageView = createImageView(depthImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT, 1);
 	}
 
+	// FOR COMPUTE SHADER
+	VkImage storageImage;
+	VkDeviceMemory storageImageMemory;
+	VkImageView storageImageView;
+
+	void createStorageImageResources() {
+		VkFormat format;//(what format?)
+
+		createImage(swapChainExtent.width, swapChainExtent.height, 1, msaaSamples, format,
+			VK_IMAGE_TILING_OPTIMAL,
+			VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
+			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+			storageImage, storageImageMemory
+		);
+		storageImageView = createImageView(storageImage, format, VK_IMAGE_ASPECT_COLOR_BIT, 1);
+	}
+
 
 	VkSampler textureSampler;
 
@@ -559,6 +576,7 @@ private:
 		if (vkCreateImage(device, &imageInfo, nullptr, &image) != VK_SUCCESS) {
 			throw std::runtime_error("failed to create image!");
 		}
+
 
 		VkMemoryRequirements memRequirements;
 		vkGetImageMemoryRequirements(device, image, &memRequirements);
@@ -686,7 +704,7 @@ private:
 	void createDescriptorSets() {
 
 
-		createMandelbulbDescriptorSets();
+		createMandelbulbGraphicsDescriptorSets();
 
 
 		descriptorSets.resize(MAX_FRAMES_IN_FLIGHT);
@@ -746,18 +764,25 @@ private:
 		}
 	}
 
-	std::vector<VkDescriptorSet> mandelbulbDescriptorSets;
+	std::vector<VkDescriptorSet> mandelbulbComputeDescriptorSets;
 
-	void createMandelbulbDescriptorSets() {
-		mandelbulbDescriptorSets.resize(MAX_FRAMES_IN_FLIGHT);
-		std::vector<VkDescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT, mandelbulbDescriptorSetLayout);
+	void createMandelbulbComputeDescriptorSets() {
+
+	}
+
+
+	std::vector<VkDescriptorSet> mandelbulbGraphicsDescriptorSets;
+
+	void createMandelbulbGraphicsDescriptorSets() {
+		mandelbulbGraphicsDescriptorSets.resize(MAX_FRAMES_IN_FLIGHT);
+		std::vector<VkDescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT, mandelbulbGraphicsDescriptorSetLayout);
 		VkDescriptorSetAllocateInfo allocInfo{};
 		allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
 		allocInfo.descriptorPool = descriptorPool;
 		allocInfo.descriptorSetCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
 		allocInfo.pSetLayouts = layouts.data();
 
-		if (vkAllocateDescriptorSets(device, &allocInfo, mandelbulbDescriptorSets.data()) != VK_SUCCESS)
+		if (vkAllocateDescriptorSets(device, &allocInfo, mandelbulbGraphicsDescriptorSets.data()) != VK_SUCCESS)
 			throw std::runtime_error("failed to allocate mandelbulb descriptor sets!");
 
 		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
@@ -767,15 +792,27 @@ private:
 			mandelbulbBufferInfo.offset = 0;
 			mandelbulbBufferInfo.range = sizeof(MandelbulbUBO);
 
-			std::array<VkWriteDescriptorSet, 1> descriptorWrites{};
+			VkDescriptorImageInfo imgInfo{};
+			imgInfo.imageView = storageImageView;
+			imgInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+
+			std::array<VkWriteDescriptorSet, 2> descriptorWrites{};
 
 			descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			descriptorWrites[0].dstSet = mandelbulbDescriptorSets[i];
+			descriptorWrites[0].dstSet = mandelbulbGraphicsDescriptorSets[i];
 			descriptorWrites[0].dstBinding = 0; // matches mandelbulb shader binding
 			descriptorWrites[0].dstArrayElement = 0;
 			descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 			descriptorWrites[0].descriptorCount = 1;
 			descriptorWrites[0].pBufferInfo = &mandelbulbBufferInfo;
+
+			descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			descriptorWrites[1].dstSet = mandelbulbGraphicsDescriptorSets[i];
+			descriptorWrites[1].dstBinding = 0; // matches mandelbulb shader binding
+			descriptorWrites[1].dstArrayElement = 0;
+			descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+			descriptorWrites[1].descriptorCount = 1;
+			descriptorWrites[1].pBufferInfo = &mandelbulbBufferInfo;
 
 			vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
 		}
@@ -904,7 +941,7 @@ private:
 
 	void createDescriptorSetLayout() {
 
-		createMandelbulbDescriptorSetLayout();
+		createMandelbulbGraphicsDescriptorSetLayout();
 
 
 		VkDescriptorSetLayoutBinding cameraBinding{};
@@ -939,9 +976,15 @@ private:
 			throw std::runtime_error("failed to create descriptor set layout!");
 	}
 
-	VkDescriptorSetLayout mandelbulbDescriptorSetLayout;
+	VkDescriptorSetLayout mandelbulbComputeDescriptorSetLayout;
+	void createMandelbulbComputeDescriptorSetLayout() {
 
-	void createMandelbulbDescriptorSetLayout() {
+	}
+
+
+	VkDescriptorSetLayout mandelbulbGraphicsDescriptorSetLayout;
+
+	void createMandelbulbGraphicsDescriptorSetLayout() {
 
 		VkDescriptorSetLayoutBinding mandelbulbBinding{};
 		mandelbulbBinding.binding = 0;
@@ -950,14 +993,21 @@ private:
 		mandelbulbBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 		mandelbulbBinding.pImmutableSamplers = nullptr;
 
-		std::array<VkDescriptorSetLayoutBinding, 1> bindings = { mandelbulbBinding };
+		VkDescriptorSetLayoutBinding imgBinding{};
+		imgBinding.binding = 1;
+		imgBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+		imgBinding.descriptorCount = 1;
+		imgBinding.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+		imgBinding.pImmutableSamplers = nullptr;
+
+		std::array<VkDescriptorSetLayoutBinding, 2> bindings = { mandelbulbBinding, imgBinding };
 
 		VkDescriptorSetLayoutCreateInfo layoutInfo{};
 		layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
 		layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
 		layoutInfo.pBindings = bindings.data();
 
-		if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &mandelbulbDescriptorSetLayout) != VK_SUCCESS)
+		if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &mandelbulbGraphicsDescriptorSetLayout) != VK_SUCCESS)
 			throw std::runtime_error("failed to create mandelbulb descriptor set layout\n");
 	}
 
@@ -1257,10 +1307,41 @@ private:
 		}
 		// mandelbulb
 		else if (!renderTriangle && renderMandelbulb) {
-			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, mandelbulbPipeline);
+			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, mandelbulbComputePipeline);
+			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, mandelbulbGraphicsPipeline);
 
-			vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, mandelbulbPipelineLayout, 0, 1,
-				&mandelbulbDescriptorSets[currentFrame], 0, nullptr);
+			vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, mandelbulbPipelineComputeLayout, 0, 1, 
+				&mandelbulbComputeDescriptorSets[currentFrame], 0, nullptr);
+			vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, mandelbulbPipelineGraphicsLayout, 0, 1,
+				&mandelbulbGraphicsDescriptorSets[currentFrame], 0, nullptr);
+
+			// ths ensures storageImage is in GENERAL layout
+			VkImageMemoryBarrier barrierFromUnknownToGeneral = { ... };
+			vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1,
+				&barrierFromUnknownToGeneral);
+
+			// dispatch threadgroups
+			uint32_t groupX = (swapChainExtent.width + 15) / 16;
+			uint32_t groupY = (swapChainExtent.height + 15) / 16;
+			vkCmdDispatch(commandBuffer, groupX, groupY, 1);
+
+			// barrier to make writes available for subsequent sampling in fragment stage
+			VkMemoryBarrier memBarrier{};
+			memBarrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
+			memBarrier.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
+			memBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+
+			vkCmdPipelineBarrier(commandBuffer,
+				VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+				VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+				0,
+				1, &memBarrier,
+				0, nullptr,
+				0, nullptr
+			);
+
+			VkImageMemoryBarrier imgBarrierToRead = { };
+
 
 			// this draws fullscreen triangles (quad) because mandelbulb is implicit
 			vkCmdDraw(commandBuffer, 3, 1, 0, 0);
@@ -1536,7 +1617,7 @@ private:
 
 	void createGraphicsPipeline() {
 
-		createMandelbulbPipeline();
+		createMandelbulbGraphicsPipeline();
 
 		auto vertShaderCode = readFile("shaders/vert.spv");
 		auto fragShaderCode = readFile("shaders/frag.spv");
@@ -1698,11 +1779,44 @@ private:
 
 	}
 
+	VkPipelineLayout mandelbulbPipelineComputeLayout;
+	VkPipeline mandelbulbComputePipeline;
 
-	VkPipelineLayout mandelbulbPipelineLayout;
-	VkPipeline mandelbulbPipeline;
+	void createMandelbulbComputePipeline() {
+		auto compShaderCode = readFile("shaders/mandelbulb.comp.spv");
 
-	void createMandelbulbPipeline() {
+		VkShaderModule compShaderModule = createShaderModule(compShaderCode);
+
+		VkPipelineShaderStageCreateInfo compStage{};
+		compStage.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+		compStage.stage = VK_SHADER_STAGE_COMPUTE_BIT;
+		compStage.module = compShaderModule;
+		compStage.pName = "main";
+
+		VkPipelineLayoutCreateInfo layoutCompInfo{};
+		layoutCompInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+		layoutCompInfo.setLayoutCount = 1;
+		layoutCompInfo.pSetLayouts = &mandelbulbComputeDescriptorSetLayout;
+
+		if (vkCreatePipelineLayout(device, &layoutCompInfo, nullptr, &mandelbulbPipelineComputeLayout) != VK_SUCCESS)
+			throw std::runtime_error("failed to create mandelbulb comp layout");
+
+		VkComputePipelineCreateInfo compPipelineInfo{};
+		compPipelineInfo.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
+		compPipelineInfo.stage = compStage;
+		compPipelineInfo.layout = mandelbulbPipelineComputeLayout;
+		if (vkCreateComputePipelines(device, VK_NULL_HANDLE, 1, &compPipelineInfo, nullptr, &mandelbulbComputePipeline)) {
+			throw std::runtime_error("failed to create compute pipeline for mandelbulb\n");
+		}
+
+		vkDestroyShaderModule(device, compShaderModule, nullptr);
+	}
+
+
+	VkPipelineLayout mandelbulbPipelineGraphicsLayout;
+	VkPipeline mandelbulbGraphicsPipeline;
+
+	void createMandelbulbGraphicsPipeline() {
 
 		auto vertShaderCode = readFile("shaders/mandelbulb.vert.spv");
 		auto fragShaderCode = readFile("shaders/mandelbulb.frag.spv");
@@ -1795,10 +1909,10 @@ private:
 		VkPipelineLayoutCreateInfo layoutInfo{};
 		layoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 		layoutInfo.setLayoutCount = 1;
-		layoutInfo.pSetLayouts = &mandelbulbDescriptorSetLayout;
+		layoutInfo.pSetLayouts = &mandelbulbGraphicsDescriptorSetLayout;
 		layoutInfo.pushConstantRangeCount = 0; // Raymarcher doesn't need push constants
 
-		if (vkCreatePipelineLayout(device, &layoutInfo, nullptr, &mandelbulbPipelineLayout) != VK_SUCCESS)
+		if (vkCreatePipelineLayout(device, &layoutInfo, nullptr, &mandelbulbPipelineGraphicsLayout) != VK_SUCCESS)
 			throw std::runtime_error("failed to create mandelbulb pipeline layout");
 
 		VkPipelineDepthStencilStateCreateInfo depthStencil{};
@@ -1821,11 +1935,11 @@ private:
 		pipelineInfo.pColorBlendState = &colorBlending;
 		pipelineInfo.pDynamicState = &dynamicState;
 
-		pipelineInfo.layout = mandelbulbPipelineLayout;
+		pipelineInfo.layout = mandelbulbPipelineGraphicsLayout;
 		pipelineInfo.renderPass = renderPass;
 		pipelineInfo.subpass = 0;
 
-		if (vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &mandelbulbPipeline) != VK_SUCCESS)
+		if (vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &mandelbulbGraphicsPipeline) != VK_SUCCESS)
 			throw std::runtime_error("failed to create mandelbulb graphics pipeline\n");
 
 		vkDestroyShaderModule(device, vertShaderModule, nullptr);

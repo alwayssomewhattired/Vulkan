@@ -1,0 +1,139 @@
+#version 450
+
+// workgroup size (tweak — 16x16 is a good starting point)
+layout(local_size_x = 16, local_size_y = 16) in;
+
+// output storage image (RGBA8 or RGBA16F)
+layout(binding = 1, rgba8) uniform writeonly image2D outImage;
+
+// UBO with camera + params
+layout(std140, binding = 0) uniform MandelbulbUBO {
+    mat4 invProjection;
+    mat4 invView;
+    vec3 camPos;
+    float time;
+    vec2 resolution;
+    float power;
+    int maxIter;
+    float bail;
+} ubo;
+
+// simple PRNG per-pixel (optional, for jitter/AA)
+uint wangHash(uint seed) {
+    seed = (seed ^ 61u) ^ (seed >> 16);
+    seed *= 9u;
+    seed = seed ^ (seed >> 4);
+    seed *= 0x27d4eb2du;
+    seed = seed ^ (seed >> 15);
+    return seed;
+}
+float randf(inout uint state) {
+    state = wangHash(state);
+    return float(state) / 4294967295.0;
+}
+
+// Distance estimator (slightly optimized)
+float mandelbulbDE(vec3 pos) {
+    vec3 z = pos;
+    float dr = 1.0;
+    float r = 0.0;
+    float power = ubo.power;
+    float bailout = ubo.bail;
+    for (int i = 0; i < ubo.maxIter; ++i) {
+        r = length(z);
+        if (r > bailout) break;
+
+        // spherical coords
+        float theta = acos(clamp(z.z / r, -1.0, 1.0));
+        float phi = atan(z.y, z.x);
+        float zr = pow(r, power-1.0) * r; // r^power but computed to plug into dr formula
+        float newTheta = theta * power;
+        float newPhi = phi * power;
+
+        // convert back
+        vec3 zn = zr * vec3(sin(newTheta) * cos(newPhi),
+                            sin(newTheta) * sin(newPhi),
+                            cos(newTheta));
+        z = zn + pos;
+
+        // derivative update
+        dr = zr * power * dr / max(r, 1e-6) + 1.0;
+    }
+    return 0.5 * log(max(r, 1e-6)) * r / max(dr, 1e-6);
+}
+
+// estimate normal (cheap: 3 samples)
+vec3 estimateNormal(vec3 p) {
+    float eps = 0.001;
+    float dx = mandelbulbDE(p + vec3(eps,0,0)) - mandelbulbDE(p - vec3(eps,0,0));
+    float dy = mandelbulbDE(p + vec3(0,eps,0)) - mandelbulbDE(p - vec3(0,eps,0));
+    float dz = mandelbulbDE(p + vec3(0,0,eps)) - mandelbulbDE(p - vec3(0,0,eps));
+    return normalize(vec3(dx,dy,dz));
+}
+
+vec3 getRayDir(vec2 uv) {
+    // uv in [0,resolution)
+    vec2 ndc = (uv / ubo.resolution) * 2.0 - 1.0;
+    ndc.x *= ubo.resolution.x / ubo.resolution.y;
+    vec4 clip = vec4(ndc, -1.0, 1.0);
+    vec4 view = ubo.invProjection * clip;
+    view /= view.w;
+    vec4 world = ubo.invView * vec4(view.xyz, 0.0);
+    return normalize(world.xyz);
+}
+
+void main() {
+    ivec2 pixel = ivec2(gl_GlobalInvocationID.xy);
+    if (pixel.x >= int(ubo.resolution.x) || pixel.y >= int(ubo.resolution.y)) return;
+
+    // optional subpixel jitter for AA (uses time as seed)
+    uint seed = uint(pixel.x) * 1973u + uint(pixel.y) * 9277u + uint(ub o.time*1000.0);
+    // float jx = (randf(seed)-0.5) / ubo.resolution.x;
+    // float jy = (randf(seed)-0.5) / ubo.resolution.y;
+
+    vec2 uv = vec2(pixel) + vec2(0.5); // + vec2(jx,jy);
+    vec3 ro = ubo.camPos;
+    vec3 rd = getRayDir(uv);
+
+    const float EPS = 0.0008;
+    const float MAX_DIST = 100.0;
+    float t = 0.0;
+    bool hit = false;
+    int steps = 0;
+    for (int i = 0; i < 256; ++i) {
+        vec3 p = ro + rd * t;
+        float d = mandelbulbDE(p);
+        t += d;
+        ++steps;
+        if (d < EPS) { hit = true; break; }
+        if (t > MAX_DIST) break;
+        if (i >= ubo.maxIter * 16) break; // safety limit
+    }
+
+    vec4 outColor;
+    if (!hit) {
+        // background gradient
+        vec3 bg = mix(vec3(0.02,0.03,0.06), vec3(0.08,0.12,0.2), clamp(rd.y * 0.5 + 0.5, 0.0, 1.0));
+        outColor = vec4(bg, 1.0);
+    } else {
+        vec3 p = ro + rd * t;
+        vec3 n = estimateNormal(p);
+        vec3 light = normalize(vec3(0.5, 0.8, -0.6));
+        float diff = max(dot(n, light), 0.0);
+        float spec = pow(max(dot(reflect(-light, n), -rd), 0.0), 32.0);
+        float ao = clamp(1.0 - float(steps) * 0.01, 0.4, 1.0);
+        vec3 base = vec3(0.7,0.4,0.9) * (0.5 + 0.5 * sin(float(steps) * 0.1 + ubo.time * 0.5));
+        vec3 color = base * (0.2 + 0.8 * diff) + vec3(1.0) * spec * 0.25;
+        color *= ao;
+        outColor = vec4(color, 1.0);
+    }
+
+    imageStore(outImage, pixel, outColor);
+}
+
+
+
+
+
+
+
