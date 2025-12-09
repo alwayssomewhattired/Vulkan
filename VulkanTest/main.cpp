@@ -179,7 +179,16 @@ private:
 
 		glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
-		window = glfwCreateWindow(WIDTH, HEIGHT, "Vulkan", nullptr, nullptr);
+		// this gets the primary monitor for fullscreen
+		GLFWmonitor* monitor = glfwGetPrimaryMonitor();
+		const GLFWvidmode* mode = glfwGetVideoMode(monitor);
+
+		window = glfwCreateWindow(
+			mode->width, 
+			mode->height, 
+			"Vulkan", 
+			monitor, 
+			nullptr);
 		glfwSetWindowUserPointer(window, this);
 		glfwSetKeyCallback(window, keyCallback);
 		glfwSetCursorPosCallback(window, mouse_callback);
