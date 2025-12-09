@@ -245,7 +245,11 @@ private:
 		createSwapChain();
 		createImageViews();
 		createRenderPass();
-		createDescriptorSetLayout();
+
+		createMeshDescriptorSetLayout();
+		createMandelbulbComputeDescriptorSetLayout();
+		createMandelbulbGraphicsDescriptorSetLayout();
+
 		createGraphicsPipeline();
 		createCommandPool();
 		createColorResources();
@@ -264,7 +268,12 @@ private:
 
 		createUniformBuffers();
 		createDescriptorPool();
-		createDescriptorSets();
+
+		createStorageImageResources();
+		createMeshDescriptorSets();
+		createMandelbulbComputeDescriptorSets();
+		createMandelbulbGraphicsDescriptorSets();
+
 		createCommandBuffers();
 		createSyncObjects();
 	}
@@ -502,7 +511,7 @@ private:
 	VkImageView storageImageView;
 
 	void createStorageImageResources() {
-		VkFormat format;//(what format?)
+		VkFormat format = VK_FORMAT_R8G8B8A8_UNORM;
 
 		createImage(swapChainExtent.width, swapChainExtent.height, 1, msaaSamples, format,
 			VK_IMAGE_TILING_OPTIMAL,
@@ -667,17 +676,19 @@ private:
 	void createDescriptorPool() {
 		const uint32_t descriptorCount = 4;
 
-		std::array<VkDescriptorPoolSize, 2> poolSizes{};
+		std::array<VkDescriptorPoolSize, 3> poolSizes{};
 		poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		poolSizes[0].descriptorCount = descriptorCount * 2; // camera + model per set
+		poolSizes[0].descriptorCount = descriptorCount * 3; // camera + model + mandelbulb per set
 		poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 		poolSizes[1].descriptorCount = descriptorCount; // one texture per set
+		poolSizes[2].type = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+		poolSizes[2].descriptorCount = descriptorCount; // one storage image per compute set
 
 		VkDescriptorPoolCreateInfo poolInfo{};
 		poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
 		poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
 		poolInfo.pPoolSizes = poolSizes.data();
-		poolInfo.maxSets = descriptorCount;
+		poolInfo.maxSets = descriptorCount * 4; // 4 mesh + 4 compute + 4 graphics = 12
 
 		if (vkCreateDescriptorPool(device, &poolInfo, nullptr, &descriptorPool) != VK_SUCCESS)
 			throw std::runtime_error("failed to create descriptor pool!");
@@ -701,10 +712,8 @@ private:
 
 	std::vector<VkDescriptorSet> descriptorSets;
 	// GEOMETRY
-	void createDescriptorSets() {
+	void createMeshDescriptorSets() {
 
-
-		createMandelbulbGraphicsDescriptorSets();
 
 
 		descriptorSets.resize(MAX_FRAMES_IN_FLIGHT);
@@ -816,6 +825,39 @@ private:
 		}
 	}
 
+	// sampler for mandelbulb
+	VkSampler mandelbulbSampler;
+
+	void createMandelbulbSampler() {
+		VkSamplerCreateInfo samplerInfo{};
+		samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+		samplerInfo.magFilter = VK_FILTER_LINEAR;
+		samplerInfo.minFilter = VK_FILTER_LINEAR;
+
+		samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+		samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+		samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+
+		samplerInfo.anisotropyEnable = VK_FALSE;
+		samplerInfo.maxAnisotropy = 1.0f;
+
+		samplerInfo.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_BLACK;
+		samplerInfo.unnormalizedCoordinates = VK_FALSE;
+
+		samplerInfo.compareEnable = VK_FALSE;
+		samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
+
+		samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+		samplerInfo.minLod = 0.0f;
+		samplerInfo.maxLod = 0.0f;
+		samplerInfo.mipLodBias = 0.0f;
+
+		if (vkCreateSampler(device, &samplerInfo, nullptr, &mandelbulbSampler) != VK_SUCCESS) {
+			throw std::runtime_error("failed to create sampler for mandelbulb");
+		}
+
+	}
+
 
 	std::vector<VkDescriptorSet> mandelbulbGraphicsDescriptorSets;
 
@@ -831,30 +873,36 @@ private:
 		if (vkAllocateDescriptorSets(device, &allocInfo, mandelbulbGraphicsDescriptorSets.data()) != VK_SUCCESS)
 			throw std::runtime_error("failed to allocate mandelbulb descriptor sets!");
 
+		createMandelbulbSampler();
+
 		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
 
+			// binding 0: sample image (output of computer shader)
+			VkDescriptorImageInfo imgInfo{};
+			imgInfo.sampler = mandelbulbSampler;
+			imgInfo.imageView = storageImageView;
+			imgInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+			// binding 1: UBO
 			VkDescriptorBufferInfo mandelbulbBufferInfo{};
 			mandelbulbBufferInfo.buffer = mandelbulbUniformBuffers[i];
 			mandelbulbBufferInfo.offset = 0;
 			mandelbulbBufferInfo.range = sizeof(MandelbulbUBO);
 
-			VkDescriptorImageInfo imgInfo{};
-			imgInfo.imageView = storageImageView;
-			imgInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
-
 			std::array<VkWriteDescriptorSet, 2> descriptorWrites{};
 
+			// sampler
 			descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 			descriptorWrites[0].dstSet = mandelbulbGraphicsDescriptorSets[i];
 			descriptorWrites[0].dstBinding = 0; // matches mandelbulb shader binding
 			descriptorWrites[0].dstArrayElement = 0;
-			descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+			descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 			descriptorWrites[0].descriptorCount = 1;
-			descriptorWrites[0].pBufferInfo = &mandelbulbBufferInfo;
+			descriptorWrites[0].pImageInfo = &imgInfo;
 
 			descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 			descriptorWrites[1].dstSet = mandelbulbGraphicsDescriptorSets[i];
-			descriptorWrites[1].dstBinding = 0; // matches mandelbulb shader binding
+			descriptorWrites[1].dstBinding = 1; // matches mandelbulb shader binding
 			descriptorWrites[1].dstArrayElement = 0;
 			descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 			descriptorWrites[1].descriptorCount = 1;
@@ -985,9 +1033,7 @@ private:
 
 	VkDescriptorSetLayout descriptorSetLayout;
 
-	void createDescriptorSetLayout() {
-
-		createMandelbulbGraphicsDescriptorSetLayout();
+	void createMeshDescriptorSetLayout() {
 
 
 		VkDescriptorSetLayoutBinding cameraBinding{};
@@ -1058,21 +1104,22 @@ private:
 
 	void createMandelbulbGraphicsDescriptorSetLayout() {
 
-		VkDescriptorSetLayoutBinding mandelbulbBinding{};
-		mandelbulbBinding.binding = 0;
-		mandelbulbBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		mandelbulbBinding.descriptorCount = 1;
-		mandelbulbBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-		mandelbulbBinding.pImmutableSamplers = nullptr;
+		VkDescriptorSetLayoutBinding samplerBinding{};
+		samplerBinding.binding = 0;
+		samplerBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		samplerBinding.descriptorCount = 1;
+		samplerBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+		samplerBinding.pImmutableSamplers = nullptr;
 
-		VkDescriptorSetLayoutBinding imgBinding{};
-		imgBinding.binding = 1;
-		imgBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-		imgBinding.descriptorCount = 1;
-		imgBinding.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
-		imgBinding.pImmutableSamplers = nullptr;
+		VkDescriptorSetLayoutBinding mandelbulbUBOBinding{};
+		mandelbulbUBOBinding.binding = 1;
+		mandelbulbUBOBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		mandelbulbUBOBinding.descriptorCount = 1;
+		mandelbulbUBOBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+		mandelbulbUBOBinding.pImmutableSamplers = nullptr;
 
-		std::array<VkDescriptorSetLayoutBinding, 2> bindings = { mandelbulbBinding, imgBinding };
+
+		std::array<VkDescriptorSetLayoutBinding, 2> bindings = { samplerBinding, mandelbulbUBOBinding };
 
 		VkDescriptorSetLayoutCreateInfo layoutInfo{};
 		layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
@@ -1726,6 +1773,7 @@ private:
 
 	void createGraphicsPipeline() {
 
+		createMandelbulbComputePipeline();
 		createMandelbulbGraphicsPipeline();
 
 		auto vertShaderCode = readFile("shaders/vert.spv");
