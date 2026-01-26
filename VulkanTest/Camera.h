@@ -2,6 +2,7 @@
 
 #include "MathConfig.hpp"
 #include <cmath>
+#include <glm/fwd.hpp>
 
 enum class Camera_Movement { FORWARD, BACKWARD, LEFT, RIGHT };
 

@@ -83,7 +83,6 @@ ModelLoad::ModelLoad(
 		const size_t posOffsetInBuffer = posView.byteOffset + posAccessor.byteOffset;
 		const size_t posStride = posView.byteStride ? posView.byteStride : (3 * sizeof(float));
 		const unsigned char* base = posBuffer.data.data() + posOffsetInBuffer;
-		std::cout << "posStride: " << posStride << "\n";
 		vertexCount = posAccessor.count;
 		vertices.resize(vertexCount);
 

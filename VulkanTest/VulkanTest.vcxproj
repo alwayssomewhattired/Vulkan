@@ -132,6 +132,8 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Camera.cpp" />
+    <ClCompile Include="Device.cpp" />
+    <ClCompile Include="items\SilentHill3Game.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="MathConfig.hpp" />
     <ClCompile Include="ModelLoad.cpp" />
@@ -141,6 +143,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="Triangle.cpp" />
+    <ClCompile Include="ValidationLayers.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\compile.bat" />
@@ -149,9 +152,13 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Camera.h" />
+    <ClInclude Include="Constants.h" />
+    <ClInclude Include="Device.h" />
+    <ClInclude Include="items\SilentHill3Game.h" />
     <ClInclude Include="ModelLoad.h" />
     <ClInclude Include="tinygltf_config.h" />
     <ClInclude Include="Triangle.h" />
+    <ClInclude Include="ValidationLayers.h" />
     <ClInclude Include="Vertex.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
