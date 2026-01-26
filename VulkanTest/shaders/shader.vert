@@ -1,9 +1,9 @@
 #version 450
 
 
-layout(push_constant) uniform PushConsts {
-    mat4 model;
-} pc;
+//layout(push_constant) uniform PushConsts {
+//    mat4 model;
+//} pc;
 
 layout(set = 0, binding = 0) uniform CameraUBO {
     mat4 view;

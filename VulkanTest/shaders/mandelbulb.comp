@@ -7,12 +7,12 @@ layout(local_size_x = 16, local_size_y = 16) in;
 layout(set = 0, binding = 0, std140) uniform MandelbulbUBO {
     mat4 invProjection;
     mat4 invView;
-    vec3 camPos;
-    float time;
-    vec2 resolution;
-    float power;
+
+    vec4 camPos_time;       // xyz = cameraPos, w = time
+    vec4 resolution_misc;   // xy = resolution, z = power, w = bail
+
     int maxIter;
-    float bail;
+    vec3 pad;               // explicit padding
 } ubo;
 
 // output storage image (RGBA8 or RGBA16F)
@@ -38,14 +38,15 @@ float mandelbulbDE(vec3 pos) {
     vec3 z = pos;
     float dr = 1.0;
     float r = 0.0;
-    float power = ubo.power;
-    float bailout = ubo.bail;
+    float power = ubo.resolution_misc.z;
+    float bailout = ubo.resolution_misc.w;
     for (int i = 0; i < ubo.maxIter; ++i) {
         r = length(z);
         if (r > bailout) break;
 
         // spherical coords
-        float theta = acos(clamp(z.z / r, -1.0, 1.0));
+        float rSafe = max(r, 1e-6);
+        float theta = acos(clamp(z.z / rSafe, -1.0, 1.0));
         float phi = atan(z.y, z.x);
         float zr = pow(r, power-1.0) * r; // r^power but computed to plug into dr formula
         float newTheta = theta * power;
@@ -74,8 +75,8 @@ vec3 estimateNormal(vec3 p) {
 
 vec3 getRayDir(vec2 uv) {
     // uv in [0,resolution)
-    vec2 ndc = (uv / ubo.resolution) * 2.0 - 1.0;
-    ndc.x *= ubo.resolution.x / ubo.resolution.y;
+    vec2 ndc = (uv / ubo.resolution_misc.xy) * 2.0 - 1.0;
+    ndc.x *= ubo.resolution_misc.x / ubo.resolution_misc.y;
     vec4 clip = vec4(ndc, -1.0, 1.0);
     vec4 view = ubo.invProjection * clip;
     view /= view.w;
@@ -85,15 +86,15 @@ vec3 getRayDir(vec2 uv) {
 
 void main() {
     ivec2 pixel = ivec2(gl_GlobalInvocationID.xy);
-    if (pixel.x >= int(ubo.resolution.x) || pixel.y >= int(ubo.resolution.y)) return;
+    if (pixel.x >= int(ubo.resolution_misc.x) || pixel.y >= int(ubo.resolution_misc.y)) return;
 
     // optional subpixel jitter for AA (uses time as seed)
-    uint seed = uint(pixel.x) * 1973u + uint(pixel.y) * 9277u + uint(ubo.time*1000.0);
+    uint seed = uint(pixel.x) * 1973u + uint(pixel.y) * 9277u + uint(ubo.camPos_time.w * 1000.0);
     // float jx = (randf(seed)-0.5) / ubo.resolution.x;
     // float jy = (randf(seed)-0.5) / ubo.resolution.y;
 
     vec2 uv = vec2(pixel) + vec2(0.5); // + vec2(jx,jy);
-    vec3 ro = ubo.camPos;
+    vec3 ro = ubo.camPos_time.xyz;
     vec3 rd = getRayDir(uv);
 
     const float EPS = 0.0008;
@@ -123,7 +124,7 @@ void main() {
         float diff = max(dot(n, light), 0.0);
         float spec = pow(max(dot(reflect(-light, n), -rd), 0.0), 32.0);
         float ao = clamp(1.0 - float(steps) * 0.01, 0.4, 1.0);
-        vec3 base = vec3(0.7,0.4,0.9) * (0.5 + 0.5 * sin(float(steps) * 0.1 + ubo.time * 0.5));
+        vec3 base = vec3(0.7,0.4,0.9) * (0.5 + 0.5 * sin(float(steps) * 0.1 + ubo.camPos_time.w * 0.5));
         vec3 color = base * (0.2 + 0.8 * diff) + vec3(1.0) * spec * 0.25;
         color *= ao;
         outColor = vec4(color, 1.0);

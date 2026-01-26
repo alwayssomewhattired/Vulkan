@@ -48,6 +48,7 @@ const bool enableValidationLayers = false;
 const bool enableValidationLayers = true;
 #endif
 
+
 VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator,
 	VkDebugUtilsMessengerEXT* pDebugMessenger)
 {
@@ -71,6 +72,7 @@ void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT
 		func(instance, debugMessenger, pAllocator);
 }
 
+// | vertices of simple triangle
 const std::vector<Vertex> triangleVertices = {
 {{ 0.0f, -0.5f, 0.0f }, {1.0f, 0.0f, 0.0f}},
 {{ 0.5f,  0.5f, 0.0f }, {0.0f, 1.0f, 0.0f}},
@@ -514,7 +516,7 @@ private:
 		depthImageView = createImageView(depthImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT, 1);
 	}
 
-	// FOR COMPUTE SHADER
+	// | FOR COMPUTE SHADER
 	VkImage storageImage;
 	VkDeviceMemory storageImageMemory;
 	VkImageView storageImageView;
@@ -522,7 +524,7 @@ private:
 	void createStorageImageResources() {
 		VkFormat format = VK_FORMAT_R8G8B8A8_UNORM;
 
-		createImage(swapChainExtent.width, swapChainExtent.height, 1, msaaSamples, format,
+		createImage(swapChainExtent.width, swapChainExtent.height, 1, VK_SAMPLE_COUNT_1_BIT, format,
 			VK_IMAGE_TILING_OPTIMAL,
 			VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
 			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
@@ -708,15 +710,24 @@ private:
 	};
 
 	struct MandelbulbUBO {
+		//glm::mat4 invProjection;
+		//glm::mat4 invView;
+		//glm::vec3 camPos;
+		//float time;
+		//glm::vec2 resolution;
+		//float power;
+		//int maxIter;
+		//float bail;
+		//float pad; // pad to 16 byts if needed
+
 		glm::mat4 invProjection;
 		glm::mat4 invView;
-		glm::vec3 camPos;
-		float time;
-		glm::vec2 resolution;
-		float power;
-		int maxIter;
-		float bail;
-		float pad; // pad to 16 byts if needed
+
+		glm::vec4 camPos_time;       // xyz = cameraPos, w = time
+		glm::vec4 resolution_misc;   // xy = resolution, z = power, w = bail
+
+		alignas(16) int maxIter;
+		glm::vec3 pad;               // explicit padding
 	};
 
 	std::vector<VkDescriptorSet> descriptorSets;
@@ -1163,19 +1174,15 @@ private:
 		ubo.invView = glm::inverse(view);
 		ubo.invProjection = glm::inverse(proj);
 
-		// 3. Camera position (extract from view matrix)
-		ubo.camPos = camera.Position;
+		// 3. Camera position (extract from view matrix) + Time (optional animation)
+		ubo.camPos_time = glm::vec4(camera.Position, static_cast<float>(glfwGetTime()));
 
-		// 4. Resolution
-		ubo.resolution = glm::vec2(swapChainExtent.width, swapChainExtent.height);
+		// 4. Resolution + Power + Bail
+		ubo.resolution_misc = glm::vec4(swapChainExtent.width, swapChainExtent.height, 8.0f, 2.0f);
 
-		// 5. Fractal params
-		ubo.power = 8.0f;
+		// 5. Fractal param
 		ubo.maxIter = 6;
-		ubo.bail = 2.0f;
 
-		// 6. Time (optional animation)
-		ubo.time = static_cast<float>(glfwGetTime());
 
 		memcpy(mandelbulbUniformBuffersMapped[currentImage], &ubo, sizeof(ubo));
 	}
@@ -1480,7 +1487,8 @@ private:
 				VkImageMemoryBarrier barrierToRead = {};
 				barrierToRead.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
 				barrierToRead.oldLayout = VK_IMAGE_LAYOUT_GENERAL;
-				barrierToRead.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+				barrierToRead.newLayout = VK_IMAGE_LAYOUT_GENERAL;
+				//barrierToRead.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 				barrierToRead.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
 				barrierToRead.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
 				barrierToRead.image = storageImage;
@@ -2314,7 +2322,7 @@ private:
 		}
 	}
 
-
+	// | currently picks only the 'dedicated-gpu' option.
 	bool isDeviceSuitable(VkPhysicalDevice device)
 	{
 		QueueFamilyIndices indices = findQueueFamilies(device);
@@ -2330,6 +2338,10 @@ private:
 
 		VkPhysicalDeviceFeatures supportedFeatures;
 		vkGetPhysicalDeviceFeatures(device, &supportedFeatures);
+		VkPhysicalDeviceProperties properties;
+		vkGetPhysicalDeviceProperties(device, &properties);
+
+		if (properties.deviceType != VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) return false;
 
 		return indices.isComplete() && extensionsSupported && swapChainAdequate && supportedFeatures.samplerAnisotropy;
 	}
