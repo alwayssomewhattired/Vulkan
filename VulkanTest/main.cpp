@@ -10,7 +10,6 @@
 #include "Devices.h"
 
 #include <stb_image.h>
-#include <stb_image_write.h>
 #include <tiny_gltf.h>
 
 #include <iostream>
@@ -28,6 +27,8 @@
 #include <unordered_map>
 #include <cmath>
 #include <memory>
+
+#include "items/Home.h"
 
 #include "ModelLoad.h"
 #include "Camera.h"
@@ -97,6 +98,8 @@ private:
 	std::unique_ptr<Devices::SwapChainSupportDetails> m_SwapChainSupportDetails = nullptr;
 	std::unique_ptr<VkQueue> m_graphicsQueue = nullptr;
 
+	std::unique_ptr<Home> m_home = nullptr;
+
 
 	static void framebufferResizeCallback(GLFWwindow* window, int width, int height) {
 		auto app = reinterpret_cast<HelloTriangleApplication*>(glfwGetWindowUserPointer(window));
@@ -135,7 +138,7 @@ private:
 		appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
 		appInfo.pEngineName = "no Engine";
 		appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
-		appInfo.apiVersion = VK_API_VERSION_1_0;
+		appInfo.apiVersion = VK_API_VERSION_1_3;
 
 		VkInstanceCreateInfo createInfo{};
 		createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
@@ -198,6 +201,9 @@ private:
 		m_devices->querySwapChainSupport(*m_physicalDevice);
 		m_SwapChainSupportDetails = std::make_unique<Devices::SwapChainSupportDetails>(m_devices->m_SwapChainSupportDetails);
 		m_graphicsQueue = std::make_unique<VkQueue>(m_devices->graphicsQueue);
+
+		m_home = std::make_unique<Home>();
+
 		createSwapChain();
 		createImageViews();
 		createRenderPass();
@@ -392,8 +398,9 @@ private:
 				VkDeviceSize size) 
 			{ copyBuffer(srcBuffer, dstBuffer, size); });
 
-		model->loadModel("models/thedeathofallionceloved.glb");
-		model->loadModel("models/silent-hill-3-ps2-game-cover/source/SilentHill3ps2Game.glb");
+		model->loadModel("models/thedeathofallionceloved.glb", *m_home);
+		//model->loadModel("models/silent-hill-3-ps2-game-cover/source/SilentHill3ps2Game.glb");
+
 	}
 
 
@@ -1128,9 +1135,6 @@ private:
 			modelUbo.model = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 4.0f));
 		}
 
-
-
-
 		memcpy(modelUniformBuffersMapped[currentImage], &modelUbo, sizeof(modelUbo));
 
 	}
@@ -1350,15 +1354,15 @@ private:
 
 			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
 
-			VkBuffer vertexBuffers[] = { model->vertexBuffer };
+			VkBuffer vertexBuffers[] = { m_home->m_vertexBuffer };
 			VkDeviceSize offsets[] = { 0 };
 			vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
 
-			vkCmdBindIndexBuffer(commandBuffer, model->indexBuffer, 0, model->indexType);
+			vkCmdBindIndexBuffer(commandBuffer, m_home->m_indexBuffer, 0, m_home->m_indexType);
 
 			vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSets[currentFrame], 0, nullptr);
 
-			vkCmdDrawIndexed(commandBuffer, model->indexCount, 1, 0, 0, 0);
+			vkCmdDrawIndexed(commandBuffer, m_home->m_indexCount, 1, 0, 0, 0);
 		}
 		// mandelbulb
 		else if (!renderTriangle && renderMandelbulb) {

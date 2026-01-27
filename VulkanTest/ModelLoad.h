@@ -10,8 +10,11 @@
 #include <cstdint>
 #include <vector>
 
+#include "items/ItemInterface.h"
 #include "Vertex.h"
 
+// | model loader AND safe-room model class
+// - yeah, not good. decouple safe-room model from model loading 
 class ModelLoad
 {
 public:
@@ -21,20 +24,8 @@ public:
 		std::function<void(VkBuffer, VkBuffer, VkDeviceSize)> copyBuffer
 		);
 
-	void loadModel(const std::string& path);
-
-	VkBuffer vertexBuffer;
-	VkDeviceMemory vertexMemory;
-
-	VkBuffer indexBuffer;
-	VkDeviceMemory indexMemory;
-
-	size_t vertexCount;
-	uint32_t indexCount;
-
-	glm::mat4 modelMatrix = glm::translate(glm::mat4(1.0f), glm::vec3(0, 0, -3));
-
-	VkIndexType indexType;
+	// | loads model and fills in class
+	void loadModel(const std::string& path, ItemInterface& classReference);
 	
 
 private:
@@ -46,7 +37,7 @@ private:
 	std::function<void(VkDeviceSize, VkBufferUsageFlags, VkMemoryPropertyFlags, VkBuffer&, VkDeviceMemory&)> createBufferFn;
 	std::function<void(VkBuffer, VkBuffer, VkDeviceSize)> copyBufferFn;
 
-	// mesh vertices
+	// | staging mesh vertices
 	std::vector<Vertex> vertices;
 	std::vector<uint32_t> indices;
 };

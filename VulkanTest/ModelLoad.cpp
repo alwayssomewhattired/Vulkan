@@ -1,8 +1,6 @@
 
 
-#include <stb_image.h>
-#include <stb_image_write.h>
-#include "tinygltf_config.h"
+
 #include <tiny_gltf.h>
 
 #include "ModelLoad.h"
@@ -17,7 +15,7 @@
 #include "Vertex.h"
 
 
-
+// | transports model data from cpu to gpu storage
 ModelLoad::ModelLoad(
 	VkDevice device,
 	VkPhysicalDevice physicalDevice,
@@ -34,8 +32,15 @@ ModelLoad::ModelLoad(
 	copyBufferFn(copyBufferFn)
 {}
 
-	void ModelLoad::loadModel(const std::string& path) {
+	void ModelLoad::loadModel(const std::string& path, ItemInterface& classReference) {
 
+		auto& vertexBuffer = classReference.vertexBuffer();
+		auto& vertexMemory = classReference.vertexMemory();
+		auto& indexBuffer = classReference.indexBuffer();
+		auto& indexMemory = classReference.indexMemory();
+		auto vertexCount = classReference.vertexCount();
+		auto& indexCount = classReference.indexCount();
+		auto indexType = classReference.indexType();
 
 		tinygltf::TinyGLTF loader;
 		tinygltf::Model model;
