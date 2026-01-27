@@ -42,7 +42,7 @@
     <ClCompile Include="items\SilentHill3Game.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Device.cpp">
+    <ClCompile Include="Devices.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="ValidationLayers.cpp">
@@ -78,7 +78,7 @@
     <ClInclude Include="Constants.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Device.h">
+    <ClInclude Include="Devices.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="ValidationLayers.h">

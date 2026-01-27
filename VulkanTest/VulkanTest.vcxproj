@@ -132,7 +132,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Camera.cpp" />
-    <ClCompile Include="Device.cpp" />
+    <ClCompile Include="Devices.cpp" />
     <ClCompile Include="items\SilentHill3Game.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="MathConfig.hpp" />
@@ -153,7 +153,7 @@
   <ItemGroup>
     <ClInclude Include="Camera.h" />
     <ClInclude Include="Constants.h" />
-    <ClInclude Include="Device.h" />
+    <ClInclude Include="Devices.h" />
     <ClInclude Include="items\SilentHill3Game.h" />
     <ClInclude Include="ModelLoad.h" />
     <ClInclude Include="tinygltf_config.h" />
