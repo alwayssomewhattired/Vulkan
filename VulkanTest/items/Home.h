@@ -8,6 +8,7 @@
 #include <vulkan/vulkan_core.h>
 
 #include "ItemInterface.h"
+#include "../Vertex.h"
 #include <cstdint>
 
 class Home : public ItemInterface
@@ -27,6 +28,9 @@ public:
 		
 	VkIndexType m_indexType;
 
+	std::vector<Vertex> m_vertices;
+	std::vector<uint32_t> m_indices;
+
 	// | begin item interface block
 	VkBuffer& vertexBuffer() override {
 		return m_vertexBuffer;
@@ -44,7 +48,7 @@ public:
 		return m_indexMemory;
 	};
 	
-	size_t vertexCount() override {
+	size_t& vertexCount() override {
 		return m_vertexCount;
 	}
 
@@ -52,8 +56,16 @@ public:
 		return m_indexCount;
 	}
 		
-	VkIndexType indexType() override {
+	VkIndexType& indexType() override {
 		return m_indexType;
+	}
+
+	std::vector<Vertex>& vertices() override {
+		return m_vertices;
+	}
+
+	std::vector<uint32_t>& indices() override {
+		return m_indices;
 	}
 };
 

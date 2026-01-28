@@ -38,6 +38,6 @@ private:
 	std::function<void(VkBuffer, VkBuffer, VkDeviceSize)> copyBufferFn;
 
 	// | staging mesh vertices
-	std::vector<Vertex> vertices;
-	std::vector<uint32_t> indices;
+	//std::vector<Vertex> vertices;
+	//std::vector<uint32_t> indices;
 };

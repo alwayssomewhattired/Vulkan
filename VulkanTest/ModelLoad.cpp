@@ -38,9 +38,11 @@ ModelLoad::ModelLoad(
 		auto& vertexMemory = classReference.vertexMemory();
 		auto& indexBuffer = classReference.indexBuffer();
 		auto& indexMemory = classReference.indexMemory();
-		auto vertexCount = classReference.vertexCount();
+		auto& vertexCount = classReference.vertexCount();
 		auto& indexCount = classReference.indexCount();
-		auto indexType = classReference.indexType();
+		auto& indexType = classReference.indexType();
+		auto& vertices = classReference.vertices();
+		auto& indices = classReference.indices();
 
 		tinygltf::TinyGLTF loader;
 		tinygltf::Model model;
@@ -160,8 +162,6 @@ ModelLoad::ModelLoad(
 			throw std::runtime_error("Unsupported index component type");
 
 
-		indexCount = static_cast<uint32_t>(indices.size());
-
 		VkDeviceSize vertexSize = sizeof(Vertex) * vertices.size();
 
 		VkBuffer stagingVb;
@@ -201,7 +201,10 @@ ModelLoad::ModelLoad(
 
 		// indices
 
-		VkDeviceSize indexSize = (indexType == VK_INDEX_TYPE_UINT16 ? sizeof(uint16_t) : sizeof(uint32_t)) * indices.size();
+		indexType = VK_INDEX_TYPE_UINT32;
+		indexCount = static_cast<uint32_t>(indices.size());
+
+		VkDeviceSize indexSize = sizeof(uint32_t) * indices.size();
 
 		VkBuffer stagingIb;
 		VkDeviceMemory stagingIm;
@@ -214,18 +217,9 @@ ModelLoad::ModelLoad(
 			stagingIm
 		);
 
-		if (indexType == VK_INDEX_TYPE_UINT16)
-		{
-			std::vector<uint16_t> tmp(indices.begin(), indices.end());
-			vkMapMemory(device, stagingIm, 0, indexSize, 0, &mapped);
-			memcpy(mapped, tmp.data(), indexSize);
-			vkUnmapMemory(device, stagingIm);
-		}
-		else {
-			vkMapMemory(device, stagingIm, 0, indexSize, 0, &mapped);
-			memcpy(mapped, indices.data(), indexSize);
-			vkUnmapMemory(device, stagingIm);
-		}
+		vkMapMemory(device, stagingIm, 0, indexSize, 0, &mapped);
+		memcpy(mapped, indices.data(), indexSize);
+		vkUnmapMemory(device, stagingIm);
 
 		createBufferFn(
 			indexSize,
@@ -239,6 +233,10 @@ ModelLoad::ModelLoad(
 
 		vkDestroyBuffer(device, stagingIb, nullptr);
 		vkFreeMemory(device, stagingIm, nullptr);
+
+		assert(indexType == VK_INDEX_TYPE_UINT32);
+		assert(indexSize == sizeof(uint32_t) * indexCount);
+
 
 	}
 
