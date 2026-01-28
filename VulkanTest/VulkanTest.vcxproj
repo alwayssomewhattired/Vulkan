@@ -133,6 +133,7 @@
   <ItemGroup>
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="Devices.cpp" />
+    <ClCompile Include="HostToDevice.cpp" />
     <ClCompile Include="items\Home.cpp" />
     <ClCompile Include="items\SilentHill3Game.cpp" />
     <ClCompile Include="main.cpp" />
@@ -151,6 +152,7 @@
     <ClInclude Include="Camera.h" />
     <ClInclude Include="Constants.h" />
     <ClInclude Include="Devices.h" />
+    <ClInclude Include="HostToDevice.h" />
     <ClInclude Include="items\Home.h" />
     <ClInclude Include="items\ItemInterface.h" />
     <ClInclude Include="items\SilentHill3Game.h" />

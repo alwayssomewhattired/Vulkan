@@ -29,11 +29,13 @@
 #include <memory>
 
 #include "items/Home.h"
+#include "items/SilentHill3Game.h"
 
 #include "ModelLoad.h"
 #include "Camera.h"
 #include "Vertex.h"
 #include "Constants.h"
+#include "HostToDevice.h"
 
 const uint32_t WIDTH = 800;
 const uint32_t HEIGHT = 600;
@@ -98,7 +100,10 @@ private:
 	std::unique_ptr<Devices::SwapChainSupportDetails> m_SwapChainSupportDetails = nullptr;
 	std::unique_ptr<VkQueue> m_graphicsQueue = nullptr;
 
+	std::unique_ptr<HostToDevice> m_HostToDevice = nullptr;
+
 	std::unique_ptr<Home> m_home = nullptr;
+	std::unique_ptr<SilentHill3Game> m_SilentHill3Game = nullptr;
 
 
 	static void framebufferResizeCallback(GLFWwindow* window, int width, int height) {
@@ -202,7 +207,10 @@ private:
 		m_SwapChainSupportDetails = std::make_unique<Devices::SwapChainSupportDetails>(m_devices->m_SwapChainSupportDetails);
 		m_graphicsQueue = std::make_unique<VkQueue>(m_devices->graphicsQueue);
 
+		m_HostToDevice = std::make_unique<HostToDevice>(*m_device, *m_physicalDevice);
+
 		m_home = std::make_unique<Home>();
+		m_SilentHill3Game = std::make_unique<SilentHill3Game>(m_devices->device, m_devices->physicalDevice);
 
 		createSwapChain();
 		createImageViews();
@@ -399,7 +407,7 @@ private:
 			{ copyBuffer(srcBuffer, dstBuffer, size); });
 
 		model->loadModel("models/thedeathofallionceloved.glb", *m_home);
-		//model->loadModel("models/silent-hill-3-ps2-game-cover/source/SilentHill3ps2Game.glb");
+		model->loadModel("models/silent-hill-3-ps2-game-cover/source/SilentHill3ps2Game.glb", *m_SilentHill3Game);
 
 	}
 
@@ -540,7 +548,7 @@ private:
 		VkMemoryAllocateInfo allocInfo{};
 		allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
 		allocInfo.allocationSize = memRequirements.size;
-		allocInfo.memoryTypeIndex = findMemoryType(memRequirements.memoryTypeBits, properties);
+		allocInfo.memoryTypeIndex = m_devices->findMemoryType(memRequirements.memoryTypeBits, properties, *m_physicalDevice);
 
 		if (vkAllocateMemory(*m_device, &allocInfo, nullptr, &imageMemory) != VK_SUCCESS) {
 			throw std::runtime_error("failed to allocate image memory!");
@@ -717,6 +725,9 @@ private:
 			vkUpdateDescriptorSets(*m_device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
 
 		}
+
+		m_HostToDevice->createDescriptorSets(m_SilentHill3Game->m_descriptorSets, descriptorSetLayout, descriptorPool, 
+			uniformBuffers, modelUniformBuffers, textureImageView, textureSampler, m_SilentHill3Game->m_modelUBOSize);
 	}
 
 	std::vector<VkDescriptorSet> mandelbulbComputeDescriptorSets;
@@ -866,6 +877,7 @@ private:
 	std::vector<VkBuffer> modelUniformBuffers;
 	std::vector<VkDeviceMemory> modelUniformBuffersMemory;
 	std::vector<void*> modelUniformBuffersMapped;
+
 	std::vector<VkBuffer> mandelbulbUniformBuffers;
 	std::vector<VkDeviceMemory> mandelbulbUniformBuffersMemory;
 	std::vector<void*> mandelbulbUniformBuffersMapped;
@@ -906,8 +918,8 @@ private:
 			VkMemoryAllocateInfo allocInfo{};
 			allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
 			allocInfo.allocationSize = memRequirements.size;
-			allocInfo.memoryTypeIndex = findMemoryType(memRequirements.memoryTypeBits,
-				VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+			allocInfo.memoryTypeIndex = m_devices->findMemoryType(memRequirements.memoryTypeBits,
+				VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, *m_physicalDevice);
 
 			if (vkAllocateMemory(*m_device, &allocInfo, nullptr, &uniformBuffersMemory[i]) != VK_SUCCESS)
 				throw std::runtime_error("failed to allocate uniform buffer memory");
@@ -935,8 +947,8 @@ private:
 			VkMemoryAllocateInfo modelAllocInfo{};
 			modelAllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
 			modelAllocInfo.allocationSize = modelMemRequirements.size;
-			modelAllocInfo.memoryTypeIndex = findMemoryType(modelMemRequirements.memoryTypeBits,
-				VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+			modelAllocInfo.memoryTypeIndex = m_devices->findMemoryType(modelMemRequirements.memoryTypeBits,
+				VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, *m_physicalDevice);
 
 			if (vkAllocateMemory(*m_device, &modelAllocInfo, nullptr, &modelUniformBuffersMemory[i]) != VK_SUCCESS)
 				throw std::runtime_error("failed to allocate uniform buffer memory");
@@ -965,8 +977,8 @@ private:
 			VkMemoryAllocateInfo mandelbulbAllocInfo{};
 			mandelbulbAllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
 			mandelbulbAllocInfo.allocationSize = mandelbulbMemRequirements.size;
-			mandelbulbAllocInfo.memoryTypeIndex = findMemoryType(mandelbulbMemRequirements.memoryTypeBits,
-				VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+			mandelbulbAllocInfo.memoryTypeIndex = m_devices->findMemoryType(mandelbulbMemRequirements.memoryTypeBits,
+				VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, *m_physicalDevice);
 
 			if (vkAllocateMemory(*m_device, &mandelbulbAllocInfo, nullptr, &mandelbulbUniformBuffersMemory[i]) != VK_SUCCESS) {
 				throw std::runtime_error("failed to allocate mandelbulb uniform buffer memory\n");
@@ -976,6 +988,8 @@ private:
 
 			vkMapMemory(*m_device, mandelbulbUniformBuffersMemory[i], 0, mandelbulbBufferSize, 0, &mandelbulbUniformBuffersMapped[i]);
 		}
+
+		m_HostToDevice->createUniformBuffer(m_SilentHill3Game->m_modelUBOSize);
 
 	}
 
@@ -1167,19 +1181,6 @@ private:
 
 	}
 
-
-	uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties) {
-		VkPhysicalDeviceMemoryProperties memProperties;
-		vkGetPhysicalDeviceMemoryProperties(*m_physicalDevice, &memProperties);
-
-		for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++) {
-			if (typeFilter & (1 << i) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties)
-				return i;
-		}
-
-		throw std::runtime_error("failed to find suitable memory type!");
-	}
-
 	void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory) {
 		VkBufferCreateInfo bufferInfo{};
 		bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
@@ -1196,7 +1197,7 @@ private:
 		VkMemoryAllocateInfo allocInfo{};
 		allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
 		allocInfo.allocationSize = memRequirements.size;
-		allocInfo.memoryTypeIndex = findMemoryType(memRequirements.memoryTypeBits, properties);
+		allocInfo.memoryTypeIndex = m_devices->findMemoryType(memRequirements.memoryTypeBits, properties, *m_physicalDevice);
 
 		if (vkAllocateMemory(*m_device, &allocInfo, nullptr, &bufferMemory) != VK_SUCCESS)
 			throw std::runtime_error("failed to allocate buffer memory!");
@@ -1353,16 +1354,30 @@ private:
 		if (!renderTriangle && !renderMandelbulb) {
 
 			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
+			{
+				VkBuffer vertexBuffers[] = { m_home->m_vertexBuffer };
+				VkDeviceSize offsets[] = { 0 };
+				vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
 
-			VkBuffer vertexBuffers[] = { m_home->m_vertexBuffer };
-			VkDeviceSize offsets[] = { 0 };
-			vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
+				vkCmdBindIndexBuffer(commandBuffer, m_home->m_indexBuffer, 0, m_home->m_indexType);
 
-			vkCmdBindIndexBuffer(commandBuffer, m_home->m_indexBuffer, 0, m_home->m_indexType);
+				vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSets[currentFrame], 0, nullptr);
 
-			vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSets[currentFrame], 0, nullptr);
+				vkCmdDrawIndexed(commandBuffer, m_home->m_indexCount, 1, 0, 0, 0);
+			}
 
-			vkCmdDrawIndexed(commandBuffer, m_home->m_indexCount, 1, 0, 0, 0);
+			{
+				VkBuffer vertexBuffers[] = { m_home->m_vertexBuffer };
+				VkDeviceSize offsets[] = { 0 };
+				vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
+
+				vkCmdBindIndexBuffer(commandBuffer, m_SilentHill3Game->m_indexBuffer, 0, m_SilentHill3Game->m_indexType);
+
+				vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1,
+					&descriptorSets[currentFrame], 0, nullptr);
+
+				vkCmdDrawIndexed(commandBuffer, m_SilentHill3Game->m_indexCount, 1, 0, 0, 0);
+			}
 		}
 		// mandelbulb
 		else if (!renderTriangle && renderMandelbulb) {
