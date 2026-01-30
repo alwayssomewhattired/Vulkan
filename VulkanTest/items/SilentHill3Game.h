@@ -70,13 +70,12 @@ public:
 
 	std::vector<VkDescriptorSet> m_descriptorSets;
 
-	size_t m_modelUBOSize = sizeof(ModelUBO);
+	size_t m_modelUBOSize = sizeof(SilentHill3GamePC);
 
 private:
 
-	// | UBO holds model matrices
-	// - use push-constants instead of ubo
-	struct ModelUBO {
+	// | holds model matrices
+	struct SilentHill3GamePC {
 		alignas(16) glm::mat4 model;
 	};
 	VkDevice& m_device;

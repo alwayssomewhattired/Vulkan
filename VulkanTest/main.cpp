@@ -8,6 +8,10 @@
 #include "MathConfig.hpp"
 #include "ValidationLayers.h"
 #include "Devices.h"
+#include "SwapChain.h"
+#include "DescriptorSetLayout.h"
+#include "GraphicsPipeline.h"
+#include "Shaders.h"
 
 #include <stb_image.h>
 #include <tiny_gltf.h>
@@ -102,8 +106,93 @@ private:
 
 	std::unique_ptr<HostToDevice> m_HostToDevice = nullptr;
 
+	std::unique_ptr<SwapChain> m_SwapChain = nullptr;
+
+	std::unique_ptr<DescriptorSetLayout> m_DescriptorSetLayout = nullptr;
+
+	std::unique_ptr<Shaders> m_Shaders = nullptr;
+
+	std::unique_ptr<GraphicsPipeline> m_GraphicsPipeline = nullptr;
+
 	std::unique_ptr<Home> m_home = nullptr;
 	std::unique_ptr<SilentHill3Game> m_SilentHill3Game = nullptr;
+
+
+
+	void initVulkan()
+	{
+		if (enableValidationLayers && !ValidationLayers::checkValidationLayerSupport())
+		{
+			throw std::runtime_error("validation layers requested. but not available!");
+		}
+
+		createInstance();
+
+		m_ValidationLayers = std::make_unique<ValidationLayers>(instance);
+		m_ValidationLayers->setupDebugMessenger();
+		createSurface();
+		m_devices = std::make_unique<Devices>(surface, instance, window);
+		m_devices->pickPhysicalDevice();
+		m_devices->createLogicalDevice();
+		m_device = std::make_unique<VkDevice>(m_devices->device);
+		m_physicalDevice = std::make_unique<VkPhysicalDevice>(m_devices->physicalDevice);
+		m_devices->findQueueFamilies(*m_physicalDevice);
+		m_msaaSamples = std::make_unique<VkSampleCountFlagBits>(m_devices->msaaSamples);
+		m_QueueFamilyIndices = std::make_unique<Devices::QueueFamilyIndices>(
+			m_devices->m_QueueFamilyIndices
+		);
+		m_devices->querySwapChainSupport(*m_physicalDevice);
+		m_SwapChainSupportDetails = std::make_unique<Devices::SwapChainSupportDetails>(m_devices->m_SwapChainSupportDetails);
+		m_graphicsQueue = std::make_unique<VkQueue>(m_devices->graphicsQueue);
+
+		m_HostToDevice = std::make_unique<HostToDevice>(*m_device, *m_physicalDevice);
+
+		m_SwapChain = std::make_unique<SwapChain>(*m_devices, surface);
+
+		m_DescriptorSetLayout = std::make_unique<DescriptorSetLayout>(m_devices->device);
+
+		m_Shaders = std::make_unique<Shaders>(*m_device);
+
+		m_GraphicsPipeline = std::make_unique<GraphicsPipeline>(*m_Shaders, *m_device, *m_SwapChain, *m_msaaSamples,
+			*m_DescriptorSetLayout, renderPass);
+
+		m_home = std::make_unique<Home>();
+		m_SilentHill3Game = std::make_unique<SilentHill3Game>(m_devices->device, m_devices->physicalDevice);
+
+		m_SwapChain->createSwapChain();
+		createImageViews();
+		createRenderPass();
+		m_DescriptorSetLayout->createMeshDescriptorSetLayout();
+		m_DescriptorSetLayout->createMandelbulbComputeDescriptorSetLayout();
+		m_DescriptorSetLayout->createMandelbulbGraphicsDescriptorSetLayout();
+
+		m_GraphicsPipeline->createGraphicsPipeline();
+		createCommandPool();
+		createColorResources();
+		createDepthResources();//
+		createFramebuffers();//
+		createTextureImage();
+		createTextureImageView();
+		createTextureSampler();
+		createModel();
+
+		// for triangle
+		createVertexBuffer();
+
+	  // incorporate for triangle in the future
+		//createIndexBuffer();
+
+		createUniformBuffers();
+		createDescriptorPool();
+
+		createStorageImageResources();
+		createMeshDescriptorSets();
+		createMandelbulbComputeDescriptorSets();
+		createMandelbulbGraphicsDescriptorSets();
+
+		createCommandBuffers();
+		createSyncObjects();
+	}
 
 
 	static void framebufferResizeCallback(GLFWwindow* window, int width, int height) {
@@ -123,10 +212,10 @@ private:
 		const GLFWvidmode* mode = glfwGetVideoMode(monitor);
 
 		window = glfwCreateWindow(
-			mode->width, 
-			mode->height, 
-			"Vulkan", 
-			monitor, 
+			mode->width,
+			mode->height,
+			"Vulkan",
+			monitor,
 			nullptr);
 		glfwSetWindowUserPointer(window, this);
 		glfwSetKeyCallback(window, keyCallback);
@@ -177,77 +266,6 @@ private:
 	}
 
 	VkInstance instance;
-
-
-
-	void initVulkan()
-	{
-		if (enableValidationLayers && !ValidationLayers::checkValidationLayerSupport())
-		{
-			throw std::runtime_error("validation layers requested. but not available!");
-		}
-
-		createInstance();
-
-		m_ValidationLayers = std::make_unique<ValidationLayers>(instance);
-		m_ValidationLayers->setupDebugMessenger();
-		createSurface();
-		m_devices = std::make_unique<Devices>(surface, instance, window);
-		m_devices->pickPhysicalDevice();
-		m_devices->createLogicalDevice();
-		m_device = std::make_unique<VkDevice>(m_devices->device);
-		m_physicalDevice = std::make_unique<VkPhysicalDevice>(m_devices->physicalDevice);
-		m_msaaSamples = std::make_unique<VkSampleCountFlagBits>(m_devices->msaaSamples);
-
-		m_devices->findQueueFamilies(*m_physicalDevice);
-		m_QueueFamilyIndices = std::make_unique<Devices::QueueFamilyIndices>(
-			m_devices->m_QueueFamilyIndices
-		);
-		m_devices->querySwapChainSupport(*m_physicalDevice);
-		m_SwapChainSupportDetails = std::make_unique<Devices::SwapChainSupportDetails>(m_devices->m_SwapChainSupportDetails);
-		m_graphicsQueue = std::make_unique<VkQueue>(m_devices->graphicsQueue);
-
-		m_HostToDevice = std::make_unique<HostToDevice>(*m_device, *m_physicalDevice);
-
-		m_home = std::make_unique<Home>();
-		m_SilentHill3Game = std::make_unique<SilentHill3Game>(m_devices->device, m_devices->physicalDevice);
-
-		createSwapChain();
-		createImageViews();
-		createRenderPass();
-
-		createMeshDescriptorSetLayout();
-		createMandelbulbComputeDescriptorSetLayout();
-		createMandelbulbGraphicsDescriptorSetLayout();
-
-		createGraphicsPipeline();
-		createCommandPool();
-		createColorResources();
-		createDepthResources();//
-		createFramebuffers();//
-		createTextureImage();
-		createTextureImageView();
-		createTextureSampler();
-		createModel();
-
-		// for triangle
-		createVertexBuffer();
-
-	  // incorporate for triangle in the future
-		//createIndexBuffer();
-
-		createUniformBuffers();
-		createDescriptorPool();
-
-		createStorageImageResources();
-		createMeshDescriptorSets();
-		createMandelbulbComputeDescriptorSets();
-		createMandelbulbGraphicsDescriptorSets();
-
-		createCommandBuffers();
-		createSyncObjects();
-	}
-
 
 	// CALLBACKS
 	//
@@ -300,6 +318,12 @@ private:
 		camera.ProcessMouseMovement(xoffset, yoffset);
 	}
 
+
+	void createSurface()
+	{
+		if (glfwCreateWindowSurface(instance, window, nullptr, &surface) != VK_SUCCESS)
+			throw std::runtime_error("failed to create window surface!");
+	}
 
 	void generateMipmaps(VkImage image, VkFormat imageFormat, int32_t texWidth, int32_t texHeight, uint32_t mipLevels) {
 		VkFormatProperties formatProperties;
@@ -407,7 +431,7 @@ private:
 			{ copyBuffer(srcBuffer, dstBuffer, size); });
 
 		model->loadModel("models/thedeathofallionceloved.glb", *m_home);
-		model->loadModel("models/silent-hill-3-ps2-game-cover/source/SilentHill3ps2Game.glb", *m_SilentHill3Game);
+		//model->loadModel("models/silent-hill-3-ps2-game-cover/source/SilentHill3ps2Game.glb", *m_SilentHill3Game);
 
 	}
 
@@ -445,9 +469,9 @@ private:
 	VkImageView depthImageView;
 
 	void createColorResources() {
-		VkFormat colorFormat = swapChainImageFormat;
+		VkFormat colorFormat = m_SwapChain->swapChainImageFormat;
 
-		createImage(swapChainExtent.width, swapChainExtent.height, 1, *m_msaaSamples, colorFormat, VK_IMAGE_TILING_OPTIMAL,
+		createImage(m_SwapChain->swapChainExtent.width, m_SwapChain->swapChainExtent.height, 1, *m_msaaSamples, colorFormat, VK_IMAGE_TILING_OPTIMAL,
 			VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, colorImage, colorImageMemory);
 		colorImageView = createImageView(colorImage, colorFormat, VK_IMAGE_ASPECT_COLOR_BIT, 1);
 	}
@@ -455,7 +479,7 @@ private:
 	void createDepthResources() {
 		VkFormat depthFormat = findDepthFormat();
 
-		createImage(swapChainExtent.width, swapChainExtent.height, 1, *m_msaaSamples, depthFormat, VK_IMAGE_TILING_OPTIMAL, 
+		createImage(m_SwapChain->swapChainExtent.width, m_SwapChain->swapChainExtent.height, 1, *m_msaaSamples, depthFormat, VK_IMAGE_TILING_OPTIMAL,
 			VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, depthImage, depthImageMemory);
 		depthImageView = createImageView(depthImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT, 1);
 	}
@@ -468,7 +492,7 @@ private:
 	void createStorageImageResources() {
 		VkFormat format = VK_FORMAT_R8G8B8A8_UNORM;
 
-		createImage(swapChainExtent.width, swapChainExtent.height, 1, VK_SAMPLE_COUNT_1_BIT, format,
+		createImage(m_SwapChain->swapChainExtent.width, m_SwapChain->swapChainExtent.height, 1, VK_SAMPLE_COUNT_1_BIT, format,
 			VK_IMAGE_TILING_OPTIMAL,
 			VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
 			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
@@ -671,7 +695,7 @@ private:
 	void createMeshDescriptorSets() {
 
 		descriptorSets.resize(MAX_FRAMES_IN_FLIGHT);
-		std::vector<VkDescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT, descriptorSetLayout);
+		std::vector<VkDescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT, m_DescriptorSetLayout->descriptorSetLayout);
 		VkDescriptorSetAllocateInfo allocInfo{};
 		allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
 		allocInfo.descriptorPool = descriptorPool;
@@ -726,7 +750,7 @@ private:
 
 		}
 
-		m_HostToDevice->createDescriptorSets(m_SilentHill3Game->m_descriptorSets, descriptorSetLayout, descriptorPool, 
+		m_HostToDevice->createDescriptorSets(m_SilentHill3Game->m_descriptorSets, m_DescriptorSetLayout->descriptorSetLayout, descriptorPool, 
 			uniformBuffers, modelUniformBuffers, textureImageView, textureSampler, m_SilentHill3Game->m_modelUBOSize);
 	}
 
@@ -735,7 +759,7 @@ private:
 	void createMandelbulbComputeDescriptorSets() {
 		mandelbulbComputeDescriptorSets.resize(MAX_FRAMES_IN_FLIGHT);
 
-		std::vector<VkDescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT, mandelbulbComputeDescriptorSetLayout);
+		std::vector<VkDescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT, m_DescriptorSetLayout->mandelbulbComputeDescriptorSetLayout);
 
 		VkDescriptorSetAllocateInfo allocInfo{};
 		allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
@@ -820,7 +844,7 @@ private:
 
 	void createMandelbulbGraphicsDescriptorSets() {
 		mandelbulbGraphicsDescriptorSets.resize(MAX_FRAMES_IN_FLIGHT);
-		std::vector<VkDescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT, mandelbulbGraphicsDescriptorSetLayout);
+		std::vector<VkDescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT, m_DescriptorSetLayout->mandelbulbGraphicsDescriptorSetLayout);
 		VkDescriptorSetAllocateInfo allocInfo{};
 		allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
 		allocInfo.descriptorPool = descriptorPool;
@@ -993,111 +1017,111 @@ private:
 
 	}
 
-	VkDescriptorSetLayout descriptorSetLayout;
+	//VkDescriptorSetLayout descriptorSetLayout;
 
-	void createMeshDescriptorSetLayout() {
-
-
-		VkDescriptorSetLayoutBinding cameraBinding{};
-		cameraBinding.binding = 0;
-		cameraBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		cameraBinding.descriptorCount = 1;
-		cameraBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-		cameraBinding.pImmutableSamplers = nullptr;
-
-		VkDescriptorSetLayoutBinding modelBinding{};
-		modelBinding.binding = 1;
-		modelBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		modelBinding.descriptorCount = 1;
-		modelBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-		modelBinding.pImmutableSamplers = nullptr;
-
-		VkDescriptorSetLayoutBinding samplerBinding{};
-		samplerBinding.binding = 2;
-		samplerBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		samplerBinding.descriptorCount = 1;
-		samplerBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-		samplerBinding.pImmutableSamplers = nullptr;
-
-		std::array<VkDescriptorSetLayoutBinding, 3> bindings = { cameraBinding, modelBinding, samplerBinding };
-
-		VkDescriptorSetLayoutCreateInfo layoutInfo{};
-		layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-		layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
-		layoutInfo.pBindings = bindings.data();
-
-		if (vkCreateDescriptorSetLayout(*m_device, &layoutInfo, nullptr, &descriptorSetLayout) != VK_SUCCESS)
-			throw std::runtime_error("failed to create descriptor set layout!");
-	}
-
-	VkDescriptorSetLayout mandelbulbComputeDescriptorSetLayout;
-	void createMandelbulbComputeDescriptorSetLayout() {
-		VkDescriptorSetLayoutBinding uboBinding{};
-		uboBinding.binding = 0;
-		uboBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		uboBinding.descriptorCount = 1;
-		uboBinding.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
-		uboBinding.pImmutableSamplers = nullptr;
-
-		VkDescriptorSetLayoutBinding storageImageBinding{};
-		storageImageBinding.binding = 1;
-		storageImageBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-		storageImageBinding.descriptorCount = 1;
-		storageImageBinding.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
-		storageImageBinding.pImmutableSamplers = nullptr;
-
-		std::array<VkDescriptorSetLayoutBinding, 2> bindings = {
-			uboBinding,
-			storageImageBinding
-		};
-
-		VkDescriptorSetLayoutCreateInfo layoutInfo{};
-		layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-		layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
-		layoutInfo.pBindings = bindings.data();
-
-		if (vkCreateDescriptorSetLayout(*m_device, &layoutInfo, nullptr, &mandelbulbComputeDescriptorSetLayout) != VK_SUCCESS) {
-			throw std::runtime_error("Failed to create compute descriptor set layout!");
-		}
-	}
+	//void createMeshDescriptorSetLayout() {
 
 
-	VkDescriptorSetLayout mandelbulbGraphicsDescriptorSetLayout;
+	//	VkDescriptorSetLayoutBinding cameraBinding{};
+	//	cameraBinding.binding = 0;
+	//	cameraBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	//	cameraBinding.descriptorCount = 1;
+	//	cameraBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+	//	cameraBinding.pImmutableSamplers = nullptr;
 
-	void createMandelbulbGraphicsDescriptorSetLayout() {
+	//	VkDescriptorSetLayoutBinding modelBinding{};
+	//	modelBinding.binding = 1;
+	//	modelBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	//	modelBinding.descriptorCount = 1;
+	//	modelBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+	//	modelBinding.pImmutableSamplers = nullptr;
 
-		VkDescriptorSetLayoutBinding samplerBinding{};
-		samplerBinding.binding = 0;
-		samplerBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		samplerBinding.descriptorCount = 1;
-		samplerBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-		samplerBinding.pImmutableSamplers = nullptr;
+	//	VkDescriptorSetLayoutBinding samplerBinding{};
+	//	samplerBinding.binding = 2;
+	//	samplerBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	//	samplerBinding.descriptorCount = 1;
+	//	samplerBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+	//	samplerBinding.pImmutableSamplers = nullptr;
 
-		VkDescriptorSetLayoutBinding mandelbulbUBOBinding{};
-		mandelbulbUBOBinding.binding = 1;
-		mandelbulbUBOBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		mandelbulbUBOBinding.descriptorCount = 1;
-		mandelbulbUBOBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-		mandelbulbUBOBinding.pImmutableSamplers = nullptr;
+	//	std::array<VkDescriptorSetLayoutBinding, 3> bindings = { cameraBinding, modelBinding, samplerBinding };
+
+	//	VkDescriptorSetLayoutCreateInfo layoutInfo{};
+	//	layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+	//	layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
+	//	layoutInfo.pBindings = bindings.data();
+
+	//	if (vkCreateDescriptorSetLayout(*m_device, &layoutInfo, nullptr, &descriptorSetLayout) != VK_SUCCESS)
+	//		throw std::runtime_error("failed to create descriptor set layout!");
+	//}
+
+	//VkDescriptorSetLayout mandelbulbComputeDescriptorSetLayout;
+	//void createMandelbulbComputeDescriptorSetLayout() {
+	//	VkDescriptorSetLayoutBinding uboBinding{};
+	//	uboBinding.binding = 0;
+	//	uboBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	//	uboBinding.descriptorCount = 1;
+	//	uboBinding.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+	//	uboBinding.pImmutableSamplers = nullptr;
+
+	//	VkDescriptorSetLayoutBinding storageImageBinding{};
+	//	storageImageBinding.binding = 1;
+	//	storageImageBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+	//	storageImageBinding.descriptorCount = 1;
+	//	storageImageBinding.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+	//	storageImageBinding.pImmutableSamplers = nullptr;
+
+	//	std::array<VkDescriptorSetLayoutBinding, 2> bindings = {
+	//		uboBinding,
+	//		storageImageBinding
+	//	};
+
+	//	VkDescriptorSetLayoutCreateInfo layoutInfo{};
+	//	layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+	//	layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
+	//	layoutInfo.pBindings = bindings.data();
+
+	//	if (vkCreateDescriptorSetLayout(*m_device, &layoutInfo, nullptr, &mandelbulbComputeDescriptorSetLayout) != VK_SUCCESS) {
+	//		throw std::runtime_error("Failed to create compute descriptor set layout!");
+	//	}
+	//}
 
 
-		std::array<VkDescriptorSetLayoutBinding, 2> bindings = { samplerBinding, mandelbulbUBOBinding };
+	//VkDescriptorSetLayout mandelbulbGraphicsDescriptorSetLayout;
 
-		VkDescriptorSetLayoutCreateInfo layoutInfo{};
-		layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-		layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
-		layoutInfo.pBindings = bindings.data();
+	//void createMandelbulbGraphicsDescriptorSetLayout() {
 
-		if (vkCreateDescriptorSetLayout(*m_device, &layoutInfo, nullptr, &mandelbulbGraphicsDescriptorSetLayout) != VK_SUCCESS)
-			throw std::runtime_error("failed to create mandelbulb descriptor set layout\n");
-	}
+	//	VkDescriptorSetLayoutBinding samplerBinding{};
+	//	samplerBinding.binding = 0;
+	//	samplerBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	//	samplerBinding.descriptorCount = 1;
+	//	samplerBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+	//	samplerBinding.pImmutableSamplers = nullptr;
+
+	//	VkDescriptorSetLayoutBinding mandelbulbUBOBinding{};
+	//	mandelbulbUBOBinding.binding = 1;
+	//	mandelbulbUBOBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	//	mandelbulbUBOBinding.descriptorCount = 1;
+	//	mandelbulbUBOBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+	//	mandelbulbUBOBinding.pImmutableSamplers = nullptr;
+
+
+	//	std::array<VkDescriptorSetLayoutBinding, 2> bindings = { samplerBinding, mandelbulbUBOBinding };
+
+	//	VkDescriptorSetLayoutCreateInfo layoutInfo{};
+	//	layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+	//	layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
+	//	layoutInfo.pBindings = bindings.data();
+
+	//	if (vkCreateDescriptorSetLayout(*m_device, &layoutInfo, nullptr, &mandelbulbGraphicsDescriptorSetLayout) != VK_SUCCESS)
+	//		throw std::runtime_error("failed to create mandelbulb descriptor set layout\n");
+	//}
 
 
 	void updateUniformBuffer(uint32_t currentImage) {
 
 		Camera::CameraUBO ubo;
 		ubo.view = camera.GetViewMatrix();
-		ubo.proj = glm::perspective(glm::radians(45.0f), swapChainExtent.width / (float)swapChainExtent.height, 0.1f, 100.0f);
+		ubo.proj = glm::perspective(glm::radians(45.0f), m_SwapChain->swapChainExtent.width / (float)m_SwapChain->swapChainExtent.height, 0.1f, 100.0f);
 		ubo.proj[1][1] *= -1;
 
 		memcpy(uniformBuffersMapped[currentImage], &ubo, sizeof(ubo));
@@ -1109,7 +1133,7 @@ private:
 
 		// 1. Camera matrices
 		glm::mat4 view = camera.GetViewMatrix();
-		glm::mat4 proj = glm::perspective(glm::radians(45.0f), swapChainExtent.width / (float)swapChainExtent.height, 0.1f, 100.0f);
+		glm::mat4 proj = glm::perspective(glm::radians(45.0f), m_SwapChain->swapChainExtent.width / (float)m_SwapChain->swapChainExtent.height, 0.1f, 100.0f);
 		proj[1][1] *= -1; // Vulkan Y-flip
 
 		// 2. Inverse matrices for fractal shader
@@ -1120,7 +1144,7 @@ private:
 		ubo.camPos_time = glm::vec4(camera.Position, static_cast<float>(glfwGetTime()));
 
 		// 4. Resolution + Power + Bail
-		ubo.resolution_misc = glm::vec4(swapChainExtent.width, swapChainExtent.height, 8.0f, 2.0f);
+		ubo.resolution_misc = glm::vec4(m_SwapChain->swapChainExtent.width, m_SwapChain->swapChainExtent.height, 8.0f, 2.0f);
 
 		// 5. Fractal param
 		ubo.maxIter = 6;
@@ -1249,7 +1273,7 @@ private:
 	std::vector<VkSemaphore> renderFinishedSemaphores;
 	std::vector<VkFence> imagesInFlight;
 	std::vector<VkFence> inFlightFences;
-	size_t swapChainImageCount = swapChainImages.size();
+	size_t swapChainImageCount = m_SwapChain->swapChainImageCount;
 
 	void createSyncObjects() {
 
@@ -1325,7 +1349,7 @@ private:
 		renderPassInfo.renderPass = renderPass;
 		renderPassInfo.framebuffer = swapChainFramebuffers[imageIndex];
 		renderPassInfo.renderArea.offset = { 0, 0 };
-		renderPassInfo.renderArea.extent = swapChainExtent;
+		renderPassInfo.renderArea.extent = m_SwapChain->swapChainExtent;
 
 		std::array<VkClearValue, 2> clearValues{};
 		clearValues[0].color = { {0.0f, 0.0f, 0.0f, 1.0f} };
@@ -1337,15 +1361,15 @@ private:
 		VkViewport viewport{};
 		viewport.x = 0.0f;
 		viewport.y = 0.0f;
-		viewport.width = static_cast<float>(swapChainExtent.width);
-		viewport.height = static_cast<float>(swapChainExtent.height);
+		viewport.width = static_cast<float>(m_SwapChain->swapChainExtent.width);
+		viewport.height = static_cast<float>(m_SwapChain->swapChainExtent.height);
 		viewport.minDepth = 0.0f;
 		viewport.maxDepth = 1.0f;
 		vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
 
 		VkRect2D scissor{};
 		scissor.offset = { 0, 0 };
-		scissor.extent = swapChainExtent;
+		scissor.extent = m_SwapChain->swapChainExtent;
 		vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
 		vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
@@ -1353,7 +1377,7 @@ private:
 		// model
 		if (!renderTriangle && !renderMandelbulb) {
 
-			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
+			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_GraphicsPipeline->graphicsPipeline);
 			{
 				VkBuffer vertexBuffers[] = { m_home->m_vertexBuffer };
 				VkDeviceSize offsets[] = { 0 };
@@ -1361,7 +1385,7 @@ private:
 
 				vkCmdBindIndexBuffer(commandBuffer, m_home->m_indexBuffer, 0, m_home->m_indexType);
 
-				vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSets[currentFrame], 0, nullptr);
+				vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_GraphicsPipeline->pipelineLayout, 0, 1, &descriptorSets[currentFrame], 0, nullptr);
 
 				vkCmdDrawIndexed(commandBuffer, m_home->m_indexCount, 1, 0, 0, 0);
 			}
@@ -1373,7 +1397,7 @@ private:
 
 				vkCmdBindIndexBuffer(commandBuffer, m_SilentHill3Game->m_indexBuffer, 0, m_SilentHill3Game->m_indexType);
 
-				vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1,
+				vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_GraphicsPipeline->pipelineLayout, 0, 1,
 					&descriptorSets[currentFrame], 0, nullptr);
 
 				vkCmdDrawIndexed(commandBuffer, m_SilentHill3Game->m_indexCount, 1, 0, 0, 0);
@@ -1384,12 +1408,12 @@ private:
 				//
 				// COMPUTE PHASE
 				//
-				vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, mandelbulbComputePipeline);
+				vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_GraphicsPipeline->mandelbulbComputePipeline);
 
 				vkCmdBindDescriptorSets(
 					commandBuffer,
 					VK_PIPELINE_BIND_POINT_COMPUTE,
-					mandelbulbPipelineComputeLayout,
+					m_GraphicsPipeline->mandelbulbPipelineComputeLayout,
 					0,
 					1,
 					&mandelbulbComputeDescriptorSets[currentFrame],
@@ -1418,8 +1442,8 @@ private:
 				);
 
 				// Dispatch
-				uint32_t groupX = (swapChainExtent.width + 15) / 16;
-				uint32_t groupY = (swapChainExtent.height + 15) / 16;
+				uint32_t groupX = (m_SwapChain->swapChainExtent.width + 15) / 16;
+				uint32_t groupY = (m_SwapChain->swapChainExtent.height + 15) / 16;
 				vkCmdDispatch(commandBuffer, groupX, groupY, 1);
 
 				// Make writes visible to fragment shader
@@ -1446,12 +1470,12 @@ private:
 				//
 				// GRAPHICS PHASE
 				//
-				vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, mandelbulbGraphicsPipeline);
+				vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_GraphicsPipeline->mandelbulbGraphicsPipeline);
 
 				vkCmdBindDescriptorSets(
 					commandBuffer,
 					VK_PIPELINE_BIND_POINT_GRAPHICS,
-					mandelbulbPipelineGraphicsLayout,
+					m_GraphicsPipeline->mandelbulbPipelineGraphicsLayout,
 					0, 1,
 					&mandelbulbGraphicsDescriptorSets[currentFrame],
 					0, nullptr
@@ -1461,13 +1485,13 @@ private:
 		} 
 		// triangle
 		else if (renderTriangle && !renderMandelbulb){
-			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
+			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_GraphicsPipeline->graphicsPipeline);
 
 			VkBuffer triangleVertexBuffers[] = { triangleVertexBuffer };
 			VkDeviceSize triangleOffsets[] = { 0 };
 			vkCmdBindVertexBuffers(commandBuffer, 0, 1, triangleVertexBuffers, triangleOffsets);
 
-			vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSets[currentFrame], 0, nullptr);
+			vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_GraphicsPipeline->pipelineLayout, 0, 1, &descriptorSets[currentFrame], 0, nullptr);
 
 			vkCmdDraw(commandBuffer, 3, 1, 0, 0);
 		}
@@ -1607,8 +1631,8 @@ private:
 			framebufferInfo.renderPass = renderPass;
 			framebufferInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
 			framebufferInfo.pAttachments = attachments.data();
-			framebufferInfo.width = swapChainExtent.width;
-			framebufferInfo.height = swapChainExtent.height;
+			framebufferInfo.width = m_SwapChain->swapChainExtent.width;
+			framebufferInfo.height = m_SwapChain->swapChainExtent.height;
 			framebufferInfo.layers = 1;
 
 			if (vkCreateFramebuffer(*m_device, &framebufferInfo, nullptr, &swapChainFramebuffers[i]) != VK_SUCCESS)
@@ -1621,7 +1645,7 @@ private:
 
 	void createRenderPass() {
 		VkAttachmentDescription colorAttachment{};
-		colorAttachment.format = swapChainImageFormat;
+		colorAttachment.format = m_SwapChain->swapChainImageFormat;
 		colorAttachment.samples = *m_msaaSamples;
 		colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 		colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -1635,7 +1659,7 @@ private:
 		colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
 		VkAttachmentDescription colorAttachmentResolve{};
-		colorAttachmentResolve.format = swapChainImageFormat;
+		colorAttachmentResolve.format = m_SwapChain->swapChainImageFormat;
 		colorAttachmentResolve.samples = VK_SAMPLE_COUNT_1_BIT;
 		colorAttachmentResolve.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 		colorAttachmentResolve.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -1693,441 +1717,441 @@ private:
 	}
 
 
-	static std::vector<char> readFile(const std::string& filename) {
-		std::ifstream file(filename, std::ios::ate | std::ios::binary);
-
-		if (!file.is_open())
-			throw std::runtime_error("failed to open file!");
-
-		size_t fileSize = (size_t)file.tellg();
-		std::vector<char> buffer(fileSize);
-
-		file.seekg(0);
-		file.read(buffer.data(), fileSize);
-		
-		file.close();
-
-		return buffer;
-	}
-
-
-	VkShaderModule createShaderModule(const std::vector<char>& code) {
-		VkShaderModuleCreateInfo createInfo{};
-		createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-		createInfo.codeSize = code.size();
-		createInfo.pCode = reinterpret_cast<const uint32_t*>(code.data());
-
-		VkShaderModule shaderModule;
-		if (vkCreateShaderModule(*m_device, &createInfo, nullptr, &shaderModule) != VK_SUCCESS)
-			throw std::runtime_error("failed to create shader module!");
-
-		return shaderModule;
-	}
-
-	VkPipelineLayout pipelineLayout;
-	VkPipeline graphicsPipeline;
-
-	void createGraphicsPipeline() {
-
-		createMandelbulbComputePipeline();
-		createMandelbulbGraphicsPipeline();
-
-		auto vertShaderCode = readFile("shaders/vert.spv");
-		auto fragShaderCode = readFile("shaders/frag.spv");
-		// print out values to see if they match the file sizes ^^^
-
-		VkShaderModule vertShaderModule = createShaderModule(vertShaderCode);
-		VkShaderModule fragShaderModule = createShaderModule(fragShaderCode);
-
-		VkPipelineShaderStageCreateInfo vertShaderStageInfo{};
-		vertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-		vertShaderStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
-		vertShaderStageInfo.module = vertShaderModule;
-		vertShaderStageInfo.pName = "main";
-
-		VkPipelineShaderStageCreateInfo fragShaderStageInfo{};
-		fragShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-		fragShaderStageInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-		fragShaderStageInfo.module = fragShaderModule;
-		fragShaderStageInfo.pName = "main";
-
-		VkPipelineShaderStageCreateInfo shaderStages[] = { vertShaderStageInfo, fragShaderStageInfo };
-
-		auto bindingDescription = Vertex::getBindingDescription();
-		auto attributeDescriptions = Vertex::getAttributeDescriptions();
-
-		VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
-		vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-		vertexInputInfo.vertexBindingDescriptionCount = 1;
-		vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
-		vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptions.size());
-		vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
-
-		VkPipelineInputAssemblyStateCreateInfo inputAssembly{};
-		inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-		inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-		inputAssembly.primitiveRestartEnable = VK_FALSE;
-
-		VkViewport viewport{};
-		viewport.x = 0.0f;
-		viewport.y = 0.0f;
-		viewport.width = (float)swapChainExtent.width;
-		viewport.height = (float)swapChainExtent.height;
-		viewport.minDepth = 0.0f;
-		viewport.maxDepth = 1.0f;
-
-		VkRect2D scissor{};
-		scissor.offset = { 0, 0 };
-		scissor.extent = swapChainExtent;
-
-		std::vector<VkDynamicState> dynamicStates = {
-		VK_DYNAMIC_STATE_VIEWPORT,
-		VK_DYNAMIC_STATE_SCISSOR
-			};
-
-		VkPipelineDynamicStateCreateInfo dynamicState{};
-		dynamicState.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
-		dynamicState.dynamicStateCount = static_cast<uint32_t>(dynamicStates.size());
-		dynamicState.pDynamicStates = dynamicStates.data();
-
-		VkPipelineViewportStateCreateInfo viewportState{};
-		viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
-		viewportState.viewportCount = 1;
-		viewportState.scissorCount = 1;
-
-		VkPipelineRasterizationStateCreateInfo rasterizer{};
-		rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
-		rasterizer.depthClampEnable = VK_FALSE;
-		rasterizer.rasterizerDiscardEnable = VK_FALSE;
-		rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
-		rasterizer.lineWidth = 1.0f;
-		//rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
-		rasterizer.cullMode = VK_CULL_MODE_NONE;
-		rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
-		rasterizer.depthBiasEnable = VK_FALSE;
-		rasterizer.depthBiasConstantFactor = 0.0f;
-		rasterizer.depthBiasClamp = 0.0f;
-		rasterizer.depthBiasSlopeFactor = 0.0f;
-
-		VkPipelineMultisampleStateCreateInfo multisampling{};
-		multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-		multisampling.sampleShadingEnable = VK_TRUE;
-		multisampling.rasterizationSamples = *m_msaaSamples;
-		multisampling.minSampleShading = .2f;
-		multisampling.pSampleMask = nullptr;
-		multisampling.alphaToCoverageEnable = VK_FALSE;
-		multisampling.alphaToOneEnable = VK_FALSE;
-
-		VkPipelineColorBlendAttachmentState colorBlendAttachment{};
-		colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-		colorBlendAttachment.blendEnable = VK_TRUE;
-		colorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
-		colorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
-		colorBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD;
-		colorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
-		colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
-		colorBlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD;
-
-		VkPipelineColorBlendStateCreateInfo colorBlending{};
-		colorBlending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
-		colorBlending.logicOpEnable = VK_FALSE;
-		colorBlending.logicOp = VK_LOGIC_OP_COPY;
-		colorBlending.attachmentCount = 1;
-		colorBlending.pAttachments = &colorBlendAttachment;
-		colorBlending.blendConstants[0] - 0.0f;
-		colorBlending.blendConstants[1] = 0.0f;
-		colorBlending.blendConstants[2] = 0.0f;
-		colorBlending.blendConstants[3] = 0.0f;
-
-		VkPushConstantRange pushConstantRange{};
-		pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-		pushConstantRange.offset = 0;
-		pushConstantRange.size = sizeof(glm::mat4);
-
-		VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
-		pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-		pipelineLayoutInfo.setLayoutCount = 1;
-		pipelineLayoutInfo.pSetLayouts = &descriptorSetLayout;
-		pipelineLayoutInfo.pushConstantRangeCount = 1;
-		pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange;
-
-		if (vkCreatePipelineLayout(*m_device, &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS)
-			throw std::runtime_error("failed to create pipeline layout!");
-
-		VkPipelineDepthStencilStateCreateInfo depthStencil{};
-		depthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
-		depthStencil.depthTestEnable = VK_TRUE;
-		depthStencil.depthWriteEnable = VK_TRUE;
-		depthStencil.depthCompareOp = VK_COMPARE_OP_LESS;
-		depthStencil.depthBoundsTestEnable = VK_FALSE;
-		depthStencil.minDepthBounds = 0.0f;
-		depthStencil.maxDepthBounds = 1.0f;
-		depthStencil.stencilTestEnable = VK_FALSE;
-		depthStencil.front = {};
-		depthStencil.back = {};
-
-		VkGraphicsPipelineCreateInfo pipelineInfo{};
-		pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-		pipelineInfo.stageCount = 2;
-		pipelineInfo.pStages = shaderStages;
-		pipelineInfo.pVertexInputState = &vertexInputInfo;
-		pipelineInfo.pInputAssemblyState = &inputAssembly;
-		pipelineInfo.pViewportState = &viewportState;
-		pipelineInfo.pRasterizationState = &rasterizer;
-		pipelineInfo.pMultisampleState = &multisampling;
-		pipelineInfo.pDepthStencilState = &depthStencil;
-		pipelineInfo.pColorBlendState = &colorBlending;
-		pipelineInfo.pDynamicState = &dynamicState;
-		pipelineInfo.layout = pipelineLayout;
-		pipelineInfo.renderPass = renderPass;
-		pipelineInfo.subpass = 0;
-		pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
-		pipelineInfo.basePipelineIndex = -1;
-
-		if (vkCreateGraphicsPipelines(*m_device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &graphicsPipeline) != VK_SUCCESS)
-			throw std::runtime_error("failed to create graphics pipeline!");
-
-		vkDestroyShaderModule(*m_device, fragShaderModule, nullptr);
-		vkDestroyShaderModule(*m_device, vertShaderModule, nullptr);
-
-	}
-
-	VkPipelineLayout mandelbulbPipelineComputeLayout;
-	VkPipeline mandelbulbComputePipeline;
-
-	void createMandelbulbComputePipeline() {
-		auto compShaderCode = readFile("shaders/mandelbulb.comp.spv");
-
-		VkShaderModule compShaderModule = createShaderModule(compShaderCode);
-
-		VkPipelineShaderStageCreateInfo compStage{};
-		compStage.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-		compStage.stage = VK_SHADER_STAGE_COMPUTE_BIT;
-		compStage.module = compShaderModule;
-		compStage.pName = "main";
-
-		VkPipelineLayoutCreateInfo layoutCompInfo{};
-		layoutCompInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-		layoutCompInfo.setLayoutCount = 1;
-		layoutCompInfo.pSetLayouts = &mandelbulbComputeDescriptorSetLayout;
-
-		if (vkCreatePipelineLayout(*m_device, &layoutCompInfo, nullptr, &mandelbulbPipelineComputeLayout) != VK_SUCCESS)
-			throw std::runtime_error("failed to create mandelbulb comp layout");
-
-		VkComputePipelineCreateInfo compPipelineInfo{};
-		compPipelineInfo.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
-		compPipelineInfo.stage = compStage;
-		compPipelineInfo.layout = mandelbulbPipelineComputeLayout;
-		if (vkCreateComputePipelines(*m_device, VK_NULL_HANDLE, 1, &compPipelineInfo, nullptr, &mandelbulbComputePipeline)) {
-			throw std::runtime_error("failed to create compute pipeline for mandelbulb\n");
-		}
-
-		vkDestroyShaderModule(*m_device, compShaderModule, nullptr);
-	}
-
-
-	VkPipelineLayout mandelbulbPipelineGraphicsLayout;
-	VkPipeline mandelbulbGraphicsPipeline;
-
-	void createMandelbulbGraphicsPipeline() {
-
-		auto vertShaderCode = readFile("shaders/mandelbulb.vert.spv");
-		auto fragShaderCode = readFile("shaders/mandelbulb.frag.spv");
-
-		VkShaderModule vertShaderModule = createShaderModule(vertShaderCode);
-		VkShaderModule fragShaderModule = createShaderModule(fragShaderCode);
-
-		VkPipelineShaderStageCreateInfo vertStage{};
-		vertStage.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-		vertStage.stage = VK_SHADER_STAGE_VERTEX_BIT;
-		vertStage.module = vertShaderModule;
-		vertStage.pName = "main";
-
-		VkPipelineShaderStageCreateInfo fragStage{};
-		fragStage.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-		fragStage.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-		fragStage.module = fragShaderModule;
-		fragStage.pName = "main";
-
-		VkPipelineShaderStageCreateInfo shaderStages[] = { vertStage, fragStage };
-
-		// no vertex input because we want fullscreen triangle
-		VkPipelineVertexInputStateCreateInfo vertexInput{};
-		vertexInput.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-		vertexInput.vertexBindingDescriptionCount = 0;
-		vertexInput.pVertexBindingDescriptions = nullptr;
-		vertexInput.vertexAttributeDescriptionCount = 0;
-		vertexInput.pVertexAttributeDescriptions = nullptr;
-
-		VkPipelineInputAssemblyStateCreateInfo inputAssembly{};
-		inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-		inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-		inputAssembly.primitiveRestartEnable = VK_FALSE;
-
-		VkPipelineViewportStateCreateInfo viewportState{};
-		viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
-		viewportState.viewportCount = 1;
-		viewportState.scissorCount = 1;
-
-		VkPipelineDynamicStateCreateInfo dynamicState{};
-		dynamicState.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
-		dynamicState.dynamicStateCount = 2;
-		VkDynamicState dynamicStates[2] = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR };
-		dynamicState.pDynamicStates = dynamicStates;
-
-		VkPipelineRasterizationStateCreateInfo rasterizer{};
-		rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
-		rasterizer.depthClampEnable = VK_FALSE;
-		rasterizer.rasterizerDiscardEnable = VK_FALSE;
-		rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
-		rasterizer.lineWidth = 1.0f;
-		//rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
-		rasterizer.cullMode = VK_CULL_MODE_NONE;
-		rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
-		rasterizer.depthBiasEnable = VK_FALSE;
-		rasterizer.depthBiasConstantFactor = 0.0f;
-		rasterizer.depthBiasClamp = 0.0f;
-		rasterizer.depthBiasSlopeFactor = 0.0f;
-
-		VkPipelineMultisampleStateCreateInfo multisampling{};
-		multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-		multisampling.sampleShadingEnable = VK_TRUE;
-		multisampling.rasterizationSamples = *m_msaaSamples;
-		multisampling.minSampleShading = .2f;
-		multisampling.pSampleMask = nullptr;
-		multisampling.alphaToCoverageEnable = VK_FALSE;
-		multisampling.alphaToOneEnable = VK_FALSE;
-
-		VkPipelineColorBlendAttachmentState colorBlendAttachment{};
-		colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-		colorBlendAttachment.blendEnable = VK_TRUE;
-		colorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
-		colorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
-		colorBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD;
-		colorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
-		colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
-		colorBlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD;
-
-		VkPipelineColorBlendStateCreateInfo colorBlending{};
-		colorBlending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
-		colorBlending.logicOpEnable = VK_FALSE;
-		colorBlending.logicOp = VK_LOGIC_OP_COPY;
-		colorBlending.attachmentCount = 1;
-		colorBlending.pAttachments = &colorBlendAttachment;
-		colorBlending.blendConstants[0] - 0.0f;
-		colorBlending.blendConstants[1] = 0.0f;
-		colorBlending.blendConstants[2] = 0.0f;
-		colorBlending.blendConstants[3] = 0.0f;
-
-		VkPipelineLayoutCreateInfo layoutInfo{};
-		layoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-		layoutInfo.setLayoutCount = 1;
-		layoutInfo.pSetLayouts = &mandelbulbGraphicsDescriptorSetLayout;
-		layoutInfo.pushConstantRangeCount = 0; // Raymarcher doesn't need push constants
-
-		if (vkCreatePipelineLayout(*m_device, &layoutInfo, nullptr, &mandelbulbPipelineGraphicsLayout) != VK_SUCCESS)
-			throw std::runtime_error("failed to create mandelbulb pipeline layout");
-
-		VkPipelineDepthStencilStateCreateInfo depthStencil{};
-		depthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
-		depthStencil.depthTestEnable = VK_FALSE;
-		depthStencil.depthWriteEnable = VK_FALSE;
-		depthStencil.depthCompareOp = VK_COMPARE_OP_ALWAYS;
-		depthStencil.stencilTestEnable = VK_FALSE;
-
-		VkGraphicsPipelineCreateInfo pipelineInfo{};
-		pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-		pipelineInfo.stageCount = 2;
-		pipelineInfo.pStages = shaderStages;
-		pipelineInfo.pVertexInputState = &vertexInput;
-		pipelineInfo.pInputAssemblyState = &inputAssembly;
-		pipelineInfo.pViewportState = &viewportState;
-		pipelineInfo.pRasterizationState = &rasterizer;
-		pipelineInfo.pMultisampleState = &multisampling;
-		pipelineInfo.pDepthStencilState = &depthStencil;
-		pipelineInfo.pColorBlendState = &colorBlending;
-		pipelineInfo.pDynamicState = &dynamicState;
-
-		pipelineInfo.layout = mandelbulbPipelineGraphicsLayout;
-		pipelineInfo.renderPass = renderPass;
-		pipelineInfo.subpass = 0;
-
-		if (vkCreateGraphicsPipelines(*m_device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &mandelbulbGraphicsPipeline) != VK_SUCCESS)
-			throw std::runtime_error("failed to create mandelbulb graphics pipeline\n");
-
-		vkDestroyShaderModule(*m_device, vertShaderModule, nullptr);
-		vkDestroyShaderModule(*m_device, fragShaderModule, nullptr);
-	}
+	//static std::vector<char> readFile(const std::string& filename) {
+	//	std::ifstream file(filename, std::ios::ate | std::ios::binary);
+
+	//	if (!file.is_open())
+	//		throw std::runtime_error("failed to open file!");
+
+	//	size_t fileSize = (size_t)file.tellg();
+	//	std::vector<char> buffer(fileSize);
+
+	//	file.seekg(0);
+	//	file.read(buffer.data(), fileSize);
+	//	
+	//	file.close();
+
+	//	return buffer;
+	//}
+
+
+	//VkShaderModule createShaderModule(const std::vector<char>& code) {
+	//	VkShaderModuleCreateInfo createInfo{};
+	//	createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+	//	createInfo.codeSize = code.size();
+	//	createInfo.pCode = reinterpret_cast<const uint32_t*>(code.data());
+
+	//	VkShaderModule shaderModule;
+	//	if (vkCreateShaderModule(*m_device, &createInfo, nullptr, &shaderModule) != VK_SUCCESS)
+	//		throw std::runtime_error("failed to create shader module!");
+
+	//	return shaderModule;
+	//}
+
+	//VkPipelineLayout pipelineLayout;
+	//VkPipeline graphicsPipeline;
+
+	//void createGraphicsPipeline() {
+
+	//	createMandelbulbComputePipeline();
+	//	createMandelbulbGraphicsPipeline();
+
+	//	auto vertShaderCode = readFile("shaders/vert.spv");
+	//	auto fragShaderCode = readFile("shaders/frag.spv");
+	//	// print out values to see if they match the file sizes ^^^
+
+	//	VkShaderModule vertShaderModule = createShaderModule(vertShaderCode);
+	//	VkShaderModule fragShaderModule = createShaderModule(fragShaderCode);
+
+	//	VkPipelineShaderStageCreateInfo vertShaderStageInfo{};
+	//	vertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+	//	vertShaderStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
+	//	vertShaderStageInfo.module = vertShaderModule;
+	//	vertShaderStageInfo.pName = "main";
+
+	//	VkPipelineShaderStageCreateInfo fragShaderStageInfo{};
+	//	fragShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+	//	fragShaderStageInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+	//	fragShaderStageInfo.module = fragShaderModule;
+	//	fragShaderStageInfo.pName = "main";
+
+	//	VkPipelineShaderStageCreateInfo shaderStages[] = { vertShaderStageInfo, fragShaderStageInfo };
+
+	//	auto bindingDescription = Vertex::getBindingDescription();
+	//	auto attributeDescriptions = Vertex::getAttributeDescriptions();
+
+	//	VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
+	//	vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+	//	vertexInputInfo.vertexBindingDescriptionCount = 1;
+	//	vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
+	//	vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptions.size());
+	//	vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
+
+	//	VkPipelineInputAssemblyStateCreateInfo inputAssembly{};
+	//	inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+	//	inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+	//	inputAssembly.primitiveRestartEnable = VK_FALSE;
+
+	//	VkViewport viewport{};
+	//	viewport.x = 0.0f;
+	//	viewport.y = 0.0f;
+	//	viewport.width = (float)swapChainExtent.width;
+	//	viewport.height = (float)swapChainExtent.height;
+	//	viewport.minDepth = 0.0f;
+	//	viewport.maxDepth = 1.0f;
+
+	//	VkRect2D scissor{};
+	//	scissor.offset = { 0, 0 };
+	//	scissor.extent = swapChainExtent;
+
+	//	std::vector<VkDynamicState> dynamicStates = {
+	//	VK_DYNAMIC_STATE_VIEWPORT,
+	//	VK_DYNAMIC_STATE_SCISSOR
+	//		};
+
+	//	VkPipelineDynamicStateCreateInfo dynamicState{};
+	//	dynamicState.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+	//	dynamicState.dynamicStateCount = static_cast<uint32_t>(dynamicStates.size());
+	//	dynamicState.pDynamicStates = dynamicStates.data();
+
+	//	VkPipelineViewportStateCreateInfo viewportState{};
+	//	viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+	//	viewportState.viewportCount = 1;
+	//	viewportState.scissorCount = 1;
+
+	//	VkPipelineRasterizationStateCreateInfo rasterizer{};
+	//	rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+	//	rasterizer.depthClampEnable = VK_FALSE;
+	//	rasterizer.rasterizerDiscardEnable = VK_FALSE;
+	//	rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
+	//	rasterizer.lineWidth = 1.0f;
+	//	//rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
+	//	rasterizer.cullMode = VK_CULL_MODE_NONE;
+	//	rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+	//	rasterizer.depthBiasEnable = VK_FALSE;
+	//	rasterizer.depthBiasConstantFactor = 0.0f;
+	//	rasterizer.depthBiasClamp = 0.0f;
+	//	rasterizer.depthBiasSlopeFactor = 0.0f;
+
+	//	VkPipelineMultisampleStateCreateInfo multisampling{};
+	//	multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+	//	multisampling.sampleShadingEnable = VK_TRUE;
+	//	multisampling.rasterizationSamples = *m_msaaSamples;
+	//	multisampling.minSampleShading = .2f;
+	//	multisampling.pSampleMask = nullptr;
+	//	multisampling.alphaToCoverageEnable = VK_FALSE;
+	//	multisampling.alphaToOneEnable = VK_FALSE;
+
+	//	VkPipelineColorBlendAttachmentState colorBlendAttachment{};
+	//	colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+	//	colorBlendAttachment.blendEnable = VK_TRUE;
+	//	colorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+	//	colorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+	//	colorBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD;
+	//	colorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+	//	colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+	//	colorBlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD;
+
+	//	VkPipelineColorBlendStateCreateInfo colorBlending{};
+	//	colorBlending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+	//	colorBlending.logicOpEnable = VK_FALSE;
+	//	colorBlending.logicOp = VK_LOGIC_OP_COPY;
+	//	colorBlending.attachmentCount = 1;
+	//	colorBlending.pAttachments = &colorBlendAttachment;
+	//	colorBlending.blendConstants[0] - 0.0f;
+	//	colorBlending.blendConstants[1] = 0.0f;
+	//	colorBlending.blendConstants[2] = 0.0f;
+	//	colorBlending.blendConstants[3] = 0.0f;
+
+	//	VkPushConstantRange pushConstantRange{};
+	//	pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+	//	pushConstantRange.offset = 0;
+	//	pushConstantRange.size = sizeof(glm::mat4);
+
+	//	VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
+	//	pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+	//	pipelineLayoutInfo.setLayoutCount = 1;
+	//	pipelineLayoutInfo.pSetLayouts = &descriptorSetLayout;
+	//	pipelineLayoutInfo.pushConstantRangeCount = 1;
+	//	pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange;
+
+	//	if (vkCreatePipelineLayout(*m_device, &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS)
+	//		throw std::runtime_error("failed to create pipeline layout!");
+
+	//	VkPipelineDepthStencilStateCreateInfo depthStencil{};
+	//	depthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+	//	depthStencil.depthTestEnable = VK_TRUE;
+	//	depthStencil.depthWriteEnable = VK_TRUE;
+	//	depthStencil.depthCompareOp = VK_COMPARE_OP_LESS;
+	//	depthStencil.depthBoundsTestEnable = VK_FALSE;
+	//	depthStencil.minDepthBounds = 0.0f;
+	//	depthStencil.maxDepthBounds = 1.0f;
+	//	depthStencil.stencilTestEnable = VK_FALSE;
+	//	depthStencil.front = {};
+	//	depthStencil.back = {};
+
+	//	VkGraphicsPipelineCreateInfo pipelineInfo{};
+	//	pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+	//	pipelineInfo.stageCount = 2;
+	//	pipelineInfo.pStages = shaderStages;
+	//	pipelineInfo.pVertexInputState = &vertexInputInfo;
+	//	pipelineInfo.pInputAssemblyState = &inputAssembly;
+	//	pipelineInfo.pViewportState = &viewportState;
+	//	pipelineInfo.pRasterizationState = &rasterizer;
+	//	pipelineInfo.pMultisampleState = &multisampling;
+	//	pipelineInfo.pDepthStencilState = &depthStencil;
+	//	pipelineInfo.pColorBlendState = &colorBlending;
+	//	pipelineInfo.pDynamicState = &dynamicState;
+	//	pipelineInfo.layout = pipelineLayout;
+	//	pipelineInfo.renderPass = renderPass;
+	//	pipelineInfo.subpass = 0;
+	//	pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
+	//	pipelineInfo.basePipelineIndex = -1;
+
+	//	if (vkCreateGraphicsPipelines(*m_device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &graphicsPipeline) != VK_SUCCESS)
+	//		throw std::runtime_error("failed to create graphics pipeline!");
+
+	//	vkDestroyShaderModule(*m_device, fragShaderModule, nullptr);
+	//	vkDestroyShaderModule(*m_device, vertShaderModule, nullptr);
+
+	//}
+
+	//VkPipelineLayout mandelbulbPipelineComputeLayout;
+	//VkPipeline mandelbulbComputePipeline;
+
+	//void createMandelbulbComputePipeline() {
+	//	auto compShaderCode = readFile("shaders/mandelbulb.comp.spv");
+
+	//	VkShaderModule compShaderModule = createShaderModule(compShaderCode);
+
+	//	VkPipelineShaderStageCreateInfo compStage{};
+	//	compStage.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+	//	compStage.stage = VK_SHADER_STAGE_COMPUTE_BIT;
+	//	compStage.module = compShaderModule;
+	//	compStage.pName = "main";
+
+	//	VkPipelineLayoutCreateInfo layoutCompInfo{};
+	//	layoutCompInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+	//	layoutCompInfo.setLayoutCount = 1;
+	//	layoutCompInfo.pSetLayouts = &mandelbulbComputeDescriptorSetLayout;
+
+	//	if (vkCreatePipelineLayout(*m_device, &layoutCompInfo, nullptr, &mandelbulbPipelineComputeLayout) != VK_SUCCESS)
+	//		throw std::runtime_error("failed to create mandelbulb comp layout");
+
+	//	VkComputePipelineCreateInfo compPipelineInfo{};
+	//	compPipelineInfo.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
+	//	compPipelineInfo.stage = compStage;
+	//	compPipelineInfo.layout = mandelbulbPipelineComputeLayout;
+	//	if (vkCreateComputePipelines(*m_device, VK_NULL_HANDLE, 1, &compPipelineInfo, nullptr, &mandelbulbComputePipeline)) {
+	//		throw std::runtime_error("failed to create compute pipeline for mandelbulb\n");
+	//	}
+
+	//	vkDestroyShaderModule(*m_device, compShaderModule, nullptr);
+	//}
+
+
+	//VkPipelineLayout mandelbulbPipelineGraphicsLayout;
+	//VkPipeline mandelbulbGraphicsPipeline;
+
+	//void createMandelbulbGraphicsPipeline() {
+
+	//	auto vertShaderCode = readFile("shaders/mandelbulb.vert.spv");
+	//	auto fragShaderCode = readFile("shaders/mandelbulb.frag.spv");
+
+	//	VkShaderModule vertShaderModule = createShaderModule(vertShaderCode);
+	//	VkShaderModule fragShaderModule = createShaderModule(fragShaderCode);
+
+	//	VkPipelineShaderStageCreateInfo vertStage{};
+	//	vertStage.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+	//	vertStage.stage = VK_SHADER_STAGE_VERTEX_BIT;
+	//	vertStage.module = vertShaderModule;
+	//	vertStage.pName = "main";
+
+	//	VkPipelineShaderStageCreateInfo fragStage{};
+	//	fragStage.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+	//	fragStage.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+	//	fragStage.module = fragShaderModule;
+	//	fragStage.pName = "main";
+
+	//	VkPipelineShaderStageCreateInfo shaderStages[] = { vertStage, fragStage };
+
+	//	// no vertex input because we want fullscreen triangle
+	//	VkPipelineVertexInputStateCreateInfo vertexInput{};
+	//	vertexInput.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+	//	vertexInput.vertexBindingDescriptionCount = 0;
+	//	vertexInput.pVertexBindingDescriptions = nullptr;
+	//	vertexInput.vertexAttributeDescriptionCount = 0;
+	//	vertexInput.pVertexAttributeDescriptions = nullptr;
+
+	//	VkPipelineInputAssemblyStateCreateInfo inputAssembly{};
+	//	inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+	//	inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+	//	inputAssembly.primitiveRestartEnable = VK_FALSE;
+
+	//	VkPipelineViewportStateCreateInfo viewportState{};
+	//	viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+	//	viewportState.viewportCount = 1;
+	//	viewportState.scissorCount = 1;
+
+	//	VkPipelineDynamicStateCreateInfo dynamicState{};
+	//	dynamicState.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+	//	dynamicState.dynamicStateCount = 2;
+	//	VkDynamicState dynamicStates[2] = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR };
+	//	dynamicState.pDynamicStates = dynamicStates;
+
+	//	VkPipelineRasterizationStateCreateInfo rasterizer{};
+	//	rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+	//	rasterizer.depthClampEnable = VK_FALSE;
+	//	rasterizer.rasterizerDiscardEnable = VK_FALSE;
+	//	rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
+	//	rasterizer.lineWidth = 1.0f;
+	//	//rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
+	//	rasterizer.cullMode = VK_CULL_MODE_NONE;
+	//	rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+	//	rasterizer.depthBiasEnable = VK_FALSE;
+	//	rasterizer.depthBiasConstantFactor = 0.0f;
+	//	rasterizer.depthBiasClamp = 0.0f;
+	//	rasterizer.depthBiasSlopeFactor = 0.0f;
+
+	//	VkPipelineMultisampleStateCreateInfo multisampling{};
+	//	multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+	//	multisampling.sampleShadingEnable = VK_TRUE;
+	//	multisampling.rasterizationSamples = *m_msaaSamples;
+	//	multisampling.minSampleShading = .2f;
+	//	multisampling.pSampleMask = nullptr;
+	//	multisampling.alphaToCoverageEnable = VK_FALSE;
+	//	multisampling.alphaToOneEnable = VK_FALSE;
+
+	//	VkPipelineColorBlendAttachmentState colorBlendAttachment{};
+	//	colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+	//	colorBlendAttachment.blendEnable = VK_TRUE;
+	//	colorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+	//	colorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+	//	colorBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD;
+	//	colorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+	//	colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+	//	colorBlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD;
+
+	//	VkPipelineColorBlendStateCreateInfo colorBlending{};
+	//	colorBlending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+	//	colorBlending.logicOpEnable = VK_FALSE;
+	//	colorBlending.logicOp = VK_LOGIC_OP_COPY;
+	//	colorBlending.attachmentCount = 1;
+	//	colorBlending.pAttachments = &colorBlendAttachment;
+	//	colorBlending.blendConstants[0] - 0.0f;
+	//	colorBlending.blendConstants[1] = 0.0f;
+	//	colorBlending.blendConstants[2] = 0.0f;
+	//	colorBlending.blendConstants[3] = 0.0f;
+
+	//	VkPipelineLayoutCreateInfo layoutInfo{};
+	//	layoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+	//	layoutInfo.setLayoutCount = 1;
+	//	layoutInfo.pSetLayouts = &mandelbulbGraphicsDescriptorSetLayout;
+	//	layoutInfo.pushConstantRangeCount = 0; // Raymarcher doesn't need push constants
+
+	//	if (vkCreatePipelineLayout(*m_device, &layoutInfo, nullptr, &mandelbulbPipelineGraphicsLayout) != VK_SUCCESS)
+	//		throw std::runtime_error("failed to create mandelbulb pipeline layout");
+
+	//	VkPipelineDepthStencilStateCreateInfo depthStencil{};
+	//	depthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+	//	depthStencil.depthTestEnable = VK_FALSE;
+	//	depthStencil.depthWriteEnable = VK_FALSE;
+	//	depthStencil.depthCompareOp = VK_COMPARE_OP_ALWAYS;
+	//	depthStencil.stencilTestEnable = VK_FALSE;
+
+	//	VkGraphicsPipelineCreateInfo pipelineInfo{};
+	//	pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+	//	pipelineInfo.stageCount = 2;
+	//	pipelineInfo.pStages = shaderStages;
+	//	pipelineInfo.pVertexInputState = &vertexInput;
+	//	pipelineInfo.pInputAssemblyState = &inputAssembly;
+	//	pipelineInfo.pViewportState = &viewportState;
+	//	pipelineInfo.pRasterizationState = &rasterizer;
+	//	pipelineInfo.pMultisampleState = &multisampling;
+	//	pipelineInfo.pDepthStencilState = &depthStencil;
+	//	pipelineInfo.pColorBlendState = &colorBlending;
+	//	pipelineInfo.pDynamicState = &dynamicState;
+
+	//	pipelineInfo.layout = mandelbulbPipelineGraphicsLayout;
+	//	pipelineInfo.renderPass = renderPass;
+	//	pipelineInfo.subpass = 0;
+
+	//	if (vkCreateGraphicsPipelines(*m_device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &mandelbulbGraphicsPipeline) != VK_SUCCESS)
+	//		throw std::runtime_error("failed to create mandelbulb graphics pipeline\n");
+
+	//	vkDestroyShaderModule(*m_device, vertShaderModule, nullptr);
+	//	vkDestroyShaderModule(*m_device, fragShaderModule, nullptr);
+	//}
 
 
 	std::vector<VkImageView> swapChainImageViews;
 
 	void createImageViews() {
-		swapChainImageViews.resize(swapChainImages.size());
+		swapChainImageViews.resize(m_SwapChain->swapChainImages.size());
 
-		for (size_t i = 0; i < swapChainImages.size(); i++) {
-			swapChainImageViews[i] = createImageView(swapChainImages[i], swapChainImageFormat, VK_IMAGE_ASPECT_COLOR_BIT, 1);
+		for (size_t i = 0; i < m_SwapChain->swapChainImages.size(); i++) {
+			swapChainImageViews[i] = createImageView(m_SwapChain->swapChainImages[i], m_SwapChain->swapChainImageFormat, VK_IMAGE_ASPECT_COLOR_BIT, 1);
 		}
 	}
 
 
-	VkSwapchainKHR swapChain;
-	std::vector<VkImage> swapChainImages;
-	VkFormat swapChainImageFormat;
-	VkExtent2D swapChainExtent;
+	//VkSwapchainKHR swapChain;
+	//std::vector<VkImage> swapChainImages;
+	//VkFormat swapChainImageFormat;
+	//VkExtent2D swapChainExtent;
 
-	void createSwapChain() {
-		Devices::SwapChainSupportDetails swapChainSupport = *m_SwapChainSupportDetails;
+	//void createSwapChain() {
+	//	Devices::SwapChainSupportDetails swapChainSupport = *m_SwapChainSupportDetails;
 
-		VkSurfaceFormatKHR surfaceFormat = m_devices->chooseSwapSurfaceFormat(swapChainSupport.formats);
-		VkPresentModeKHR presentMode = m_devices->chooseSwapPresentMode(swapChainSupport.presentModes);
-		VkExtent2D extent = m_devices->chooseSwapExtent(swapChainSupport.capabilities);
+	//	VkSurfaceFormatKHR surfaceFormat = m_devices->chooseSwapSurfaceFormat(swapChainSupport.formats);
+	//	VkPresentModeKHR presentMode = m_devices->chooseSwapPresentMode(swapChainSupport.presentModes);
+	//	VkExtent2D extent = m_devices->chooseSwapExtent(swapChainSupport.capabilities);
 
-		uint32_t imageCount = swapChainSupport.capabilities.minImageCount + 1;
-		if (swapChainSupport.capabilities.maxImageCount > 0 && imageCount > swapChainSupport.capabilities.maxImageCount)
-			imageCount = swapChainSupport.capabilities.maxImageCount;
+	//	uint32_t imageCount = swapChainSupport.capabilities.minImageCount + 1;
+	//	if (swapChainSupport.capabilities.maxImageCount > 0 && imageCount > swapChainSupport.capabilities.maxImageCount)
+	//		imageCount = swapChainSupport.capabilities.maxImageCount;
 
-		VkSwapchainCreateInfoKHR createInfo{};
-		createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-		createInfo.surface = surface;
-		createInfo.minImageCount = imageCount;
-		createInfo.imageFormat = surfaceFormat.format;
-		swapChainImageFormat = surfaceFormat.format;
-		createInfo.imageColorSpace = surfaceFormat.colorSpace;
-		createInfo.imageExtent = extent;
-		swapChainExtent = extent;
-		createInfo.imageArrayLayers = 1;
-		createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+	//	VkSwapchainCreateInfoKHR createInfo{};
+	//	createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
+	//	createInfo.surface = surface;
+	//	createInfo.minImageCount = imageCount;
+	//	createInfo.imageFormat = surfaceFormat.format;
+	//	swapChainImageFormat = surfaceFormat.format;
+	//	createInfo.imageColorSpace = surfaceFormat.colorSpace;
+	//	createInfo.imageExtent = extent;
+	//	swapChainExtent = extent;
+	//	createInfo.imageArrayLayers = 1;
+	//	createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
-		//QueueFamilyIndices indices = findQueueFamilies(*m_physicalDevice);
-		uint32_t queueFamilyIndices[] = { m_QueueFamilyIndices->graphicsFamily.value(), 
-			m_QueueFamilyIndices->presentFamily.value() };
+	//	//QueueFamilyIndices indices = findQueueFamilies(*m_physicalDevice);
+	//	uint32_t queueFamilyIndices[] = { m_QueueFamilyIndices->graphicsFamily.value(), 
+	//		m_QueueFamilyIndices->presentFamily.value() };
 
-		if (m_QueueFamilyIndices->graphicsFamily != m_QueueFamilyIndices->presentFamily) {
-			createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
-			createInfo.queueFamilyIndexCount = 2;
-			createInfo.pQueueFamilyIndices = queueFamilyIndices;
-		}
-		else {
-			createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
-			createInfo.queueFamilyIndexCount = 0;
-			createInfo.pQueueFamilyIndices = nullptr;
-		}
+	//	if (m_QueueFamilyIndices->graphicsFamily != m_QueueFamilyIndices->presentFamily) {
+	//		createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
+	//		createInfo.queueFamilyIndexCount = 2;
+	//		createInfo.pQueueFamilyIndices = queueFamilyIndices;
+	//	}
+	//	else {
+	//		createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
+	//		createInfo.queueFamilyIndexCount = 0;
+	//		createInfo.pQueueFamilyIndices = nullptr;
+	//	}
 
-		createInfo.preTransform = swapChainSupport.capabilities.currentTransform;
-		createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
-		createInfo.presentMode = presentMode;
-		createInfo.clipped = VK_TRUE;
-		createInfo.oldSwapchain = VK_NULL_HANDLE;
+	//	createInfo.preTransform = swapChainSupport.capabilities.currentTransform;
+	//	createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+	//	createInfo.presentMode = presentMode;
+	//	createInfo.clipped = VK_TRUE;
+	//	createInfo.oldSwapchain = VK_NULL_HANDLE;
 
-		if (vkCreateSwapchainKHR(*m_device, &createInfo, nullptr, &swapChain) != VK_SUCCESS)
-			throw std::runtime_error("failed to create swapchain!");
+	//	if (vkCreateSwapchainKHR(*m_device, &createInfo, nullptr, &swapChain) != VK_SUCCESS)
+	//		throw std::runtime_error("failed to create swapchain!");
 
-		vkGetSwapchainImagesKHR(*m_device, swapChain, &imageCount, nullptr);
-		swapChainImages.resize(imageCount);
-		vkGetSwapchainImagesKHR(*m_device, swapChain, &imageCount, swapChainImages.data());
-		swapChainImageCount = imageCount;
-	}
+	//	vkGetSwapchainImagesKHR(*m_device, swapChain, &imageCount, nullptr);
+	//	swapChainImages.resize(imageCount);
+	//	vkGetSwapchainImagesKHR(*m_device, swapChain, &imageCount, swapChainImages.data());
+	//	swapChainImageCount = imageCount;
+	//}
 
 
 	void cleanupSwapChain() {
@@ -2146,7 +2170,7 @@ private:
 			vkDestroyImageView(*m_device, imageView, nullptr);
 		}
 
-		vkDestroySwapchainKHR(*m_device, swapChain, nullptr);
+		vkDestroySwapchainKHR(*m_device, m_SwapChain->swapChain, nullptr);
 	}
 
 	void recreateSwapChain() {
@@ -2160,19 +2184,12 @@ private:
 
 		cleanupSwapChain();
 
-		createSwapChain();
+		m_SwapChain->createSwapChain();
 		createImageViews();
 		createColorResources();
 		createDepthResources();
 		createFramebuffers();
 		createSyncObjects();
-	}
-
-
-	void createSurface()
-	{
-		if (glfwCreateWindowSurface(instance, window, nullptr, &surface) != VK_SUCCESS)
-			throw std::runtime_error("failed to create window surface!");
 	}
 
 
@@ -2196,7 +2213,7 @@ private:
 
 		// signals 'imageAvailableSemaphores[currentFrame]' when ready
 		// acquires next swapchain image (swapchain holds images, not imageviews)
-		VkResult result = vkAcquireNextImageKHR(*m_device, swapChain, UINT64_MAX, imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, &imageIndex);
+		VkResult result = vkAcquireNextImageKHR(*m_device, m_SwapChain->swapChain, UINT64_MAX, imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, &imageIndex);
 		if (result == VK_ERROR_OUT_OF_DATE_KHR) {
 			recreateSwapChain();
 			return;
@@ -2244,7 +2261,7 @@ private:
 		presentInfo.waitSemaphoreCount = 1;
 		presentInfo.pWaitSemaphores = signalSemaphores;
 
-		VkSwapchainKHR swapChains[] = { swapChain };
+		VkSwapchainKHR swapChains[] = { m_SwapChain->swapChain };
 		presentInfo.swapchainCount = 1;
 		presentInfo.pSwapchains = swapChains;
 		presentInfo.pImageIndices = &imageIndex;
@@ -2295,7 +2312,7 @@ private:
 			// Now after updating camera, we write UBO for current swapchain image
 			Camera::CameraUBO ubo{};
 			ubo.view = camera.GetViewMatrix();
-			ubo.proj = glm::perspective(glm::radians(45.0f), swapChainExtent.width / (float)swapChainExtent.height, 0.1f, 100.0f);
+			ubo.proj = glm::perspective(glm::radians(45.0f), m_SwapChain->swapChainExtent.width / (float)m_SwapChain->swapChainExtent.height, 0.1f, 100.0f);
 			ubo.proj[1][1] *= -1.0f;
 
 			drawFrame();
@@ -2323,7 +2340,7 @@ private:
 
 		vkDestroyDescriptorPool(*m_device, descriptorPool, nullptr);
 
-		vkDestroyDescriptorSetLayout(*m_device, descriptorSetLayout, nullptr);
+		vkDestroyDescriptorSetLayout(*m_device, m_DescriptorSetLayout->descriptorSetLayout, nullptr);
 
 		vkDestroyBuffer(*m_device, indexBuffer, nullptr);
 		vkFreeMemory(*m_device, indexBufferMemory, nullptr);
@@ -2331,8 +2348,8 @@ private:
 		vkDestroyBuffer(*m_device, triangleVertexBuffer, nullptr);
 		vkFreeMemory(*m_device, triangleVertexBufferMemory, nullptr);
 
-		vkDestroyPipeline(*m_device, graphicsPipeline, nullptr);
-		vkDestroyPipelineLayout(*m_device, pipelineLayout, nullptr);
+		vkDestroyPipeline(*m_device, m_GraphicsPipeline->graphicsPipeline, nullptr);
+		vkDestroyPipelineLayout(*m_device, m_GraphicsPipeline->pipelineLayout, nullptr);
 		vkDestroyRenderPass(*m_device, renderPass, nullptr);
 
 		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
@@ -2361,6 +2378,7 @@ private:
 
 int main()
 {
+
 	HelloTriangleApplication app;
 
 	try {

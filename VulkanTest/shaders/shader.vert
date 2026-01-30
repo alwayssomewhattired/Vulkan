@@ -1,10 +1,6 @@
 #version 450
 
 
-//layout(push_constant) uniform PushConsts {
-//    mat4 model;
-//} pc;
-
 layout(set = 0, binding = 0) uniform CameraUBO {
     mat4 view;
     mat4 proj;
@@ -13,6 +9,10 @@ layout(set = 0, binding = 0) uniform CameraUBO {
 layout(set = 0, binding = 1) uniform ModelUBO {
     mat4 model;
 } modelUbo;
+
+layout(push_constant) uniform SilentHill3GamePC {
+    mat4 model;
+} silentHill3GamePC;
  
 layout(location = 0) in vec3 inPosition;
 layout(location = 1) in vec3 inColor;
