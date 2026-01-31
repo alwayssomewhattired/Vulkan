@@ -136,6 +136,7 @@
     <ClCompile Include="Devices.cpp" />
     <ClCompile Include="GraphicsPipeline.cpp" />
     <ClCompile Include="HostToDevice.cpp" />
+    <ClCompile Include="Initialize.cpp" />
     <ClCompile Include="items\Home.cpp" />
     <ClCompile Include="items\SilentHill3Game.cpp" />
     <ClCompile Include="main.cpp" />
@@ -159,6 +160,7 @@
     <ClInclude Include="Devices.h" />
     <ClInclude Include="GraphicsPipeline.h" />
     <ClInclude Include="HostToDevice.h" />
+    <ClInclude Include="Initialize.h" />
     <ClInclude Include="items\Home.h" />
     <ClInclude Include="items\ItemInterface.h" />
     <ClInclude Include="items\SilentHill3Game.h" />

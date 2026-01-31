@@ -6,6 +6,7 @@ layout(set = 0, binding = 0) uniform CameraUBO {
     mat4 proj;
 } camera;
 
+// change the ModeUBO to be push constant
 layout(set = 0, binding = 1) uniform ModelUBO {
     mat4 model;
 } modelUbo;
