@@ -4,6 +4,8 @@
 #include <tiny_gltf.h>
 
 #include "ModelLoad.h"
+#include "Constants.h"
+
 #include <cstdint>
 #include <stdexcept>
 #include <vulkan/vulkan.h>
@@ -14,6 +16,54 @@
 
 #include "Vertex.h"
 
+//struct GPUTexture {
+//	VkImage image;
+//	VkDeviceMemory memory;
+//	VkImageView view;
+//	VkSampler sampler;
+//};
+//
+//struct GPUMaterial {
+//	int baseColorTex;
+//	int normalTex;
+//	glm::vec4 baseColorFactor;
+//};
+//
+//std::vector<GPUTexture> gpuTextures;
+//std::vector<GPUMaterial> gpuMaterials;
+
+
+//void ModelLoad::uploadGltfTextureToVulkan(tinygltf::Model& model, int& textureIndex) {
+//	const tinygltf::Texture& texture = model.textures[textureIndex];
+//	const tinygltf::Image& image = model.images[texture.source];
+//	const tinygltf::Sampler& sampler = model.samplers[texture.sampler];
+//
+//	// do all the stuff here 
+//
+//	gpuTextures[textureIndex];
+//}
+//
+//void ModelLoad::buildGPUMaterial(tinygltf::Model& model, int& materialIndex) {
+//	const tinygltf::Material& material = model.materials[materialIndex];
+//
+//	GPUMaterial mat{};
+//
+//	mat.baseColorTex = material.pbrMetallicRoughness.baseColorTexture.index;
+//
+//	mat.normalTex = material.normalTexture.index;
+//
+//	mat.baseColorFactor = glm::make_vec4(material.pbrMetallicRoughness.baseColorFactor.data());
+//
+//	// handle missing textures
+//	if (mat.baseColorTex < 0)
+//		mat.baseColorTex = Constants::DEFAULT_WHITE_TEXTURE_INDEX;
+//
+//	if (mat.normalTex < 0)
+//		mat.normalTex = Constants::DEFAULT_NORMAL_TEXTURE_INDEX;
+//
+//	gpuMaterials[materialIndex] = mat;
+//}
+
 
 // | transports model data from cpu to gpu storage
 ModelLoad::ModelLoad(
@@ -22,15 +72,28 @@ ModelLoad::ModelLoad(
 	VkCommandPool commandPool,
 	VkQueue graphicsQueue,
 	std::function<void(VkDeviceSize, VkBufferUsageFlags, VkMemoryPropertyFlags, VkBuffer&, VkDeviceMemory&)> createBufferFn,
-	std::function<void(VkBuffer, VkBuffer, VkDeviceSize)> copyBufferFn
+	std::function<void(VkBuffer, VkBuffer, VkDeviceSize)> copyBufferFn,
+	Buffer& buffer,
+	Texture& texture
 ) 
 	: device(device),
 	physicalDevice(physicalDevice),
 	commandPool(commandPool),
 	graphicsQueue(graphicsQueue),
 	createBufferFn(createBufferFn),
-	copyBufferFn(copyBufferFn)
-{}
+	copyBufferFn(copyBufferFn),
+	m_Buffer(buffer),
+	m_Texture(texture)
+{
+	Texture::GPUTexture whiteTex{};
+	m_Texture.createTextureImage(true, "", Constants::WHITE_PIXEL, whiteTex);
+	Constants::DEFAULT_WHITE_TEXTURE_INDEX = m_Texture.gpuTextures.size();
+	m_Texture.gpuTextures.push_back(whiteTex);
+
+	GPUTexture normalTex = create1x1Texture(Constants::NORMAL_PIXEL, VK_FORMAT_R8G8B8A8_UNORM);
+	Constants::DEFAULT_NORMAL_TEXTURE_INDEX = gpuTextures.size();
+	gpuTextures.push_back(normalTex);
+}
 
 	void ModelLoad::loadModel(const std::string& path, ItemInterface& classReference) {
 
@@ -57,6 +120,64 @@ ModelLoad::ModelLoad(
 		if (model.meshes.empty()) {
 			throw std::runtime_error("Model has no meshes!");
 		}
+
+		// | begin file property debug
+
+		// | images
+		std::cout << "Images: " << model.images.size() << "\n";
+
+		for (size_t i = 0; i < model.images.size(); ++i)
+		{
+			const auto& img = model.images[i];
+
+			std::cout << "Image " << i << "\n";
+			std::cout << "  name: " << img.name << "\n";
+			std::cout << "  size: " << img.width << " x " << img.height << "\n";
+			std::cout << "  components: " << img.component << "\n";
+			std::cout << "  bits: " << img.bits << "\n";
+			std::cout << "  mimeType: " << img.mimeType << "\n";
+			std::cout << "  image data bytes: " << img.image.size() << "\n";
+		}
+
+		// | textures
+		std::cout << "Textures: " << model.textures.size() << "\n";
+
+		for (size_t i = 0; i < model.textures.size(); ++i)
+		{
+			const auto& tex = model.textures[i];
+
+			std::cout << "Texture " << i << "\n";
+			std::cout << "  source image index: " << tex.source << "\n";
+			std::cout << "  sampler index: " << tex.sampler << "\n";
+		}
+
+		// PBR
+		for (size_t i = 0; i < model.materials.size(); ++i)
+		{
+			const auto& mat = model.materials[i];
+			const auto& pbr = mat.pbrMetallicRoughness;
+
+			std::cout << "Material " << i << "\n";
+
+			if (pbr.baseColorTexture.index >= 0)
+				std::cout << "  baseColorTexture: "
+				<< pbr.baseColorTexture.index << "\n";
+
+			if (pbr.metallicRoughnessTexture.index >= 0)
+				std::cout << "  metallicRoughnessTexture: "
+				<< pbr.metallicRoughnessTexture.index << "\n";
+
+			if (mat.normalTexture.index >= 0)
+				std::cout << "  normalTexture: "
+				<< mat.normalTexture.index << "\n";
+
+			if (mat.emissiveTexture.index >= 0)
+				std::cout << "  emissiveTexture: "
+				<< mat.emissiveTexture.index << "\n";
+		}
+
+		// | end file property debug
+
 
 		int scene = model.defaultScene;
 		const tinygltf::Scene& sceneObj = model.scenes[scene];
@@ -161,6 +282,18 @@ ModelLoad::ModelLoad(
 		else
 			throw std::runtime_error("Unsupported index component type");
 
+		// | materials and textures
+
+		gpuTextures.resize(model.textures.size());
+		for (int i = 0; i < model.textures.size(); i++) {
+			uploadGltfTextureToVulkan(model, i);
+		}
+
+		gpuMaterials.resize(model.materials.size());
+		for (int i = 0; i < model.materials.size(); ++i)
+			buildGPUMaterial(model, i);
+
+
 
 		VkDeviceSize vertexSize = sizeof(Vertex) * vertices.size();
 
@@ -239,4 +372,3 @@ ModelLoad::ModelLoad(
 
 
 	}
-
