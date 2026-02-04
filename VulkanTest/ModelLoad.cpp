@@ -85,14 +85,18 @@ ModelLoad::ModelLoad(
 	m_Buffer(buffer),
 	m_Texture(texture)
 {
+	// move this inside item class
+	// | texture (default white)
 	Texture::GPUTexture whiteTex{};
-	m_Texture.createTextureImage(true, "", Constants::WHITE_PIXEL, whiteTex);
+	m_Texture.createTextureImage(true, "", Constants::WHITE_PIXEL, whiteTex, VK_FORMAT_R8G8B8A8_SRGB);
 	Constants::DEFAULT_WHITE_TEXTURE_INDEX = m_Texture.gpuTextures.size();
 	m_Texture.gpuTextures.push_back(whiteTex);
 
-	GPUTexture normalTex = create1x1Texture(Constants::NORMAL_PIXEL, VK_FORMAT_R8G8B8A8_UNORM);
-	Constants::DEFAULT_NORMAL_TEXTURE_INDEX = gpuTextures.size();
-	gpuTextures.push_back(normalTex);
+	// | normals (default flat)
+	Texture::GPUTexture normalTex{};
+	m_Texture.createTextureImage(true, "", Constants::NORMAL_PIXEL, normalTex, VK_FORMAT_R8G8B8A8_UNORM);
+	Constants::DEFAULT_NORMAL_TEXTURE_INDEX = m_Texture.gpuTextures.size();
+	m_Texture.gpuTextures.push_back(normalTex);
 }
 
 	void ModelLoad::loadModel(const std::string& path, ItemInterface& classReference) {
@@ -121,62 +125,7 @@ ModelLoad::ModelLoad(
 			throw std::runtime_error("Model has no meshes!");
 		}
 
-		// | begin file property debug
-
-		// | images
-		std::cout << "Images: " << model.images.size() << "\n";
-
-		for (size_t i = 0; i < model.images.size(); ++i)
-		{
-			const auto& img = model.images[i];
-
-			std::cout << "Image " << i << "\n";
-			std::cout << "  name: " << img.name << "\n";
-			std::cout << "  size: " << img.width << " x " << img.height << "\n";
-			std::cout << "  components: " << img.component << "\n";
-			std::cout << "  bits: " << img.bits << "\n";
-			std::cout << "  mimeType: " << img.mimeType << "\n";
-			std::cout << "  image data bytes: " << img.image.size() << "\n";
-		}
-
-		// | textures
-		std::cout << "Textures: " << model.textures.size() << "\n";
-
-		for (size_t i = 0; i < model.textures.size(); ++i)
-		{
-			const auto& tex = model.textures[i];
-
-			std::cout << "Texture " << i << "\n";
-			std::cout << "  source image index: " << tex.source << "\n";
-			std::cout << "  sampler index: " << tex.sampler << "\n";
-		}
-
-		// PBR
-		for (size_t i = 0; i < model.materials.size(); ++i)
-		{
-			const auto& mat = model.materials[i];
-			const auto& pbr = mat.pbrMetallicRoughness;
-
-			std::cout << "Material " << i << "\n";
-
-			if (pbr.baseColorTexture.index >= 0)
-				std::cout << "  baseColorTexture: "
-				<< pbr.baseColorTexture.index << "\n";
-
-			if (pbr.metallicRoughnessTexture.index >= 0)
-				std::cout << "  metallicRoughnessTexture: "
-				<< pbr.metallicRoughnessTexture.index << "\n";
-
-			if (mat.normalTexture.index >= 0)
-				std::cout << "  normalTexture: "
-				<< mat.normalTexture.index << "\n";
-
-			if (mat.emissiveTexture.index >= 0)
-				std::cout << "  emissiveTexture: "
-				<< mat.emissiveTexture.index << "\n";
-		}
-
-		// | end file property debug
+		//fileDebug(model);
 
 
 		int scene = model.defaultScene;
@@ -195,8 +144,6 @@ ModelLoad::ModelLoad(
 
 		if (!meshPtr)
 			throw std::runtime_error("No mesh found in GLB");
-
-		//
 
 		const tinygltf::Mesh& mesh = *meshPtr;
 
@@ -284,14 +231,14 @@ ModelLoad::ModelLoad(
 
 		// | materials and textures
 
-		gpuTextures.resize(model.textures.size());
+		classReference.gpuTextures().resize(model.textures.size());
 		for (int i = 0; i < model.textures.size(); i++) {
-			uploadGltfTextureToVulkan(model, i);
+			m_Texture.uploadGltfTextureToVulkan(model, i, classReference);
 		}
 
-		gpuMaterials.resize(model.materials.size());
+		classReference.gpuMaterials().resize(model.materials.size());
 		for (int i = 0; i < model.materials.size(); ++i)
-			buildGPUMaterial(model, i);
+			m_Texture.buildGPUMaterial(model, i, classReference);
 
 
 
@@ -370,5 +317,63 @@ ModelLoad::ModelLoad(
 		assert(indexType == VK_INDEX_TYPE_UINT32);
 		assert(indexSize == sizeof(uint32_t) * indexCount);
 
+
+	}
+
+	// | helpful for printing file properties
+	void ModelLoad::fileDebug(const tinygltf::Model& model) {
+
+	// | images
+		std::cout << "Images: " << model.images.size() << "\n";
+
+		for (size_t i = 0; i < model.images.size(); ++i)
+		{
+			const auto& img = model.images[i];
+
+			std::cout << "Image " << i << "\n";
+			std::cout << "  name: " << img.name << "\n";
+			std::cout << "  size: " << img.width << " x " << img.height << "\n";
+			std::cout << "  components: " << img.component << "\n";
+			std::cout << "  bits: " << img.bits << "\n";
+			std::cout << "  mimeType: " << img.mimeType << "\n";
+			std::cout << "  image data bytes: " << img.image.size() << "\n";
+		}
+
+		// | textures
+		std::cout << "Textures: " << model.textures.size() << "\n";
+
+		for (size_t i = 0; i < model.textures.size(); ++i)
+		{
+			const auto& tex = model.textures[i];
+
+			std::cout << "Texture " << i << "\n";
+			std::cout << "  source image index: " << tex.source << "\n";
+			std::cout << "  sampler index: " << tex.sampler << "\n";
+		}
+
+		// PBR
+		for (size_t i = 0; i < model.materials.size(); ++i)
+		{
+			const auto& mat = model.materials[i];
+			const auto& pbr = mat.pbrMetallicRoughness;
+
+			std::cout << "Material " << i << "\n";
+
+			if (pbr.baseColorTexture.index >= 0)
+				std::cout << "  baseColorTexture: "
+				<< pbr.baseColorTexture.index << "\n";
+
+			if (pbr.metallicRoughnessTexture.index >= 0)
+				std::cout << "  metallicRoughnessTexture: "
+				<< pbr.metallicRoughnessTexture.index << "\n";
+
+			if (mat.normalTexture.index >= 0)
+				std::cout << "  normalTexture: "
+				<< mat.normalTexture.index << "\n";
+
+			if (mat.emissiveTexture.index >= 0)
+				std::cout << "  emissiveTexture: "
+				<< mat.emissiveTexture.index << "\n";
+		}
 
 	}

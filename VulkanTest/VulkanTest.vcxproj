@@ -135,6 +135,7 @@
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="CommandBuffer.cpp" />
     <ClCompile Include="CommandPool.cpp" />
+    <ClCompile Include="DescriptorSet.cpp" />
     <ClCompile Include="DescriptorSetLayout.cpp" />
     <ClCompile Include="Devices.cpp" />
     <ClCompile Include="GraphicsPipeline.cpp" />
@@ -151,6 +152,7 @@
     <ClCompile Include="Texture.cpp" />
     <ClCompile Include="tinygltf_impl.cpp" />
     <ClCompile Include="Triangle.cpp" />
+    <ClCompile Include="UniformBuffer.cpp" />
     <ClCompile Include="ValidationLayers.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -164,6 +166,7 @@
     <ClInclude Include="CommandBuffer.h" />
     <ClInclude Include="CommandPool.h" />
     <ClInclude Include="Constants.h" />
+    <ClInclude Include="DescriptorSet.h" />
     <ClInclude Include="DescriptorSetLayout.h" />
     <ClInclude Include="Devices.h" />
     <ClInclude Include="GraphicsPipeline.h" />
@@ -178,6 +181,7 @@
     <ClInclude Include="SwapChain.h" />
     <ClInclude Include="Texture.h" />
     <ClInclude Include="Triangle.h" />
+    <ClInclude Include="UniformBuffer.h" />
     <ClInclude Include="ValidationLayers.h" />
     <ClInclude Include="Vertex.h" />
   </ItemGroup>

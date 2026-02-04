@@ -11,6 +11,9 @@
 #include "Devices.h"
 #include "CommandBuffer.h"
 #include "Constants.h"
+#include "MathConfig.hpp"
+#include "Items/ItemInterface.h"
+
 
 class Texture
 {
@@ -25,12 +28,13 @@ public:
 	};
 
 	void createTextureImage(const bool isDefault, const std::string& texturePath, const uint8_t* pixelData, 
-		GPUTexture& outTexture);
-	void createTextureImageView();
-	void createTextureSampler();
+		GPUTexture& outTexture, const VkFormat& format);
+	//void createTextureImageView();
+	void createTextureSampler(const uint32_t& mipLevels, Texture::GPUTexture& outTex);
 	void generateMipmaps(VkImage image, VkFormat imageFormat, int32_t texWidth, int32_t texHeight, uint32_t mipLevels);
 
 	uint32_t mipLevels;
+	// - get rid of these texture variables. we use our texture struct from now on
 	VkImage textureImage;
 	VkImageView textureImageView;
 	VkDeviceMemory textureImageMemory;
@@ -43,12 +47,13 @@ public:
 		glm::vec4 baseColorFactor;
 	};
 
-	std::vector<GPUTexture> gpuTextures;
-	std::vector<GPUMaterial> gpuMaterials;
+	// don't store textures/materials in this class. store it in the item's class
+	//std::vector<GPUTexture> gpuTextures;
+	//std::vector<GPUMaterial> gpuMaterials;
 
-	void uploadGltfTextureToVulkan(tinygltf::Model& model, int& textureIndex);
+	void uploadGltfTextureToVulkan(tinygltf::Model& model, int& textureIndex, ItemInterface& classReference);
 
-	void buildGPUMaterial(tinygltf::Model& model, int& materialIndex);
+	void buildGPUMaterial(tinygltf::Model& model, int& materialIndex, ItemInterface& classReference);
 
 private:
 	Buffer& m_Buffer;

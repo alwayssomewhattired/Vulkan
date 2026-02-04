@@ -113,7 +113,7 @@ void Image::copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, ui
 	m_CommandBuffer.endSingleTimeCommands(commandBuffer);
 }
 
-VkImageView Image::createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags, uint32_t mipLevels, 
+void Image::createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags, uint32_t mipLevels, 
 	Texture::GPUTexture& outTexture) {
 	VkImageViewCreateInfo viewInfo{};
 	viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
@@ -131,5 +131,4 @@ VkImageView Image::createImageView(VkImage image, VkFormat format, VkImageAspect
 		throw std::runtime_error("failed to create image view!");
 	}
 
-	return outTexture.view;
 }

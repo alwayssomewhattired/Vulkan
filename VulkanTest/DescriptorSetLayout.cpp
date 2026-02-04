@@ -27,7 +27,14 @@ void DescriptorSetLayout::createMeshDescriptorSetLayout() {
 	samplerBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 	samplerBinding.pImmutableSamplers = nullptr;
 
-	std::array<VkDescriptorSetLayoutBinding, 3> bindings = { cameraBinding, modelBinding, samplerBinding };
+	VkDescriptorSetLayoutBinding normalBinding{};
+	normalBinding.binding = 3;
+	normalBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	normalBinding.descriptorCount = 1;
+	normalBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+	normalBinding.pImmutableSamplers = nullptr;
+
+	std::array<VkDescriptorSetLayoutBinding, 4> bindings = { cameraBinding, modelBinding, samplerBinding, normalBinding };
 
 	VkDescriptorSetLayoutCreateInfo layoutInfo{};
 	layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;

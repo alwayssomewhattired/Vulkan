@@ -1,5 +1,4 @@
 #include "Texture.h"
-#include <tiny_gltf.h>
 
 
 Texture::Texture(Buffer& buffer, Image& image, Devices& devices, CommandBuffer& commandBuffer) : 
@@ -91,12 +90,16 @@ void Texture::generateMipmaps(VkImage image, VkFormat imageFormat, int32_t texWi
 	m_CommandBuffer.endSingleTimeCommands(commandBuffer);
 }
 
+// | updates outTexture struct. does more than just create images...
 // * isDefault : if true, creates default 1x1 texture
 // * texturePath(optional) : path to seperate texture
 // * pixelData(optional) : for pixel data of seperate texture
 // * outTexture(optional) : for struct of attached texture
+// - note: this now also creates views and sampler. make the other calls to them two functinos  after this function go away. 
+// possibly make these two 
+// member functions private.
 void Texture::createTextureImage(const bool isDefault, const std::string& texturePath, const uint8_t* pixelData, 
-	GPUTexture& outTexture) {
+	GPUTexture& outTexture, const VkFormat& format) {
 	int texWidth, texHeight, texChannels;
 
 	// - double check if this is correct
@@ -108,7 +111,11 @@ void Texture::createTextureImage(const bool isDefault, const std::string& textur
 	else if (!texturePath.empty())
 		pixelData = stbi_load(texturePath.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
 
-	mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(texWidth, texHeight)))) + 1;
+	if (!isDefault)
+		mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(texWidth, texHeight)))) + 1;
+	else
+		mipLevels = 1;
+
 	VkDeviceSize imageSize = texWidth * texHeight * 4;
 
 	if (!pixelData)
@@ -116,7 +123,8 @@ void Texture::createTextureImage(const bool isDefault, const std::string& textur
 
 	VkBuffer stagingBuffer;
 	VkDeviceMemory stagingBufferMemory;
-	m_Buffer.createBuffer(imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+	m_Buffer.createBuffer(imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, 
+		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
 		stagingBuffer, stagingBufferMemory);
 
 	void* data;
@@ -132,33 +140,26 @@ void Texture::createTextureImage(const bool isDefault, const std::string& textur
 		texHeight, 
 		mipLevels, 
 		VK_SAMPLE_COUNT_1_BIT, 
-		VK_FORMAT_R8G8B8A8_SRGB, 
+		format, 
 		VK_IMAGE_TILING_OPTIMAL,
-		VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | (isDefault ? 0 : VK_IMAGE_USAGE_SAMPLED_BIT),
+		VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | (isDefault ? 0 : VK_IMAGE_USAGE_TRANSFER_SRC_BIT),
 		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 
 		outTexture.image, 
 		outTexture.memory
 	);
-	//m_Image.createImage(texWidth, texHeight, mipLevels, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
-	//	VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-	//	VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, textureImage, textureImageMemory);
 
-	m_Image.transitionImageLayout(outTexture.image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, 
+	m_Image.transitionImageLayout(outTexture.image, format, VK_IMAGE_LAYOUT_UNDEFINED,
 		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 		mipLevels);
-	//m_Image.transitionImageLayout(textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-	//	mipLevels);
 
 	m_Image.copyBufferToImage(stagingBuffer, outTexture.image, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
-	//m_Image.copyBufferToImage(stagingBuffer, textureImage, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
 
 	if (!isDefault) {
-		generateMipmaps(outTexture.image, VK_FORMAT_R8G8B8A8_SRGB, texWidth, texHeight, mipLevels);
-		/*generateMipmaps(textureImage, VK_FORMAT_R8G8B8A8_SRGB, texWidth, texHeight, mipLevels);*/
+		generateMipmaps(outTexture.image, format, texWidth, texHeight, mipLevels);
 	} else {
 		m_Image.transitionImageLayout(
 			outTexture.image,
-			VK_FORMAT_R8G8B8A8_SRGB,
+			format,
 			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 			1
@@ -168,16 +169,17 @@ void Texture::createTextureImage(const bool isDefault, const std::string& textur
 	vkDestroyBuffer(m_Devices.device, stagingBuffer, nullptr);
 	vkFreeMemory(m_Devices.device, stagingBufferMemory, nullptr);
 
-	m_Image.createImageView(outTexture.image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, mipLevels, outTexture);
+	m_Image.createImageView(outTexture.image, format, VK_IMAGE_ASPECT_COLOR_BIT, mipLevels, outTexture);
 	createTextureSampler(mipLevels, outTexture);
 
 }
 
-void Texture::createTextureImageView() {
-	textureImageView = m_Image.createImageView(textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, mipLevels);
-}
+// | not needed anymore. createImageView does everything for us
+//void Texture::createTextureImageView() {
+//	textureImageView = m_Image.createImageView(textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, mipLevels);
+//}
 
-void Texture::createTextureSampler() {
+void Texture::createTextureSampler(const uint32_t& mipLevels, Texture::GPUTexture& outTex) {
 	VkSamplerCreateInfo samplerInfo{};
 	samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
 	samplerInfo.magFilter = VK_FILTER_LINEAR;
@@ -203,22 +205,21 @@ void Texture::createTextureSampler() {
 	samplerInfo.mipLodBias = 0.0f;
 	samplerInfo.minLod = 0.0f;
 	samplerInfo.maxLod = 0.0f;
-
-	if (vkCreateSampler(m_Devices.device, &samplerInfo, nullptr, &textureSampler) != VK_SUCCESS)
+	if (vkCreateSampler(m_Devices.device, &samplerInfo, nullptr, &outTex.sampler) != VK_SUCCESS)
 		throw std::runtime_error("failed to create texture sampler!");
 }
 
-void Texture::uploadGltfTextureToVulkan(tinygltf::Model& model, int& textureIndex) {
+void Texture::uploadGltfTextureToVulkan(tinygltf::Model& model, int& textureIndex, ItemInterface& classReference) {
 	const tinygltf::Texture& texture = model.textures[textureIndex];
 	const tinygltf::Image& image = model.images[texture.source];
 	const tinygltf::Sampler& sampler = model.samplers[texture.sampler];
 
 	// do all the stuff here 
 
-	gpuTextures[textureIndex];
+	classReference.gpuTextures()[textureIndex];
 }
 
-void Texture::buildGPUMaterial(tinygltf::Model& model, int& materialIndex) {
+void Texture::buildGPUMaterial(tinygltf::Model& model, int& materialIndex, ItemInterface& classReference) {
 	const tinygltf::Material& material = model.materials[materialIndex];
 
 	GPUMaterial mat{};
@@ -236,5 +237,5 @@ void Texture::buildGPUMaterial(tinygltf::Model& model, int& materialIndex) {
 	if (mat.normalTex < 0)
 		mat.normalTex = Constants::DEFAULT_NORMAL_TEXTURE_INDEX;
 
-	gpuMaterials[materialIndex] = mat;
+	classReference.gpuMaterials()[materialIndex] = mat;
 }

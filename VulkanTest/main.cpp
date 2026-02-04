@@ -114,21 +114,21 @@ private:
 	///
 	/// 
 
-	struct ModelUBO {
-		alignas(16) glm::mat4 model;
-	};
+	//struct ModelUBO {
+	//	alignas(16) glm::mat4 model;
+	//};
 
-	struct MandelbulbUBO {
+	//struct MandelbulbUBO {
 
-		glm::mat4 invProjection;
-		glm::mat4 invView;
+	//	glm::mat4 invProjection;
+	//	glm::mat4 invView;
 
-		glm::vec4 camPos_time;       // xyz = cameraPos, w = time
-		glm::vec4 resolution_misc;   // xy = resolution, z = power, w = bail
+	//	glm::vec4 camPos_time;       // xyz = cameraPos, w = time
+	//	glm::vec4 resolution_misc;   // xy = resolution, z = power, w = bail
 
-		alignas(16) int maxIter;
-		glm::vec3 pad;               // explicit padding
-	};
+	//	alignas(16) int maxIter;
+	//	glm::vec3 pad;               // explicit padding
+	//};
 
 	/// 
 	///
@@ -162,27 +162,27 @@ private:
 
 	/*VkImageView textureImageView;*/
 
-	VkDescriptorPool descriptorPool;
+	/*VkDescriptorPool descriptorPool;*/
 
-	std::vector<VkDescriptorSet> descriptorSets;
+	//std::vector<VkDescriptorSet> descriptorSets;
 
-	std::vector<VkDescriptorSet> mandelbulbComputeDescriptorSets;
+	//std::vector<VkDescriptorSet> mandelbulbComputeDescriptorSets;
 
 	VkSampler mandelbulbSampler;
 
-	std::vector<VkDescriptorSet> mandelbulbGraphicsDescriptorSets;
+	/*std::vector<VkDescriptorSet> mandelbulbGraphicsDescriptorSets;*/
 
-	std::vector<VkBuffer> uniformBuffers;
-	std::vector<VkDeviceMemory> uniformBuffersMemory;
-	std::vector<void*> uniformBuffersMapped;
+	//std::vector<VkBuffer> uniformBuffers;
+	//std::vector<VkDeviceMemory> uniformBuffersMemory;
+	//std::vector<void*> uniformBuffersMapped;
 
-	std::vector<VkBuffer> modelUniformBuffers;
-	std::vector<VkDeviceMemory> modelUniformBuffersMemory;
-	std::vector<void*> modelUniformBuffersMapped;
+	//std::vector<VkBuffer> modelUniformBuffers;
+	//std::vector<VkDeviceMemory> modelUniformBuffersMemory;
+	//std::vector<void*> modelUniformBuffersMapped;
 
-	std::vector<VkBuffer> mandelbulbUniformBuffers;
-	std::vector<VkDeviceMemory> mandelbulbUniformBuffersMemory;
-	std::vector<void*> mandelbulbUniformBuffersMapped;
+	//std::vector<VkBuffer> mandelbulbUniformBuffers;
+	//std::vector<VkDeviceMemory> mandelbulbUniformBuffersMemory;
+	//std::vector<void*> mandelbulbUniformBuffersMapped;
 
 	bool rotationEnabled = false;
 
@@ -276,6 +276,7 @@ private:
 		//createIndexBuffer();
 
 		createUniformBuffers();
+		m_HostToDevice->createUniformBuffer(m_SilentHill3Game->m_modelUBOSize);
 		createDescriptorPool();
 
 		createStorageImageResources();
@@ -730,143 +731,143 @@ private:
 	
 	
 
-	void createDescriptorPool() {
-		const uint32_t descriptorCount = 4;
+	//void createDescriptorPool() {
+	//	const uint32_t descriptorCount = 4;
 
-		std::array<VkDescriptorPoolSize, 3> poolSizes{};
-		poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		poolSizes[0].descriptorCount = descriptorCount * 3; // camera + model + mandelbulb per set
-		poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		poolSizes[1].descriptorCount = descriptorCount; // one texture per set
-		poolSizes[2].type = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-		poolSizes[2].descriptorCount = descriptorCount; // one storage image per compute set
+	//	std::array<VkDescriptorPoolSize, 3> poolSizes{};
+	//	poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	//	poolSizes[0].descriptorCount = descriptorCount * 3; // camera + model + mandelbulb per set
+	//	poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	//	poolSizes[1].descriptorCount = descriptorCount; // one texture per set
+	//	poolSizes[2].type = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+	//	poolSizes[2].descriptorCount = descriptorCount; // one storage image per compute set
 
-		VkDescriptorPoolCreateInfo poolInfo{};
-		poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-		poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
-		poolInfo.pPoolSizes = poolSizes.data();
-		poolInfo.maxSets = descriptorCount * 4; // 4 mesh + 4 compute + 4 graphics = 12
+	//	VkDescriptorPoolCreateInfo poolInfo{};
+	//	poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+	//	poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
+	//	poolInfo.pPoolSizes = poolSizes.data();
+	//	poolInfo.maxSets = descriptorCount * 4; // 4 mesh + 4 compute + 4 graphics = 12
 
-		if (vkCreateDescriptorPool(*m_device, &poolInfo, nullptr, &descriptorPool) != VK_SUCCESS)
-			throw std::runtime_error("failed to create descriptor pool!");
-	}
+	//	if (vkCreateDescriptorPool(*m_device, &poolInfo, nullptr, &descriptorPool) != VK_SUCCESS)
+	//		throw std::runtime_error("failed to create descriptor pool!");
+	//}
 
 
 
-	// GEOMETRY
-	void createMeshDescriptorSets() {
+	//// GEOMETRY
+	//void createMeshDescriptorSets() {
 
-		descriptorSets.resize(MAX_FRAMES_IN_FLIGHT);
-		std::vector<VkDescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT, m_DescriptorSetLayout->descriptorSetLayout);
-		VkDescriptorSetAllocateInfo allocInfo{};
-		allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-		allocInfo.descriptorPool = descriptorPool;
-		allocInfo.descriptorSetCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
-		allocInfo.pSetLayouts = layouts.data();
+	//	descriptorSets.resize(MAX_FRAMES_IN_FLIGHT);
+	//	std::vector<VkDescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT, m_DescriptorSetLayout->descriptorSetLayout);
+	//	VkDescriptorSetAllocateInfo allocInfo{};
+	//	allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+	//	allocInfo.descriptorPool = descriptorPool;
+	//	allocInfo.descriptorSetCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
+	//	allocInfo.pSetLayouts = layouts.data();
 
-		if (vkAllocateDescriptorSets(*m_device, &allocInfo, descriptorSets.data()) != VK_SUCCESS)
-			throw std::runtime_error("failed to allocate descriptor sets!");
+	//	if (vkAllocateDescriptorSets(*m_device, &allocInfo, descriptorSets.data()) != VK_SUCCESS)
+	//		throw std::runtime_error("failed to allocate descriptor sets!");
 
-		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-			VkDescriptorBufferInfo bufferInfo{};
-			bufferInfo.buffer = uniformBuffers[i];
-			bufferInfo.offset = 0;			
-			bufferInfo.range = sizeof(Camera::CameraUBO);
+	//	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+	//		VkDescriptorBufferInfo bufferInfo{};
+	//		bufferInfo.buffer = uniformBuffers[i];
+	//		bufferInfo.offset = 0;			
+	//		bufferInfo.range = sizeof(Camera::CameraUBO);
 
-			VkDescriptorBufferInfo modelBufferInfo{};
-			modelBufferInfo.buffer = modelUniformBuffers[i];
-			modelBufferInfo.offset = 0;			
-			modelBufferInfo.range = sizeof(ModelUBO);
+	//		VkDescriptorBufferInfo modelBufferInfo{};
+	//		modelBufferInfo.buffer = modelUniformBuffers[i];
+	//		modelBufferInfo.offset = 0;			
+	//		modelBufferInfo.range = sizeof(ModelUBO);
 
-			VkDescriptorImageInfo imageInfo{};
-			imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-			imageInfo.imageView = textureImageView;
-			imageInfo.sampler = textureSampler;
+	//		VkDescriptorImageInfo imageInfo{};
+	//		imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+	//		imageInfo.imageView = textureImageView;
+	//		imageInfo.sampler = textureSampler;
 
-			std::array<VkWriteDescriptorSet, 3> descriptorWrites{};
-			descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			descriptorWrites[0].dstSet = descriptorSets[i];
-			descriptorWrites[0].dstBinding = 0;
-			descriptorWrites[0].dstArrayElement = 0;
-			descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-			descriptorWrites[0].descriptorCount = 1;
-			descriptorWrites[0].pBufferInfo = &bufferInfo;
+	//		std::array<VkWriteDescriptorSet, 3> descriptorWrites{};
+	//		descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+	//		descriptorWrites[0].dstSet = descriptorSets[i];
+	//		descriptorWrites[0].dstBinding = 0;
+	//		descriptorWrites[0].dstArrayElement = 0;
+	//		descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	//		descriptorWrites[0].descriptorCount = 1;
+	//		descriptorWrites[0].pBufferInfo = &bufferInfo;
 
-			descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			descriptorWrites[1].dstSet = descriptorSets[i];
-			descriptorWrites[1].dstBinding = 1;
-			descriptorWrites[1].dstArrayElement = 0;
-			descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-			descriptorWrites[1].descriptorCount = 1;
-			descriptorWrites[1].pBufferInfo = &modelBufferInfo;
+	//		descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+	//		descriptorWrites[1].dstSet = descriptorSets[i];
+	//		descriptorWrites[1].dstBinding = 1;
+	//		descriptorWrites[1].dstArrayElement = 0;
+	//		descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	//		descriptorWrites[1].descriptorCount = 1;
+	//		descriptorWrites[1].pBufferInfo = &modelBufferInfo;
 
-			descriptorWrites[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			descriptorWrites[2].dstSet = descriptorSets[i];
-			descriptorWrites[2].dstBinding = 2;
-			descriptorWrites[2].dstArrayElement = 0;
-			descriptorWrites[2].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-			descriptorWrites[2].descriptorCount = 1;
-			descriptorWrites[2].pImageInfo = &imageInfo;
+	//		descriptorWrites[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+	//		descriptorWrites[2].dstSet = descriptorSets[i];
+	//		descriptorWrites[2].dstBinding = 2;
+	//		descriptorWrites[2].dstArrayElement = 0;
+	//		descriptorWrites[2].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	//		descriptorWrites[2].descriptorCount = 1;
+	//		descriptorWrites[2].pImageInfo = &imageInfo;
 
-			vkUpdateDescriptorSets(*m_device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
+	//		vkUpdateDescriptorSets(*m_device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
 
-		}
+	//	}
 
-		m_HostToDevice->createDescriptorSets(m_SilentHill3Game->m_descriptorSets, m_DescriptorSetLayout->descriptorSetLayout, descriptorPool, 
-			uniformBuffers, modelUniformBuffers, textureImageView, textureSampler, m_SilentHill3Game->m_modelUBOSize);
-	}
+	//	m_HostToDevice->createDescriptorSets(m_SilentHill3Game->m_descriptorSets, m_DescriptorSetLayout->descriptorSetLayout, descriptorPool, 
+	//		uniformBuffers, modelUniformBuffers, textureImageView, textureSampler, m_SilentHill3Game->m_modelUBOSize);
+	//}
 
 	
 
-	void createMandelbulbComputeDescriptorSets() {
-		mandelbulbComputeDescriptorSets.resize(MAX_FRAMES_IN_FLIGHT);
+	//void createMandelbulbComputeDescriptorSets() {
+	//	mandelbulbComputeDescriptorSets.resize(MAX_FRAMES_IN_FLIGHT);
 
-		std::vector<VkDescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT, m_DescriptorSetLayout->mandelbulbComputeDescriptorSetLayout);
+	//	std::vector<VkDescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT, m_DescriptorSetLayout->mandelbulbComputeDescriptorSetLayout);
 
-		VkDescriptorSetAllocateInfo allocInfo{};
-		allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-		allocInfo.descriptorPool = descriptorPool;            // must support STORAGE_IMAGE + UBO
-		allocInfo.descriptorSetCount = MAX_FRAMES_IN_FLIGHT;
-		allocInfo.pSetLayouts = layouts.data();
+	//	VkDescriptorSetAllocateInfo allocInfo{};
+	//	allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+	//	allocInfo.descriptorPool = descriptorPool;            // must support STORAGE_IMAGE + UBO
+	//	allocInfo.descriptorSetCount = MAX_FRAMES_IN_FLIGHT;
+	//	allocInfo.pSetLayouts = layouts.data();
 
-		if (vkAllocateDescriptorSets(*m_device, &allocInfo, mandelbulbComputeDescriptorSets.data()) != VK_SUCCESS) {
-			throw std::runtime_error("Failed to allocate compute descriptor sets!");
-		}
+	//	if (vkAllocateDescriptorSets(*m_device, &allocInfo, mandelbulbComputeDescriptorSets.data()) != VK_SUCCESS) {
+	//		throw std::runtime_error("Failed to allocate compute descriptor sets!");
+	//	}
 
-		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+	//	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
 
-			// UBO
-			VkDescriptorBufferInfo uboInfo{};
-			uboInfo.buffer = mandelbulbUniformBuffers[i];
-			uboInfo.offset = 0;
-			uboInfo.range = sizeof(MandelbulbUBO);
+	//		// UBO
+	//		VkDescriptorBufferInfo uboInfo{};
+	//		uboInfo.buffer = mandelbulbUniformBuffers[i];
+	//		uboInfo.offset = 0;
+	//		uboInfo.range = sizeof(MandelbulbUBO);
 
-			// Storage image
-			VkDescriptorImageInfo imageInfo{};
-			imageInfo.imageView = storageImageView; // created with STORAGE_IMAGE usage
-			imageInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL; // for storage image writes
+	//		// Storage image
+	//		VkDescriptorImageInfo imageInfo{};
+	//		imageInfo.imageView = storageImageView; // created with STORAGE_IMAGE usage
+	//		imageInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL; // for storage image writes
 
-			std::array<VkWriteDescriptorSet, 2> writes{};
+	//		std::array<VkWriteDescriptorSet, 2> writes{};
 
-			// Binding 0: UBO
-			writes[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			writes[0].dstSet = mandelbulbComputeDescriptorSets[i];
-			writes[0].dstBinding = 0;
-			writes[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-			writes[0].descriptorCount = 1;
-			writes[0].pBufferInfo = &uboInfo;
+	//		// Binding 0: UBO
+	//		writes[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+	//		writes[0].dstSet = mandelbulbComputeDescriptorSets[i];
+	//		writes[0].dstBinding = 0;
+	//		writes[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	//		writes[0].descriptorCount = 1;
+	//		writes[0].pBufferInfo = &uboInfo;
 
-			// Binding 1: storage image
-			writes[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			writes[1].dstSet = mandelbulbComputeDescriptorSets[i];
-			writes[1].dstBinding = 1;
-			writes[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-			writes[1].descriptorCount = 1;
-			writes[1].pImageInfo = &imageInfo;
+	//		// Binding 1: storage image
+	//		writes[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+	//		writes[1].dstSet = mandelbulbComputeDescriptorSets[i];
+	//		writes[1].dstBinding = 1;
+	//		writes[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+	//		writes[1].descriptorCount = 1;
+	//		writes[1].pImageInfo = &imageInfo;
 
-			vkUpdateDescriptorSets(*m_device, writes.size(), writes.data(), 0, nullptr);
-		}
-	}
+	//		vkUpdateDescriptorSets(*m_device, writes.size(), writes.data(), 0, nullptr);
+	//	}
+	//}
 
 
 
@@ -902,228 +903,228 @@ private:
 
 
 
-	void createMandelbulbGraphicsDescriptorSets() {
-		mandelbulbGraphicsDescriptorSets.resize(MAX_FRAMES_IN_FLIGHT);
-		std::vector<VkDescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT, m_DescriptorSetLayout->mandelbulbGraphicsDescriptorSetLayout);
-		VkDescriptorSetAllocateInfo allocInfo{};
-		allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-		allocInfo.descriptorPool = descriptorPool;
-		allocInfo.descriptorSetCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
-		allocInfo.pSetLayouts = layouts.data();
+	//void createMandelbulbGraphicsDescriptorSets() {
+	//	mandelbulbGraphicsDescriptorSets.resize(MAX_FRAMES_IN_FLIGHT);
+	//	std::vector<VkDescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT, m_DescriptorSetLayout->mandelbulbGraphicsDescriptorSetLayout);
+	//	VkDescriptorSetAllocateInfo allocInfo{};
+	//	allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+	//	allocInfo.descriptorPool = descriptorPool;
+	//	allocInfo.descriptorSetCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
+	//	allocInfo.pSetLayouts = layouts.data();
 
-		if (vkAllocateDescriptorSets(*m_device, &allocInfo, mandelbulbGraphicsDescriptorSets.data()) != VK_SUCCESS)
-			throw std::runtime_error("failed to allocate mandelbulb descriptor sets!");
+	//	if (vkAllocateDescriptorSets(*m_device, &allocInfo, mandelbulbGraphicsDescriptorSets.data()) != VK_SUCCESS)
+	//		throw std::runtime_error("failed to allocate mandelbulb descriptor sets!");
 
-		createMandelbulbSampler();
+	//	createMandelbulbSampler();
 
-		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+	//	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
 
-			// binding 0: sample image (output of computer shader)
-			VkDescriptorImageInfo imgInfo{};
-			imgInfo.sampler = mandelbulbSampler;
-			imgInfo.imageView = storageImageView;
-			imgInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+	//		// binding 0: sample image (output of computer shader)
+	//		VkDescriptorImageInfo imgInfo{};
+	//		imgInfo.sampler = mandelbulbSampler;
+	//		imgInfo.imageView = storageImageView;
+	//		imgInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
-			// binding 1: UBO
-			VkDescriptorBufferInfo mandelbulbBufferInfo{};
-			mandelbulbBufferInfo.buffer = mandelbulbUniformBuffers[i];
-			mandelbulbBufferInfo.offset = 0;
-			mandelbulbBufferInfo.range = sizeof(MandelbulbUBO);
+	//		// binding 1: UBO
+	//		VkDescriptorBufferInfo mandelbulbBufferInfo{};
+	//		mandelbulbBufferInfo.buffer = mandelbulbUniformBuffers[i];
+	//		mandelbulbBufferInfo.offset = 0;
+	//		mandelbulbBufferInfo.range = sizeof(MandelbulbUBO);
 
-			std::array<VkWriteDescriptorSet, 2> descriptorWrites{};
+	//		std::array<VkWriteDescriptorSet, 2> descriptorWrites{};
 
-			// sampler
-			descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			descriptorWrites[0].dstSet = mandelbulbGraphicsDescriptorSets[i];
-			descriptorWrites[0].dstBinding = 0; // matches mandelbulb shader binding
-			descriptorWrites[0].dstArrayElement = 0;
-			descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-			descriptorWrites[0].descriptorCount = 1;
-			descriptorWrites[0].pImageInfo = &imgInfo;
+	//		// sampler
+	//		descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+	//		descriptorWrites[0].dstSet = mandelbulbGraphicsDescriptorSets[i];
+	//		descriptorWrites[0].dstBinding = 0; // matches mandelbulb shader binding
+	//		descriptorWrites[0].dstArrayElement = 0;
+	//		descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	//		descriptorWrites[0].descriptorCount = 1;
+	//		descriptorWrites[0].pImageInfo = &imgInfo;
 
-			descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			descriptorWrites[1].dstSet = mandelbulbGraphicsDescriptorSets[i];
-			descriptorWrites[1].dstBinding = 1; // matches mandelbulb shader binding
-			descriptorWrites[1].dstArrayElement = 0;
-			descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-			descriptorWrites[1].descriptorCount = 1;
-			descriptorWrites[1].pBufferInfo = &mandelbulbBufferInfo;
+	//		descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+	//		descriptorWrites[1].dstSet = mandelbulbGraphicsDescriptorSets[i];
+	//		descriptorWrites[1].dstBinding = 1; // matches mandelbulb shader binding
+	//		descriptorWrites[1].dstArrayElement = 0;
+	//		descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	//		descriptorWrites[1].descriptorCount = 1;
+	//		descriptorWrites[1].pBufferInfo = &mandelbulbBufferInfo;
 
-			vkUpdateDescriptorSets(*m_device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
-		}
-	}
-
-
-	void createUniformBuffers() {
-
-		VkDeviceSize bufferSize = sizeof(Camera::CameraUBO);
-		VkDeviceSize modelBufferSize = sizeof(ModelUBO);
-		VkDeviceSize mandelbulbBufferSize = sizeof(MandelbulbUBO);
-
-		uniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
-		uniformBuffersMemory.resize(MAX_FRAMES_IN_FLIGHT);
-		uniformBuffersMapped.resize(MAX_FRAMES_IN_FLIGHT);
-
-		modelUniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
-		modelUniformBuffersMemory.resize(MAX_FRAMES_IN_FLIGHT);
-		modelUniformBuffersMapped.resize(MAX_FRAMES_IN_FLIGHT);
-
-		mandelbulbUniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
-		mandelbulbUniformBuffersMemory.resize(MAX_FRAMES_IN_FLIGHT);
-		mandelbulbUniformBuffersMapped.resize(MAX_FRAMES_IN_FLIGHT);
-
-		// | Triangle (i think)
-		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-
-			VkBufferCreateInfo bufferInfo{};
-			bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-			bufferInfo.size = bufferSize;
-			bufferInfo.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
-			bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-			if (vkCreateBuffer(*m_device, &bufferInfo, nullptr, &uniformBuffers[i]) != VK_SUCCESS)
-				throw std::runtime_error("failed to create uniform buffer!");
-
-			VkMemoryRequirements memRequirements;
-			vkGetBufferMemoryRequirements(*m_device, uniformBuffers[i], &memRequirements);
-
-			VkMemoryAllocateInfo allocInfo{};
-			allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-			allocInfo.allocationSize = memRequirements.size;
-			allocInfo.memoryTypeIndex = m_devices->findMemoryType(memRequirements.memoryTypeBits,
-				VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, *m_physicalDevice);
-
-			if (vkAllocateMemory(*m_device, &allocInfo, nullptr, &uniformBuffersMemory[i]) != VK_SUCCESS)
-				throw std::runtime_error("failed to allocate uniform buffer memory");
-
-			vkBindBufferMemory(*m_device, uniformBuffers[i], uniformBuffersMemory[i], 0);
-
-			vkMapMemory(*m_device, uniformBuffersMemory[i], 0, bufferSize, 0, &uniformBuffersMapped[i]);
-		}
-
-		// | safe-romm model
-		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-
-			VkBufferCreateInfo modelBufferInfo{};
-			modelBufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-			modelBufferInfo.size = modelBufferSize;
-			modelBufferInfo.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
-			modelBufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-			if (vkCreateBuffer(*m_device, &modelBufferInfo, nullptr, &modelUniformBuffers[i]) != VK_SUCCESS)
-				throw std::runtime_error("failed to create uniform buffer!");
-
-			VkMemoryRequirements modelMemRequirements;
-			vkGetBufferMemoryRequirements(*m_device, modelUniformBuffers[i], &modelMemRequirements);
-
-			VkMemoryAllocateInfo modelAllocInfo{};
-			modelAllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-			modelAllocInfo.allocationSize = modelMemRequirements.size;
-			modelAllocInfo.memoryTypeIndex = m_devices->findMemoryType(modelMemRequirements.memoryTypeBits,
-				VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, *m_physicalDevice);
-
-			if (vkAllocateMemory(*m_device, &modelAllocInfo, nullptr, &modelUniformBuffersMemory[i]) != VK_SUCCESS)
-				throw std::runtime_error("failed to allocate uniform buffer memory");
-
-			vkBindBufferMemory(*m_device, modelUniformBuffers[i], modelUniformBuffersMemory[i], 0);
-
-			vkMapMemory(*m_device, modelUniformBuffersMemory[i], 0, modelBufferSize, 0, &modelUniformBuffersMapped[i]);
-		}
-
-		// | Mandelbulb
-		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-
-			VkBufferCreateInfo mandelbulbBufferInfo{};
-			mandelbulbBufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-			mandelbulbBufferInfo.size = mandelbulbBufferSize;
-			mandelbulbBufferInfo.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
-			mandelbulbBufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-			if (vkCreateBuffer(*m_device, &mandelbulbBufferInfo, nullptr, &mandelbulbUniformBuffers[i]) != VK_SUCCESS) {
-				throw std::runtime_error("failed to create mandelbulb uniform buffers\n");
-			}
-
-			VkMemoryRequirements mandelbulbMemRequirements;
-			vkGetBufferMemoryRequirements(*m_device, mandelbulbUniformBuffers[i], &mandelbulbMemRequirements);
-
-			VkMemoryAllocateInfo mandelbulbAllocInfo{};
-			mandelbulbAllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-			mandelbulbAllocInfo.allocationSize = mandelbulbMemRequirements.size;
-			mandelbulbAllocInfo.memoryTypeIndex = m_devices->findMemoryType(mandelbulbMemRequirements.memoryTypeBits,
-				VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, *m_physicalDevice);
-
-			if (vkAllocateMemory(*m_device, &mandelbulbAllocInfo, nullptr, &mandelbulbUniformBuffersMemory[i]) != VK_SUCCESS) {
-				throw std::runtime_error("failed to allocate mandelbulb uniform buffer memory\n");
-			}
-
-			vkBindBufferMemory(*m_device, mandelbulbUniformBuffers[i], mandelbulbUniformBuffersMemory[i], 0);
-
-			vkMapMemory(*m_device, mandelbulbUniformBuffersMemory[i], 0, mandelbulbBufferSize, 0, &mandelbulbUniformBuffersMapped[i]);
-		}
-
-		m_HostToDevice->createUniformBuffer(m_SilentHill3Game->m_modelUBOSize);
-
-	}
+	//		vkUpdateDescriptorSets(*m_device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
+	//	}
+	//}
 
 
-	void updateUniformBuffer(uint32_t currentImage) {
+	//void createUniformBuffers() {
 
-		Camera::CameraUBO ubo;
-		ubo.view = camera.GetViewMatrix();
-		ubo.proj = glm::perspective(glm::radians(45.0f), m_SwapChain->swapChainExtent.width / (float)m_SwapChain->swapChainExtent.height, 0.1f, 100.0f);
-		ubo.proj[1][1] *= -1;
+	//	VkDeviceSize bufferSize = sizeof(Camera::CameraUBO);
+	//	VkDeviceSize modelBufferSize = sizeof(ModelUBO);
+	//	VkDeviceSize mandelbulbBufferSize = sizeof(MandelbulbUBO);
 
-		memcpy(uniformBuffersMapped[currentImage], &ubo, sizeof(ubo));
-	}
+	//	uniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
+	//	uniformBuffersMemory.resize(MAX_FRAMES_IN_FLIGHT);
+	//	uniformBuffersMapped.resize(MAX_FRAMES_IN_FLIGHT);
 
-	void updateMandelbulbUBO(uint32_t currentImage)
-	{
-		MandelbulbUBO ubo{};
+	//	modelUniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
+	//	modelUniformBuffersMemory.resize(MAX_FRAMES_IN_FLIGHT);
+	//	modelUniformBuffersMapped.resize(MAX_FRAMES_IN_FLIGHT);
 
-		// 1. Camera matrices
-		glm::mat4 view = camera.GetViewMatrix();
-		glm::mat4 proj = glm::perspective(glm::radians(45.0f), m_SwapChain->swapChainExtent.width / (float)m_SwapChain->swapChainExtent.height, 0.1f, 100.0f);
-		proj[1][1] *= -1; // Vulkan Y-flip
+	//	mandelbulbUniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
+	//	mandelbulbUniformBuffersMemory.resize(MAX_FRAMES_IN_FLIGHT);
+	//	mandelbulbUniformBuffersMapped.resize(MAX_FRAMES_IN_FLIGHT);
 
-		// 2. Inverse matrices for fractal shader
-		ubo.invView = glm::inverse(view);
-		ubo.invProjection = glm::inverse(proj);
+	//	// | Triangle (i think)
+	//	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
 
-		// 3. Camera position (extract from view matrix) + Time (optional animation)
-		ubo.camPos_time = glm::vec4(camera.Position, static_cast<float>(glfwGetTime()));
+	//		VkBufferCreateInfo bufferInfo{};
+	//		bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+	//		bufferInfo.size = bufferSize;
+	//		bufferInfo.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
+	//		bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-		// 4. Resolution + Power + Bail
-		ubo.resolution_misc = glm::vec4(m_SwapChain->swapChainExtent.width, m_SwapChain->swapChainExtent.height, 8.0f, 2.0f);
+	//		if (vkCreateBuffer(*m_device, &bufferInfo, nullptr, &uniformBuffers[i]) != VK_SUCCESS)
+	//			throw std::runtime_error("failed to create uniform buffer!");
 
-		// 5. Fractal param
-		ubo.maxIter = 6;
+	//		VkMemoryRequirements memRequirements;
+	//		vkGetBufferMemoryRequirements(*m_device, uniformBuffers[i], &memRequirements);
+
+	//		VkMemoryAllocateInfo allocInfo{};
+	//		allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+	//		allocInfo.allocationSize = memRequirements.size;
+	//		allocInfo.memoryTypeIndex = m_devices->findMemoryType(memRequirements.memoryTypeBits,
+	//			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, *m_physicalDevice);
+
+	//		if (vkAllocateMemory(*m_device, &allocInfo, nullptr, &uniformBuffersMemory[i]) != VK_SUCCESS)
+	//			throw std::runtime_error("failed to allocate uniform buffer memory");
+
+	//		vkBindBufferMemory(*m_device, uniformBuffers[i], uniformBuffersMemory[i], 0);
+
+	//		vkMapMemory(*m_device, uniformBuffersMemory[i], 0, bufferSize, 0, &uniformBuffersMapped[i]);
+	//	}
+
+	//	// | safe-romm model
+	//	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+
+	//		VkBufferCreateInfo modelBufferInfo{};
+	//		modelBufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+	//		modelBufferInfo.size = modelBufferSize;
+	//		modelBufferInfo.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
+	//		modelBufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+	//		if (vkCreateBuffer(*m_device, &modelBufferInfo, nullptr, &modelUniformBuffers[i]) != VK_SUCCESS)
+	//			throw std::runtime_error("failed to create uniform buffer!");
+
+	//		VkMemoryRequirements modelMemRequirements;
+	//		vkGetBufferMemoryRequirements(*m_device, modelUniformBuffers[i], &modelMemRequirements);
+
+	//		VkMemoryAllocateInfo modelAllocInfo{};
+	//		modelAllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+	//		modelAllocInfo.allocationSize = modelMemRequirements.size;
+	//		modelAllocInfo.memoryTypeIndex = m_devices->findMemoryType(modelMemRequirements.memoryTypeBits,
+	//			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, *m_physicalDevice);
+
+	//		if (vkAllocateMemory(*m_device, &modelAllocInfo, nullptr, &modelUniformBuffersMemory[i]) != VK_SUCCESS)
+	//			throw std::runtime_error("failed to allocate uniform buffer memory");
+
+	//		vkBindBufferMemory(*m_device, modelUniformBuffers[i], modelUniformBuffersMemory[i], 0);
+
+	//		vkMapMemory(*m_device, modelUniformBuffersMemory[i], 0, modelBufferSize, 0, &modelUniformBuffersMapped[i]);
+	//	}
+
+	//	// | Mandelbulb
+	//	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+
+	//		VkBufferCreateInfo mandelbulbBufferInfo{};
+	//		mandelbulbBufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+	//		mandelbulbBufferInfo.size = mandelbulbBufferSize;
+	//		mandelbulbBufferInfo.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
+	//		mandelbulbBufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+	//		if (vkCreateBuffer(*m_device, &mandelbulbBufferInfo, nullptr, &mandelbulbUniformBuffers[i]) != VK_SUCCESS) {
+	//			throw std::runtime_error("failed to create mandelbulb uniform buffers\n");
+	//		}
+
+	//		VkMemoryRequirements mandelbulbMemRequirements;
+	//		vkGetBufferMemoryRequirements(*m_device, mandelbulbUniformBuffers[i], &mandelbulbMemRequirements);
+
+	//		VkMemoryAllocateInfo mandelbulbAllocInfo{};
+	//		mandelbulbAllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+	//		mandelbulbAllocInfo.allocationSize = mandelbulbMemRequirements.size;
+	//		mandelbulbAllocInfo.memoryTypeIndex = m_devices->findMemoryType(mandelbulbMemRequirements.memoryTypeBits,
+	//			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, *m_physicalDevice);
+
+	//		if (vkAllocateMemory(*m_device, &mandelbulbAllocInfo, nullptr, &mandelbulbUniformBuffersMemory[i]) != VK_SUCCESS) {
+	//			throw std::runtime_error("failed to allocate mandelbulb uniform buffer memory\n");
+	//		}
+
+	//		vkBindBufferMemory(*m_device, mandelbulbUniformBuffers[i], mandelbulbUniformBuffersMemory[i], 0);
+
+	//		vkMapMemory(*m_device, mandelbulbUniformBuffersMemory[i], 0, mandelbulbBufferSize, 0, &mandelbulbUniformBuffersMapped[i]);
+	//	}
+
+	//	m_HostToDevice->createUniformBuffer(m_SilentHill3Game->m_modelUBOSize);
+
+	//}
 
 
-		memcpy(mandelbulbUniformBuffersMapped[currentImage], &ubo, sizeof(ubo));
-	}
+	//void updateUniformBuffer(uint32_t currentImage) {
+
+	//	Camera::CameraUBO ubo;
+	//	ubo.view = camera.GetViewMatrix();
+	//	ubo.proj = glm::perspective(glm::radians(45.0f), m_SwapChain->swapChainExtent.width / (float)m_SwapChain->swapChainExtent.height, 0.1f, 100.0f);
+	//	ubo.proj[1][1] *= -1;
+
+	//	memcpy(uniformBuffersMapped[currentImage], &ubo, sizeof(ubo));
+	//}
+
+	//void updateMandelbulbUBO(uint32_t currentImage)
+	//{
+	//	MandelbulbUBO ubo{};
+
+	//	// 1. Camera matrices
+	//	glm::mat4 view = camera.GetViewMatrix();
+	//	glm::mat4 proj = glm::perspective(glm::radians(45.0f), m_SwapChain->swapChainExtent.width / (float)m_SwapChain->swapChainExtent.height, 0.1f, 100.0f);
+	//	proj[1][1] *= -1; // Vulkan Y-flip
+
+	//	// 2. Inverse matrices for fractal shader
+	//	ubo.invView = glm::inverse(view);
+	//	ubo.invProjection = glm::inverse(proj);
+
+	//	// 3. Camera position (extract from view matrix) + Time (optional animation)
+	//	ubo.camPos_time = glm::vec4(camera.Position, static_cast<float>(glfwGetTime()));
+
+	//	// 4. Resolution + Power + Bail
+	//	ubo.resolution_misc = glm::vec4(m_SwapChain->swapChainExtent.width, m_SwapChain->swapChainExtent.height, 8.0f, 2.0f);
+
+	//	// 5. Fractal param
+	//	ubo.maxIter = 6;
 
 
-	void updateModelBuffer(uint32_t currentImage) {
-		static auto startTime = std::chrono::high_resolution_clock::now();
-		auto currentTime = std::chrono::high_resolution_clock::now();
-		float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
+	//	memcpy(mandelbulbUniformBuffersMapped[currentImage], &ubo, sizeof(ubo));
+	//}
 
-		ModelUBO modelUbo{};
 
-		// item view (tilted, rotating)((bind to key 'p'))
-		if (rotationEnabled) {
-			modelUbo.model = glm::rotate(glm::mat4(1.0f),
-				time * glm::radians(90.0f),
-				glm::vec3(0.0f, 0.0f, 1.0f));
-		}
-		else {
-		// normal view (straight, unchanging)
-			modelUbo.model = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 4.0f));
-		}
+	//void updateModelBuffer(uint32_t currentImage) {
+	//	static auto startTime = std::chrono::high_resolution_clock::now();
+	//	auto currentTime = std::chrono::high_resolution_clock::now();
+	//	float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
 
-		memcpy(modelUniformBuffersMapped[currentImage], &modelUbo, sizeof(modelUbo));
+	//	ModelUBO modelUbo{};
 
-	}
+	//	// item view (tilted, rotating)((bind to key 'p'))
+	//	if (rotationEnabled) {
+	//		modelUbo.model = glm::rotate(glm::mat4(1.0f),
+	//			time * glm::radians(90.0f),
+	//			glm::vec3(0.0f, 0.0f, 1.0f));
+	//	}
+	//	else {
+	//	// normal view (straight, unchanging)
+	//		modelUbo.model = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 4.0f));
+	//	}
+
+	//	memcpy(modelUniformBuffersMapped[currentImage], &modelUbo, sizeof(modelUbo));
+
+	//}
 
 
 
@@ -1323,7 +1324,8 @@ private:
 
 				vkCmdBindIndexBuffer(commandBuffer, m_home->m_indexBuffer, 0, m_home->m_indexType);
 
-				vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_GraphicsPipeline->pipelineLayout, 0, 1, &descriptorSets[currentFrame], 0, nullptr);
+				vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_GraphicsPipeline->pipelineLayout, 0, 1, 
+					&descriptorSets[currentFrame], 0, nullptr);
 
 				vkCmdDrawIndexed(commandBuffer, m_home->m_indexCount, 1, 0, 0, 0);
 			}

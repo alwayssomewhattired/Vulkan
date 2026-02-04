@@ -42,9 +42,11 @@ private:
 	Buffer& m_Buffer;
 	Texture& m_Texture; 
 
-	void uploadGltfTextureToVulkan(tinygltf::Model& model, int& textureIndex);
-	void buildGPUMaterial(tinygltf::Model& model, int& materialIndex);
-	GPUTexture create1x1Texture(const uint8_t* rgbaPixel, VkFormat format);
+	//void uploadGltfTextureToVulkan(tinygltf::Model& model, int& textureIndex, ItemInterface& classReference);
+	//void buildGPUMaterial(tinygltf::Model& model, int& materialIndex, ItemInterface& classReference);
+	//GPUTexture create1x1Texture(const uint8_t* rgbaPixel, VkFormat format);
+	void fileDebug(const tinygltf::Model& model);
+
 	// | staging mesh vertices
 	//std::vector<Vertex> vertices;
 	//std::vector<uint32_t> indices;

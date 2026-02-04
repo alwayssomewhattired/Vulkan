@@ -10,6 +10,7 @@
 #include <vector>
 
 #include "../Vertex.h"
+#include "../Texture.h"
 
 // | blueprint for all items
 struct ItemInterface {
@@ -27,6 +28,9 @@ struct ItemInterface {
 
 	virtual std::vector<Vertex>& vertices() = 0;
 	virtual std::vector<uint32_t>& indices() = 0;
+
+	virtual std::vector<Texture::GPUTexture> gpuTextures() = 0;
+	virtual std::vector<Texture::GPUMaterial> gpuMaterials() = 0;
 
 	virtual ~ItemInterface() = default;
 };
