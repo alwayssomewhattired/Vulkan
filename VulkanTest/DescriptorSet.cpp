@@ -122,7 +122,7 @@ void DescriptorSet::createMandelbulbComputeDescriptorSets() {
 	mandelbulbComputeDescriptorSets.resize(Constants::MAX_FRAMES_IN_FLIGHT);
 
 	std::vector<VkDescriptorSetLayout> layouts(Constants::MAX_FRAMES_IN_FLIGHT, 
-		m_DescriptorSetLayout->mandelbulbComputeDescriptorSetLayout);
+		m_DescriptorSetLayout.mandelbulbComputeDescriptorSetLayout);
 
 	VkDescriptorSetAllocateInfo allocInfo{};
 	allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;

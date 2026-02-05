@@ -18,6 +18,8 @@ public:
 
 	void createUniformBuffers();
 
+	void createUniformBuffer(const size_t& UBOSize);
+
 	void updateUniformBuffer(uint32_t currentImage);
 
 	void updateMandelbulbUBO(uint32_t currentImage);

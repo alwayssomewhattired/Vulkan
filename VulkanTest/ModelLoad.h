@@ -13,6 +13,7 @@
 #include "items/ItemInterface.h"
 #include "Vertex.h"
 #include "Buffer.h"
+#include "CommandBuffer.h"
 #include "Texture.h"
 
 // | model loader AND safe-room model class
@@ -22,9 +23,10 @@ class ModelLoad
 public:
 
 	ModelLoad(VkDevice device, VkPhysicalDevice physicalDevice, VkCommandPool commandPool, VkQueue graphicsQueue,
-		std::function<void(VkDeviceSize, VkBufferUsageFlags, VkMemoryPropertyFlags, VkBuffer&, VkDeviceMemory&)> createBufferFn,
-		std::function<void(VkBuffer, VkBuffer, VkDeviceSize)> copyBuffer, Buffer& buffer, Texture& texture
+		Buffer& buffer, CommandBuffer& commandBuffer, Texture& texture
 		);
+
+
 
 	// | loads model and fills in class
 	void loadModel(const std::string& path, ItemInterface& classReference);
@@ -36,10 +38,9 @@ private:
 	VkCommandPool commandPool;
 	VkQueue graphicsQueue;
 
-	std::function<void(VkDeviceSize, VkBufferUsageFlags, VkMemoryPropertyFlags, VkBuffer&, VkDeviceMemory&)> createBufferFn;
-	std::function<void(VkBuffer, VkBuffer, VkDeviceSize)> copyBufferFn;
 
 	Buffer& m_Buffer;
+	CommandBuffer& m_CommandBuffer;
 	Texture& m_Texture; 
 
 	//void uploadGltfTextureToVulkan(tinygltf::Model& model, int& textureIndex, ItemInterface& classReference);

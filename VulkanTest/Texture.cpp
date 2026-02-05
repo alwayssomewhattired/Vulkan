@@ -91,19 +91,16 @@ void Texture::generateMipmaps(VkImage image, VkFormat imageFormat, int32_t texWi
 }
 
 // | updates outTexture struct. does more than just create images...
+// | must be called if supplying an independent texture
 // * isDefault : if true, creates default 1x1 texture
 // * texturePath(optional) : path to seperate texture
-// * pixelData(optional) : for pixel data of seperate texture
+// * pixelData(optional) : for pixel data of texture
 // * outTexture(optional) : for struct of attached texture
-// - note: this now also creates views and sampler. make the other calls to them two functinos  after this function go away. 
-// possibly make these two 
-// member functions private.
 void Texture::createTextureImage(const bool isDefault, const std::string& texturePath, const uint8_t* pixelData, 
 	GPUTexture& outTexture, const VkFormat& format) {
 	int texWidth, texHeight, texChannels;
 
-	// - double check if this is correct
-	if (isDefault) {
+	if (!pixelData) {
 		texWidth = 1;
 		texHeight = 1;
 		texChannels = 4;
@@ -111,7 +108,7 @@ void Texture::createTextureImage(const bool isDefault, const std::string& textur
 	else if (!texturePath.empty())
 		pixelData = stbi_load(texturePath.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
 
-	if (!isDefault)
+	if (pixelData)
 		mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(texWidth, texHeight)))) + 1;
 	else
 		mipLevels = 1;
@@ -132,7 +129,7 @@ void Texture::createTextureImage(const bool isDefault, const std::string& textur
 	memcpy(data, pixelData, static_cast<size_t>(imageSize));
 	vkUnmapMemory(m_Devices.device, stagingBufferMemory);
 
-	if (!isDefault)
+	if (!texturePath.empty())
 		stbi_image_free((void*)pixelData);
 
 	m_Image.createImage(
@@ -174,11 +171,6 @@ void Texture::createTextureImage(const bool isDefault, const std::string& textur
 
 }
 
-// | not needed anymore. createImageView does everything for us
-//void Texture::createTextureImageView() {
-//	textureImageView = m_Image.createImageView(textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, mipLevels);
-//}
-
 void Texture::createTextureSampler(const uint32_t& mipLevels, Texture::GPUTexture& outTex) {
 	VkSamplerCreateInfo samplerInfo{};
 	samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
@@ -209,17 +201,25 @@ void Texture::createTextureSampler(const uint32_t& mipLevels, Texture::GPUTextur
 		throw std::runtime_error("failed to create texture sampler!");
 }
 
-void Texture::uploadGltfTextureToVulkan(tinygltf::Model& model, int& textureIndex, ItemInterface& classReference) {
+int Texture::uploadGltfTextureToVulkan(tinygltf::Model& model, int& textureIndex, ItemInterface& classReference, 
+	const VkFormat& format) {
 	const tinygltf::Texture& texture = model.textures[textureIndex];
 	const tinygltf::Image& image = model.images[texture.source];
+	// - use sampler at some point
 	const tinygltf::Sampler& sampler = model.samplers[texture.sampler];
 
-	// do all the stuff here 
+	GPUTexture gpuTex{};
 
-	classReference.gpuTextures()[textureIndex];
+	const uint8_t* pixelData = image.image.data();
+	createTextureImage(false, "", pixelData, gpuTex, format);
+
+	classReference.gpuTextures().push_back(gpuTex);
+
+	return static_cast<int>(classReference.gpuTextures().size() - 1);
 }
 
 void Texture::buildGPUMaterial(tinygltf::Model& model, int& materialIndex, ItemInterface& classReference) {
+
 	const tinygltf::Material& material = model.materials[materialIndex];
 
 	GPUMaterial mat{};
@@ -233,9 +233,13 @@ void Texture::buildGPUMaterial(tinygltf::Model& model, int& materialIndex, ItemI
 	// handle missing textures
 	if (mat.baseColorTex < 0)
 		mat.baseColorTex = Constants::DEFAULT_WHITE_TEXTURE_INDEX;
+	else
+		mat.baseColorTex = uploadGltfTextureToVulkan(model, materialIndex, classReference, VK_FORMAT_R8G8B8A8_SRGB);
 
 	if (mat.normalTex < 0)
 		mat.normalTex = Constants::DEFAULT_NORMAL_TEXTURE_INDEX;
+	else
+		mat.normalTex = uploadGltfTextureToVulkan(model, materialIndex, classReference, VK_FORMAT_R8G8B8A8_UNORM);
 
 	classReference.gpuMaterials()[materialIndex] = mat;
 }

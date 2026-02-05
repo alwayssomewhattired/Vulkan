@@ -44,3 +44,4 @@ void CommandBuffer::copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceS
 
 	endSingleTimeCommands(commandBuffer);
 }
+
