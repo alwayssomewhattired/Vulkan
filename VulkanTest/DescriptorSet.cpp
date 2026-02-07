@@ -1,8 +1,10 @@
 #include "DescriptorSet.h"
 
 
-DescriptorSet::DescriptorSet(DescriptorSetLayout& descriptorSetLayout, Devices& devices, UniformBuffer& uniformBuffer) : 
-	m_DescriptorSetLayout(descriptorSetLayout), m_Devices(devices), m_UniformBuffer(uniformBuffer) {}
+DescriptorSet::DescriptorSet(DescriptorSetLayout& descriptorSetLayout, Devices& devices, UniformBuffer& uniformBuffer, 
+	StorageImageManager& storageImageManager) : 
+	m_DescriptorSetLayout(descriptorSetLayout), m_Devices(devices), m_UniformBuffer(uniformBuffer),
+	m_StorageImageManager(storageImageManager) {}
 
 void DescriptorSet::createDescriptorPool() {
 	const uint32_t descriptorCount = 4;
@@ -144,7 +146,7 @@ void DescriptorSet::createMandelbulbComputeDescriptorSets() {
 
 		// Storage image
 		VkDescriptorImageInfo imageInfo{};
-		imageInfo.imageView = storageImageView; // created with STORAGE_IMAGE usage
+		imageInfo.imageView = m_StorageImageManager.m_GPUStorageImage.view(); // created with STORAGE_IMAGE usage
 		imageInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL; // for storage image writes
 
 		std::array<VkWriteDescriptorSet, 2> writes{};
@@ -172,7 +174,7 @@ void DescriptorSet::createMandelbulbComputeDescriptorSets() {
 void DescriptorSet::createMandelbulbGraphicsDescriptorSets() {
 	mandelbulbGraphicsDescriptorSets.resize(Constants::MAX_FRAMES_IN_FLIGHT);
 	std::vector<VkDescriptorSetLayout> layouts(Constants::MAX_FRAMES_IN_FLIGHT, 
-		m_DescriptorSetLayout->mandelbulbGraphicsDescriptorSetLayout);
+		m_DescriptorSetLayout.mandelbulbGraphicsDescriptorSetLayout);
 	VkDescriptorSetAllocateInfo allocInfo{};
 	allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
 	allocInfo.descriptorPool = descriptorPool;
@@ -182,14 +184,14 @@ void DescriptorSet::createMandelbulbGraphicsDescriptorSets() {
 	if (vkAllocateDescriptorSets(m_Devices.device, &allocInfo, mandelbulbGraphicsDescriptorSets.data()) != VK_SUCCESS)
 		throw std::runtime_error("failed to allocate mandelbulb descriptor sets!");
 
-	createMandelbulbSampler();
+	m_StorageImageManager.createMandelbulbSampler();
 
 	for (size_t i = 0; i < Constants::MAX_FRAMES_IN_FLIGHT; i++) {
 
 		// binding 0: sample image (output of computer shader)
 		VkDescriptorImageInfo imgInfo{};
-		imgInfo.sampler = mandelbulbSampler;
-		imgInfo.imageView = storageImageView;
+		imgInfo.sampler = m_StorageImageManager.mandelbulbSampler;
+		imgInfo.imageView = m_StorageImageManager.m_GPUStorageImage.view();
 		imgInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
 		// binding 1: UBO

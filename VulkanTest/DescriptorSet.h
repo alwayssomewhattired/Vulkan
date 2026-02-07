@@ -8,11 +8,13 @@
 #include "Devices.h"
 #include "UniformBuffer.h"
 #include "items/ItemInterface.h"
+#include "StorageImageManager.h"
 
 class DescriptorSet
 {
 public:
-	DescriptorSet(DescriptorSetLayout& descriptorSetLayout, Devices& devices, UniformBuffer& uniformBuffer);
+	DescriptorSet(DescriptorSetLayout& descriptorSetLayout, Devices& devices, UniformBuffer& uniformBuffer, 
+		StorageImageManager& storageImageManager);
 	// | GEOMETRY
 	void createMeshDescriptorSets(ItemInterface& classReference);
 	void createMandelbulbComputeDescriptorSets();
@@ -29,5 +31,7 @@ private:
 	Devices& m_Devices;
 	DescriptorSetLayout& m_DescriptorSetLayout;
 	UniformBuffer& m_UniformBuffer;
+	StorageImageManager& m_StorageImageManager;
+
 };
 

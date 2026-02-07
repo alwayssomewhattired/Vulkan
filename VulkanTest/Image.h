@@ -8,6 +8,7 @@
 #include "Devices.h"
 #include "CommandBuffer.h"
 #include "Texture.h"
+#include "Interface.h"
 
 class Image
 {
@@ -20,7 +21,7 @@ public:
 		uint32_t mipLevels);
 	void copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
 	void createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags, uint32_t mipLevels,
-		Texture::GPUTexture& outTexture);
+		ImageBundle& outTexture);
 private:
 	Devices& m_Devices;
 	CommandBuffer& m_CommandBuffer;

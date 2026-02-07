@@ -20,6 +20,7 @@ public:
 
 	static uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties, const VkPhysicalDevice& physicalDevice);
 	VkSampleCountFlagBits getMaxUsableSampleCount();
+	VkFormat findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
 
 	struct QueueFamilyIndices {
 		std::optional<uint32_t> graphicsFamily;

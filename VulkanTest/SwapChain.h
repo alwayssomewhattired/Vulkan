@@ -16,6 +16,8 @@ public:
 	VkFormat swapChainImageFormat;
 	VkExtent2D swapChainExtent;
 	size_t swapChainImageCount = swapChainImages.size();
+	std::vector<VkFramebuffer> swapChainFramebuffers;
+	std::vector<VkImageView> swapChainImageViews;
 
 private:
 	Devices& m_Devices;

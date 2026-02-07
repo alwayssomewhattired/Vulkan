@@ -131,6 +131,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="AttachmentManager.cpp" />
     <ClCompile Include="Buffer.cpp" />
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="CommandBuffer.cpp" />
@@ -147,7 +148,9 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="MathConfig.hpp" />
     <ClCompile Include="ModelLoad.cpp" />
+    <ClCompile Include="RenderPass.cpp" />
     <ClCompile Include="Shaders.cpp" />
+    <ClCompile Include="StorageImageManager.cpp" />
     <ClCompile Include="SwapChain.cpp" />
     <ClCompile Include="Texture.cpp" />
     <ClCompile Include="tinygltf_impl.cpp" />
@@ -161,6 +164,7 @@
     <None Include="shaders\shader.vert" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="AttachmentManager.h" />
     <ClInclude Include="Buffer.h" />
     <ClInclude Include="Camera.h" />
     <ClInclude Include="CommandBuffer.h" />
@@ -173,11 +177,14 @@
     <ClInclude Include="HostToDevice.h" />
     <ClInclude Include="Image.h" />
     <ClInclude Include="Initialize.h" />
+    <ClInclude Include="Interface.h" />
     <ClInclude Include="items\Home.h" />
     <ClInclude Include="items\ItemInterface.h" />
     <ClInclude Include="items\SilentHill3Game.h" />
     <ClInclude Include="ModelLoad.h" />
+    <ClInclude Include="RenderPass.h" />
     <ClInclude Include="Shaders.h" />
+    <ClInclude Include="StorageImageManager.h" />
     <ClInclude Include="SwapChain.h" />
     <ClInclude Include="Texture.h" />
     <ClInclude Include="Triangle.h" />

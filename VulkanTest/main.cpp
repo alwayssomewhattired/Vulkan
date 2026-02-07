@@ -11,8 +11,10 @@
 #include "Devices.h"
 #include "SwapChain.h"
 #include "DescriptorSetLayout.h"
+#include "RenderPass.h"
 #include "GraphicsPipeline.h"
 #include "CommandPool.h"
+#include "AttachmentManager.h"
 #include "CommandBuffer.h"
 #include "Buffer.h"
 #include "Image.h"
@@ -22,9 +24,9 @@
 #include "Camera.h"
 #include "Vertex.h"
 #include "Constants.h"
-#include "HostToDevice.h"
 #include "UniformBuffer.h"
 #include "DescriptorSet.h"
+#include "StorageImageManager.h"
 #include "items/Home.h"
 #include "items/SilentHill3Game.h"
 
@@ -111,9 +113,13 @@ private:
 
 	std::unique_ptr<Shaders> m_Shaders = nullptr;
 
+	std::unique_ptr<RenderPass> m_RenderPass = nullptr;
+
 	std::unique_ptr<GraphicsPipeline> m_GraphicsPipeline = nullptr;
 
 	std::unique_ptr<CommandPool> m_CommandPool = nullptr;
+
+	std::unique_ptr<AttachmentManager> m_AttachmentManager = nullptr;
 
 	std::unique_ptr<CommandBuffer> m_CommandBuffer = nullptr;
 
@@ -132,6 +138,8 @@ private:
 
 	std::unique_ptr<DescriptorSet> m_DescriptorSet = nullptr;
 
+	std::unique_ptr<StorageImageManager> m_StorageImageManager = nullptr;
+
 	/// 
 	///
 	/// 
@@ -147,20 +155,6 @@ private:
 
 	std::unique_ptr<ModelLoad> model;
 
-	VkImage depthImage;
-	VkDeviceMemory depthImageMemory;
-	VkImageView depthImageView;
-
-	VkImage storageImage;
-	VkDeviceMemory storageImageMemory;
-	VkImageView storageImageView;
-
-	VkImage colorImage;
-	VkDeviceMemory colorImageMemory;
-	VkImageView colorImageView;
-
-	VkSampler mandelbulbSampler;
-
 	bool rotationEnabled = false;
 
 	VkBuffer indexBuffer;
@@ -173,14 +167,6 @@ private:
 	std::vector<VkSemaphore> renderFinishedSemaphores;
 	std::vector<VkFence> imagesInFlight;
 	std::vector<VkFence> inFlightFences;
-
-	std::vector<VkCommandBuffer> commandBuffers;
-
-	std::vector<VkFramebuffer> swapChainFramebuffers;
-
-	VkRenderPass renderPass;
-
-	std::vector<VkImageView> swapChainImageViews;
 
 	uint32_t currentFrame = 0;
 	bool framebufferResized = false;
@@ -220,8 +206,10 @@ private:
 
 		m_Shaders = std::make_unique<Shaders>(*m_device);
 
+		m_RenderPass = std::make_unique<RenderPass>(*m_devices, *m_SwapChain);
+
 		m_GraphicsPipeline = std::make_unique<GraphicsPipeline>(*m_Shaders, *m_device, *m_SwapChain, *m_msaaSamples,
-			*m_DescriptorSetLayout, renderPass);
+			*m_DescriptorSetLayout, m_RenderPass->renderPass);
 
 		m_CommandPool = std::make_unique<CommandPool>();
 		// make command buffer + buffer here
@@ -239,17 +227,19 @@ private:
 		m_SwapChain->createSwapChain();
 		m_swapChainImageCount = std::make_unique<size_t>(m_SwapChain->swapChainImageCount);
 		createImageViews();
-		createRenderPass();
 		m_DescriptorSetLayout->createMeshDescriptorSetLayout();
 		m_DescriptorSetLayout->createMandelbulbComputeDescriptorSetLayout();
 		m_DescriptorSetLayout->createMandelbulbGraphicsDescriptorSetLayout();
 
+		m_AttachmentManager = std::make_unique<AttachmentManager>(*m_SwapChain, *m_msaaSamples, *m_Image, *m_devices);
+		m_AttachmentManager->createColorResources();
+		m_AttachmentManager->createDepthResources();
+		m_RenderPass->createRenderPass(*m_AttachmentManager);
+
 		m_GraphicsPipeline->createGraphicsPipeline();
 		m_CommandPool->createCommandPool(*m_devices);
-		//createCommandPool();
-		createColorResources();//
-		createDepthResources();//
-		createFramebuffers();//
+
+		m_RenderPass->createFramebuffers(m_AttachmentManager->m_GPUColor.view(), m_AttachmentManager->m_GPUDepth.view());
 
 		createModel();
 		// | we create texture image AFTER we load model file
@@ -271,7 +261,8 @@ private:
 		m_DescriptorSet = std::make_unique<DescriptorSet>(*m_DescriptorSetLayout, *m_devices, *m_UniformBuffer);
 		m_DescriptorSet->createDescriptorPool();
 
-		createStorageImageResources();
+		m_StorageImageManager = std::make_unique<StorageImageManager>(*m_Image, *m_SwapChain, *m_devices);
+		m_StorageImageManager->createStorageImageResources();
 		createDescriptorSets();
 		m_DescriptorSet->createMandelbulbComputeDescriptorSets();
 		m_DescriptorSet->createMandelbulbGraphicsDescriptorSets();
@@ -427,97 +418,6 @@ private:
 	}
 
 
-	VkFormat findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features) {
-		for (VkFormat format : candidates) {
-			VkFormatProperties props;
-			vkGetPhysicalDeviceFormatProperties(*m_physicalDevice, format, &props);
-
-			if (tiling == VK_IMAGE_TILING_LINEAR && (props.linearTilingFeatures & features) == features) {
-				return format;
-			}
-			else if (tiling == VK_IMAGE_TILING_OPTIMAL && (props.optimalTilingFeatures & features) == features) {
-				return format;
-			}
-		}
-
-		throw std::runtime_error("failed to find supported format!");
-	}
-
-	VkFormat findDepthFormat() {
-		return findSupportedFormat(
-			{ VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT },
-			VK_IMAGE_TILING_OPTIMAL,
-			VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT
-		);
-	}
-
-	bool hasStencilComponent(VkFormat format) {
-		return format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT;
-	}
-
-	// create attachment manager class for this
-	void createColorResources() {
-		VkFormat colorFormat = m_SwapChain->swapChainImageFormat;
-
-		createImage(m_SwapChain->swapChainExtent.width, m_SwapChain->swapChainExtent.height, 1, *m_msaaSamples, colorFormat, VK_IMAGE_TILING_OPTIMAL,
-			VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, colorImage, colorImageMemory);
-		colorImageView = createImageView(colorImage, colorFormat, VK_IMAGE_ASPECT_COLOR_BIT, 1);
-	}
-
-	void createDepthResources() {
-		VkFormat depthFormat = findDepthFormat();
-
-		createImage(m_SwapChain->swapChainExtent.width, m_SwapChain->swapChainExtent.height, 1, *m_msaaSamples, depthFormat, VK_IMAGE_TILING_OPTIMAL,
-			VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, depthImage, depthImageMemory);
-		depthImageView = createImageView(depthImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT, 1);
-	}
-
-	// | FOR COMPUTE SHADER
-
-	// create storage image manager class for this
-	void createStorageImageResources() {
-		VkFormat format = VK_FORMAT_R8G8B8A8_UNORM;
-
-		createImage(m_SwapChain->swapChainExtent.width, m_SwapChain->swapChainExtent.height, 1, VK_SAMPLE_COUNT_1_BIT, format,
-			VK_IMAGE_TILING_OPTIMAL,
-			VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
-			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-			storageImage, storageImageMemory
-		);
-		storageImageView = createImageView(storageImage, format, VK_IMAGE_ASPECT_COLOR_BIT, 1);
-	}
-
-
-	void createMandelbulbSampler() {
-		VkSamplerCreateInfo samplerInfo{};
-		samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-		samplerInfo.magFilter = VK_FILTER_LINEAR;
-		samplerInfo.minFilter = VK_FILTER_LINEAR;
-
-		samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-		samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-		samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-
-		samplerInfo.anisotropyEnable = VK_FALSE;
-		samplerInfo.maxAnisotropy = 1.0f;
-
-		samplerInfo.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_BLACK;
-		samplerInfo.unnormalizedCoordinates = VK_FALSE;
-
-		samplerInfo.compareEnable = VK_FALSE;
-		samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
-
-		samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-		samplerInfo.minLod = 0.0f;
-		samplerInfo.maxLod = 0.0f;
-		samplerInfo.mipLodBias = 0.0f;
-
-		if (vkCreateSampler(*m_device, &samplerInfo, nullptr, &mandelbulbSampler) != VK_SUCCESS) {
-			throw std::runtime_error("failed to create sampler for mandelbulb");
-		}
-
-	}
-
 
 	void createSyncObjects() {
 
@@ -545,22 +445,6 @@ private:
 				throw std::runtime_error("failed to create per-image sync objects!");
 			}
 		}
-	}
-
-
-	void createCommandBuffers() {
-
-		commandBuffers.resize(*m_swapChainImageCount);
-
-		VkCommandBufferAllocateInfo allocInfo{};
-		allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-		allocInfo.commandPool = commandPool;
-		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-		allocInfo.commandBufferCount = (uint32_t)commandBuffers.size();
-
-		if (vkAllocateCommandBuffers(*m_device, &allocInfo, commandBuffers.data()) != VK_SUCCESS)
-			throw std::runtime_error("failed to allocate command buffers");
-
 	}
 
 
@@ -730,106 +614,6 @@ private:
 
 		if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS)
 			throw std::runtime_error("failed to record command buffer");
-	}
-
-
-	void createFramebuffers() {
-		swapChainFramebuffers.resize(swapChainImageViews.size());
-
-		for (size_t i = 0; i < swapChainImageViews.size(); i++) {
-			std::array<VkImageView, 3> attachments = {
-				colorImageView,
-				depthImageView,
-				swapChainImageViews[i]
-			};
-
-			VkFramebufferCreateInfo framebufferInfo{};
-			framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-			framebufferInfo.renderPass = renderPass;
-			framebufferInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
-			framebufferInfo.pAttachments = attachments.data();
-			framebufferInfo.width = m_SwapChain->swapChainExtent.width;
-			framebufferInfo.height = m_SwapChain->swapChainExtent.height;
-			framebufferInfo.layers = 1;
-
-			if (vkCreateFramebuffer(*m_device, &framebufferInfo, nullptr, &swapChainFramebuffers[i]) != VK_SUCCESS)
-				throw std::runtime_error("failed to create framebuffer!");
-		}
-	}
-
-
-
-	void createRenderPass() {
-		VkAttachmentDescription colorAttachment{};
-		colorAttachment.format = m_SwapChain->swapChainImageFormat;
-		colorAttachment.samples = *m_msaaSamples;
-		colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-		colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-		colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-		colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-		colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		colorAttachment.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-		VkAttachmentReference colorAttachmentRef{};
-		colorAttachmentRef.attachment = 0;
-		colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-		VkAttachmentDescription colorAttachmentResolve{};
-		colorAttachmentResolve.format = m_SwapChain->swapChainImageFormat;
-		colorAttachmentResolve.samples = VK_SAMPLE_COUNT_1_BIT;
-		colorAttachmentResolve.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-		colorAttachmentResolve.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-		colorAttachmentResolve.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-		colorAttachmentResolve.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-		colorAttachmentResolve.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		colorAttachmentResolve.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-
-		VkAttachmentReference colorAttachmentResolveRef{};
-		colorAttachmentResolveRef.attachment = 2;
-		colorAttachmentResolveRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-		VkAttachmentDescription depthAttachment{};
-		depthAttachment.format = findDepthFormat();
-		depthAttachment.samples = *m_msaaSamples;
-		depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-		depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-		depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-		depthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-		depthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		depthAttachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-
-		VkAttachmentReference depthAttachmentRef{};
-		depthAttachmentRef.attachment = 1;
-		depthAttachmentRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-
-		VkSubpassDescription subpass{};
-		subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-		subpass.colorAttachmentCount = 1;
-		subpass.pColorAttachments = &colorAttachmentRef;
-		subpass.pDepthStencilAttachment = &depthAttachmentRef;
-		subpass.pResolveAttachments = &colorAttachmentResolveRef;
-
-		VkSubpassDependency dependency{};
-		dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
-		dependency.dstSubpass = 0;
-		dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
-		dependency.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-		dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
-		dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-
-		std::array<VkAttachmentDescription, 3> attachments = { colorAttachment, depthAttachment, colorAttachmentResolve };
-		VkRenderPassCreateInfo renderPassInfo{};
-		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-		renderPassInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
-		renderPassInfo.pAttachments = attachments.data();
-		renderPassInfo.subpassCount = 1;
-		renderPassInfo.pSubpasses = &subpass;
-		renderPassInfo.dependencyCount = 1;
-		renderPassInfo.pDependencies = &dependency;
-
-		if (vkCreateRenderPass(*m_device, &renderPassInfo, nullptr, &renderPass) != VK_SUCCESS)
-			throw std::runtime_error("failed to create render pass!");
-
 	}
 
 

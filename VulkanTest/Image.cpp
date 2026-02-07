@@ -114,7 +114,7 @@ void Image::copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, ui
 }
 
 void Image::createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags, uint32_t mipLevels, 
-	Texture::GPUTexture& outTexture) {
+	ImageBundle& outTexture) {
 	VkImageViewCreateInfo viewInfo{};
 	viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
 	viewInfo.image = image;
