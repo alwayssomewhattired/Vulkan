@@ -34,4 +34,7 @@ public:
 		glm::mat4 view;
 		glm::mat4 proj;
 	};
+
+	double lastX = 0, lastY = 0;
+	bool firstMouse = true;
 };

@@ -29,6 +29,7 @@
 #include "StorageImageManager.h"
 #include "items/Home.h"
 #include "items/SilentHill3Game.h"
+#include "RenderTarget.h"
 
 
 #include <iostream>
@@ -46,12 +47,11 @@
 #include <unordered_map>
 #include <cmath>
 #include <memory>
+#include "items/ItemInterface.h"
 
 const uint32_t WIDTH = 800;
 const uint32_t HEIGHT = 600;
 const int MAX_FRAMES_IN_FLIGHT = Constants::MAX_FRAMES_IN_FLIGHT;
-bool renderTriangle = false;
-bool renderMandelbulb = true;
 
 const std::string TEXTURE_PATH = "textures/Metal055C_8K-PNG_Color.png";
 
@@ -73,13 +73,6 @@ namespace std {
 		}
 	};
 }
-
-
-// camera globals
-Camera camera;
-bool cameraEnabled = true;
-double lastX = 0, lastY = 0;
-bool firstMouse = true;
 
 
 class HelloTriangleApplication
@@ -154,8 +147,6 @@ private:
 	VkInstance instance;
 
 	std::unique_ptr<ModelLoad> model;
-
-	bool rotationEnabled = false;
 
 	VkBuffer indexBuffer;
 	VkDeviceMemory indexBufferMemory;
@@ -273,8 +264,17 @@ private:
 		std::cout << "Vulkan Engine Initialized\n";
 	}
 
+	// | Callbacks
+	// | These need to be in here because
+	// | they reference the main class
 
-	static void framebufferResizeCallback(GLFWwindow* window, int width, int height) {
+	void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
+		HelloTriangleApplication* app = reinterpret_cast<HelloTriangleApplication*>(glfwGetWindowUserPointer(window));
+		if (app)
+			app->onKey(key, scancode, action, mods);
+	}
+
+	void framebufferResizeCallback(GLFWwindow* window, int width, int height) {
 		auto app = reinterpret_cast<HelloTriangleApplication*>(glfwGetWindowUserPointer(window));
 		app->framebufferResized = true;
 	}
@@ -344,57 +344,6 @@ private:
 	}
 
 
-	// CALLBACKS
-	//
-	//
-	static void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
-		HelloTriangleApplication* app = reinterpret_cast<HelloTriangleApplication*>(glfwGetWindowUserPointer(window));
-		if (app)
-			app->onKey(key, scancode, action, mods);
-	}
-
-	void onKey(int key, int scancode, int action, int mods) {
-
-		if (key == GLFW_KEY_P && action == GLFW_PRESS) {
-			cameraEnabled = !cameraEnabled;
-
-			if (cameraEnabled)
-				glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-			else
-				glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-		}
-		else if (key == GLFW_KEY_T && action == GLFW_PRESS) {
-			if (renderTriangle)
-				renderTriangle = false;
-			else
-				renderTriangle = true;
-		}
-		else if (key == GLFW_KEY_M && action == GLFW_PRESS) {
-			renderMandelbulb = !renderMandelbulb;
-		}
-		else if (key == GLFW_KEY_G && action == GLFW_PRESS) {
-			rotationEnabled = !rotationEnabled;
-		}
-	}
-
-
-	static void mouse_callback(GLFWwindow* window, double xpos, double ypos) {
-
-		if (firstMouse) {
-			lastX = (float)xpos;
-			lastY = (float)ypos;
-			firstMouse = false;
-		}
-
-		float xoffset = (float)xpos - lastX;
-		float yoffset = lastY - (float)ypos; // reversed y
-
-		lastX = (float)xpos;
-		lastY = (float)ypos;
-
-		camera.ProcessMouseMovement(xoffset, yoffset);
-	}
-
 
 	void createSurface()
 	{
@@ -448,174 +397,6 @@ private:
 	}
 
 
-	void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex) {
-		VkCommandBufferBeginInfo beginInfo{};
-		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-		beginInfo.flags = 0;
-		beginInfo.pInheritanceInfo = nullptr;
-
-		if (vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS)
-			throw std::runtime_error("failed to begin recording command buffer!");
-
-		VkRenderPassBeginInfo renderPassInfo{};
-		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-		renderPassInfo.renderPass = renderPass;
-		renderPassInfo.framebuffer = swapChainFramebuffers[imageIndex];
-		renderPassInfo.renderArea.offset = { 0, 0 };
-		renderPassInfo.renderArea.extent = m_SwapChain->swapChainExtent;
-
-		std::array<VkClearValue, 2> clearValues{};
-		clearValues[0].color = { {0.0f, 0.0f, 0.0f, 1.0f} };
-		clearValues[1].depthStencil = { 1.0f, 0 };
-
-		renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
-		renderPassInfo.pClearValues = clearValues.data();
-
-		VkViewport viewport{};
-		viewport.x = 0.0f;
-		viewport.y = 0.0f;
-		viewport.width = static_cast<float>(m_SwapChain->swapChainExtent.width);
-		viewport.height = static_cast<float>(m_SwapChain->swapChainExtent.height);
-		viewport.minDepth = 0.0f;
-		viewport.maxDepth = 1.0f;
-		vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
-
-		VkRect2D scissor{};
-		scissor.offset = { 0, 0 };
-		scissor.extent = m_SwapChain->swapChainExtent;
-		vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
-
-		vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-
-		// model
-		if (!renderTriangle && !renderMandelbulb) {
-
-			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_GraphicsPipeline->graphicsPipeline);
-			{
-				VkBuffer vertexBuffers[] = { m_home->m_vertexBuffer };
-				VkDeviceSize offsets[] = { 0 };
-				vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
-
-				vkCmdBindIndexBuffer(commandBuffer, m_home->m_indexBuffer, 0, m_home->m_indexType);
-
-				vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_GraphicsPipeline->pipelineLayout, 0, 1, 
-					&descriptorSets[currentFrame], 0, nullptr);
-
-				vkCmdDrawIndexed(commandBuffer, m_home->m_indexCount, 1, 0, 0, 0);
-			}
-
-			{
-				VkBuffer vertexBuffers[] = { m_SilentHill3Game->m_vertexBuffer };
-				VkDeviceSize offsets[] = { 0 };
-				vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
-
-				vkCmdBindIndexBuffer(commandBuffer, m_SilentHill3Game->m_indexBuffer, 0, m_SilentHill3Game->m_indexType);
-
-				vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_GraphicsPipeline->pipelineLayout, 0, 1,
-					&descriptorSets[currentFrame], 0, nullptr);
-
-				vkCmdDrawIndexed(commandBuffer, m_SilentHill3Game->m_indexCount, 1, 0, 0, 0);
-			}
-		}
-		// mandelbulb
-		else if (!renderTriangle && renderMandelbulb) {
-				//
-				// COMPUTE PHASE
-				//
-				vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_GraphicsPipeline->mandelbulbComputePipeline);
-
-				vkCmdBindDescriptorSets(
-					commandBuffer,
-					VK_PIPELINE_BIND_POINT_COMPUTE,
-					m_GraphicsPipeline->mandelbulbPipelineComputeLayout,
-					0,
-					1,
-					&mandelbulbComputeDescriptorSets[currentFrame],
-					0,
-					nullptr
-				);
-
-				// Ensure image in GENERAL layout
-				VkImageMemoryBarrier barrierToGeneral = {};
-				barrierToGeneral.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-				barrierToGeneral.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-				barrierToGeneral.newLayout = VK_IMAGE_LAYOUT_GENERAL;
-				barrierToGeneral.srcAccessMask = 0;
-				barrierToGeneral.dstAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
-				barrierToGeneral.image = storageImage;
-				barrierToGeneral.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-				barrierToGeneral.subresourceRange.levelCount = 1;
-				barrierToGeneral.subresourceRange.layerCount = 1;
-
-				vkCmdPipelineBarrier(
-					commandBuffer,
-					VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-					VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-					0, 0, nullptr, 0, nullptr,
-					1, &barrierToGeneral
-				);
-
-				// Dispatch
-				uint32_t groupX = (m_SwapChain->swapChainExtent.width + 15) / 16;
-				uint32_t groupY = (m_SwapChain->swapChainExtent.height + 15) / 16;
-				vkCmdDispatch(commandBuffer, groupX, groupY, 1);
-
-				// Make writes visible to fragment shader
-				VkImageMemoryBarrier barrierToRead = {};
-				barrierToRead.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-				barrierToRead.oldLayout = VK_IMAGE_LAYOUT_GENERAL;
-				barrierToRead.newLayout = VK_IMAGE_LAYOUT_GENERAL;
-				//barrierToRead.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-				barrierToRead.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
-				barrierToRead.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-				barrierToRead.image = storageImage;
-				barrierToRead.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-				barrierToRead.subresourceRange.levelCount = 1;
-				barrierToRead.subresourceRange.layerCount = 1;
-
-				vkCmdPipelineBarrier(
-					commandBuffer,
-					VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-					VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-					0, 0, nullptr, 0, nullptr,
-					1, &barrierToRead
-				);
-
-				//
-				// GRAPHICS PHASE
-				//
-				vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_GraphicsPipeline->mandelbulbGraphicsPipeline);
-
-				vkCmdBindDescriptorSets(
-					commandBuffer,
-					VK_PIPELINE_BIND_POINT_GRAPHICS,
-					m_GraphicsPipeline->mandelbulbPipelineGraphicsLayout,
-					0, 1,
-					&mandelbulbGraphicsDescriptorSets[currentFrame],
-					0, nullptr
-				);
-
-				vkCmdDraw(commandBuffer, 3, 1, 0, 0);
-		} 
-		// triangle
-		else if (renderTriangle && !renderMandelbulb){
-			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_GraphicsPipeline->graphicsPipeline);
-
-			VkBuffer triangleVertexBuffers[] = { triangleVertexBuffer };
-			VkDeviceSize triangleOffsets[] = { 0 };
-			vkCmdBindVertexBuffers(commandBuffer, 0, 1, triangleVertexBuffers, triangleOffsets);
-
-			vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_GraphicsPipeline->pipelineLayout, 0, 1, &descriptorSets[currentFrame], 0, nullptr);
-
-			vkCmdDraw(commandBuffer, 3, 1, 0, 0);
-		}
-
-		vkCmdEndRenderPass(commandBuffer);
-
-		if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS)
-			throw std::runtime_error("failed to record command buffer");
-	}
-
 
 
 	void createImageViews() {
@@ -624,45 +405,6 @@ private:
 		for (size_t i = 0; i < m_SwapChain->swapChainImages.size(); i++) {
 			swapChainImageViews[i] = createImageView(m_SwapChain->swapChainImages[i], m_SwapChain->swapChainImageFormat, VK_IMAGE_ASPECT_COLOR_BIT, 1);
 		}
-	}
-
-
-	void cleanupSwapChain() {
-		vkDestroyImage(*m_device, colorImage, nullptr);
-		vkDestroyImageView(*m_device, colorImageView, nullptr);
-		vkFreeMemory(*m_device, colorImageMemory, nullptr);
-		vkDestroyImageView(*m_device, depthImageView, nullptr);
-		vkDestroyImage(*m_device, depthImage, nullptr);
-		vkFreeMemory(*m_device, depthImageMemory, nullptr);
-
-		for (auto framebuffer : swapChainFramebuffers) {
-			vkDestroyFramebuffer(*m_device, framebuffer, nullptr);
-		}
-
-		for (auto imageView : swapChainImageViews) {
-			vkDestroyImageView(*m_device, imageView, nullptr);
-		}
-
-		vkDestroySwapchainKHR(*m_device, m_SwapChain->swapChain, nullptr);
-	}
-
-	void recreateSwapChain() {
-		int width = 0, height = 0;
-		while (width == 0 || height == 0) {
-			glfwGetFramebufferSize(window, &width, &height);
-			glfwWaitEvents();
-		}
-
-		vkDeviceWaitIdle(*m_device);
-
-		cleanupSwapChain();
-
-		m_SwapChain->createSwapChain();
-		createImageViews();
-		createColorResources();
-		createDepthResources();
-		createFramebuffers();
-		createSyncObjects();
 	}
 
 
@@ -701,6 +443,7 @@ private:
 		imagesInFlight[imageIndex] = inFlightFences[currentFrame];
 
 		vkResetCommandBuffer(commandBuffers[imageIndex], 0);
+
 		recordCommandBuffer(commandBuffers[imageIndex], imageIndex);
 
 		VkSubmitInfo submitInfo{};
@@ -752,18 +495,6 @@ private:
 	}
 
 
-	// callback inside the class
-	static void cursor_position_callback(GLFWwindow* window, double xpos, double ypos) {
-		if (firstMouse)
-			lastX = xpos; lastY = ypos; firstMouse = false;
-
-		float xoffset = float(xpos - lastX);
-		float yoffset = float(lastY - ypos); // reversed: y ranges top->bottom
-		lastX = xpos; lastY = ypos;
-
-		camera.ProcessMouseMovement(xoffset, yoffset);
-	}
-
 	void mainLoop()
 	{
 
@@ -783,7 +514,8 @@ private:
 			// Now after updating camera, we write UBO for current swapchain image
 			Camera::CameraUBO ubo{};
 			ubo.view = camera.GetViewMatrix();
-			ubo.proj = glm::perspective(glm::radians(45.0f), m_SwapChain->swapChainExtent.width / (float)m_SwapChain->swapChainExtent.height, 0.1f, 100.0f);
+			ubo.proj = glm::perspective(glm::radians(45.0f), 
+				m_SwapChain->swapChainExtent.width / (float)m_SwapChain->swapChainExtent.height, 0.1f, 100.0f);
 			ubo.proj[1][1] *= -1.0f;
 
 			drawFrame();

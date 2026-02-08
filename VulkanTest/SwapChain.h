@@ -19,6 +19,10 @@ public:
 	std::vector<VkFramebuffer> swapChainFramebuffers;
 	std::vector<VkImageView> swapChainImageViews;
 
+	void cleanupSwapChain();
+
+	void recreateSwapChain();
+
 private:
 	Devices& m_Devices;
 	Devices::SwapChainSupportDetails& m_SwapChainSupportDetails;

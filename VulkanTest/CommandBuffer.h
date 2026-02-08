@@ -3,11 +3,19 @@
 #include <vulkan/vulkan_core.h>
 #include <stdexcept>
 #include <array>
+#include <iostream>
+#include <cstdint>
+#include <vector>
 
 #include "SwapChain.h"
 #include "Devices.h"
 #include "CommandPool.h"
 #include "GraphicsPipeline.h"
+#include "RenderTarget.h"
+#include "items/ItemInterface.h"
+#include "items/Home.h"
+#include "items/SilentHill3Game.h"
+#include "DescriptorSet.h"
 
 class CommandBuffer
 {
@@ -20,7 +28,9 @@ public:
 	void createCommandBuffers(CommandPool& commandPool);
 
 	void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex, VkRenderPass& renderPass,
-		GraphicsPipeline& graphicsPipeline);
+		GraphicsPipeline& graphicsPipeline, std::vector<ItemInterface>& item, DescriptorSet& descriptorSet, 
+		const uint32_t& currentFrame,
+		VkImage& storageImage, VkBuffer& triangleVertexBuffer);
 
 	std::vector<VkCommandBuffer> commandBuffers;
 

@@ -59,3 +59,41 @@ void SwapChain::createSwapChain() {
 	vkGetSwapchainImagesKHR(m_Devices.device, swapChain, &imageCount, swapChainImages.data());
 	swapChainImageCount = imageCount;
 }
+
+void SwapChain::cleanupSwapChain() {
+	vkDestroyImage(*m_device, colorImage, nullptr);
+	vkDestroyImageView(*m_device, colorImageView, nullptr);
+	vkFreeMemory(*m_device, colorImageMemory, nullptr);
+	vkDestroyImageView(*m_device, depthImageView, nullptr);
+	vkDestroyImage(*m_device, depthImage, nullptr);
+	vkFreeMemory(*m_device, depthImageMemory, nullptr);
+
+	for (auto framebuffer : swapChainFramebuffers) {
+		vkDestroyFramebuffer(*m_device, framebuffer, nullptr);
+	}
+
+	for (auto imageView : swapChainImageViews) {
+		vkDestroyImageView(*m_device, imageView, nullptr);
+	}
+
+	vkDestroySwapchainKHR(*m_device, m_SwapChain->swapChain, nullptr);
+}
+
+void SwapChain::recreateSwapChain() {
+	int width = 0, height = 0;
+	while (width == 0 || height == 0) {
+		glfwGetFramebufferSize(window, &width, &height);
+		glfwWaitEvents();
+	}
+
+	vkDeviceWaitIdle(*m_device);
+
+	cleanupSwapChain();
+
+	m_SwapChain->createSwapChain();
+	createImageViews();
+	createColorResources();
+	createDepthResources();
+	createFramebuffers();
+	createSyncObjects();
+}
