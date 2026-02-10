@@ -1,5 +1,8 @@
 #include "UniformBuffer.h"
-#include <glm/ext/matrix_clip_space.inl>
+
+//#include <glm/ext/matrix_clip_space.inl>
+
+
 
 UniformBuffer::UniformBuffer(Devices& devices, Camera& camera, SwapChain& swapChain, const bool& rotationEnabled) : 
 	m_Devices(devices), m_Camera(camera), m_SwapChain(swapChain), m_rotationEnabled(rotationEnabled){}

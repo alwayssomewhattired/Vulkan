@@ -8,7 +8,7 @@
 class GraphicsPipeline
 {
 public:
-	GraphicsPipeline(Shaders& shaders, VkDevice& device, SwapChain& swapChain, VkSampleCountFlagBits& msaaSamples,
+	GraphicsPipeline(Shaders& shaders, VkDevice device, SwapChain& swapChain, VkSampleCountFlagBits msaaSamples,
 		DescriptorSetLayout& descriptorSetLayout, VkRenderPass& renderPass);
 	void createGraphicsPipeline();
 	void createMandelbulbComputePipeline();
@@ -24,10 +24,10 @@ public:
 	VkPipeline mandelbulbGraphicsPipeline;
 
 private:
+	VkSampleCountFlagBits m_msaaSamples;
+	VkDevice m_device;
 	Shaders& m_Shaders;
-	VkDevice& m_device;
 	SwapChain& m_SwapChain;
-	VkSampleCountFlagBits& m_msaaSamples;
 	DescriptorSetLayout& m_DescriptorSetLayout;
 	VkRenderPass& m_renderPass;
 

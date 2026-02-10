@@ -1,7 +1,6 @@
 #pragma once
 
 #include <tiny_gltf.h>
-#include "MathConfig.hpp"
 
 #include <iostream>
 #include <stdexcept>

@@ -175,6 +175,7 @@
     <ClInclude Include="DescriptorSet.h" />
     <ClInclude Include="DescriptorSetLayout.h" />
     <ClInclude Include="Devices.h" />
+    <ClInclude Include="glm_config.h" />
     <ClInclude Include="GraphicsPipeline.h" />
     <ClInclude Include="HostToDevice.h" />
     <ClInclude Include="Image.h" />

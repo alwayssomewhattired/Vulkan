@@ -1,10 +1,13 @@
 #include "SwapChain.h"
 #include "Devices.h"
+#include "AttachmentManager.h"
+#include "Image.h"
+#include "RenderPass.h"
 
 #include <stdexcept>
 #include <vulkan/vulkan_core.h>
 
-SwapChain::SwapChain(Devices& devices, VkSurfaceKHR& surface) : 
+SwapChain::SwapChain(Devices& devices, VkSurfaceKHR surface) : 
 	m_Devices(devices), m_SwapChainSupportDetails(devices.m_SwapChainSupportDetails), m_surface(surface){}
 
 void SwapChain::createSwapChain() {
@@ -57,43 +60,80 @@ void SwapChain::createSwapChain() {
 	vkGetSwapchainImagesKHR(m_Devices.device, swapChain, &imageCount, nullptr);
 	swapChainImages.resize(imageCount);
 	vkGetSwapchainImagesKHR(m_Devices.device, swapChain, &imageCount, swapChainImages.data());
-	swapChainImageCount = imageCount;
+	//swapChainImageCount = imageCount;
 }
 
-void SwapChain::cleanupSwapChain() {
-	vkDestroyImage(*m_device, colorImage, nullptr);
-	vkDestroyImageView(*m_device, colorImageView, nullptr);
-	vkFreeMemory(*m_device, colorImageMemory, nullptr);
-	vkDestroyImageView(*m_device, depthImageView, nullptr);
-	vkDestroyImage(*m_device, depthImage, nullptr);
-	vkFreeMemory(*m_device, depthImageMemory, nullptr);
+void SwapChain::createImageViews(Image& imageClass) {
+	swapChainImageViews.resize(swapChainImages.size());
+
+	for (size_t i = 0; i < swapChainImages.size(); i++) {
+		swapChainImageViews[i] = imageClass.createImageView(swapChainImages[i],
+			swapChainImageFormat, VK_IMAGE_ASPECT_COLOR_BIT, 1);
+	}
+}
+
+void SwapChain::cleanupSwapChain(AttachmentManager& attachmentManager) {
+	vkDestroyImage(m_Devices.device, attachmentManager.m_GPUColor.image(), nullptr);
+	vkDestroyImageView(m_Devices.device, attachmentManager.m_GPUColor.view(), nullptr);
+	vkFreeMemory(m_Devices.device, attachmentManager.m_GPUColor.memory(), nullptr);
+	vkDestroyImageView(m_Devices.device, attachmentManager.m_GPUDepth.view(), nullptr);
+	vkDestroyImage(m_Devices.device, attachmentManager.m_GPUDepth.image(), nullptr);
+	vkFreeMemory(m_Devices.device, attachmentManager.m_GPUDepth.memory(), nullptr);
 
 	for (auto framebuffer : swapChainFramebuffers) {
-		vkDestroyFramebuffer(*m_device, framebuffer, nullptr);
+		vkDestroyFramebuffer(m_Devices.device, framebuffer, nullptr);
 	}
 
 	for (auto imageView : swapChainImageViews) {
-		vkDestroyImageView(*m_device, imageView, nullptr);
+		vkDestroyImageView(m_Devices.device, imageView, nullptr);
 	}
 
-	vkDestroySwapchainKHR(*m_device, m_SwapChain->swapChain, nullptr);
+	vkDestroySwapchainKHR(m_Devices.device, swapChain, nullptr);
 }
 
-void SwapChain::recreateSwapChain() {
+void SwapChain::createSyncObjects() {
+
+	imageAvailableSemaphores.resize(Constants::MAX_FRAMES_IN_FLIGHT);
+	renderFinishedSemaphores.resize(swapChainImages.size());
+	imagesInFlight.resize(swapChainImages.size(), VK_NULL_HANDLE);
+	inFlightFences.resize(Constants::MAX_FRAMES_IN_FLIGHT);
+
+	VkSemaphoreCreateInfo semaphoreInfo{};
+	semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+
+	VkFenceCreateInfo fenceInfo{};
+	fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+	fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+	for (size_t i = 0; i < Constants::MAX_FRAMES_IN_FLIGHT; i++) {
+		if (vkCreateSemaphore(m_Devices.device, &semaphoreInfo, nullptr, &imageAvailableSemaphores[i]) != VK_SUCCESS ||
+			vkCreateFence(m_Devices.device, &fenceInfo, nullptr, &inFlightFences[i]) != VK_SUCCESS)
+		{
+			throw std::runtime_error("failed to create per-frame sync objects!");
+		}
+	}
+	for (size_t i = 0; i < swapChainImages.size(); i++) {
+		if (vkCreateSemaphore(m_Devices.device, &semaphoreInfo, nullptr, &renderFinishedSemaphores[i]) != VK_SUCCESS)
+		{
+			throw std::runtime_error("failed to create per-image sync objects!");
+		}
+	}
+}
+
+void SwapChain::recreateSwapChain(GLFWwindow* window, Image& imageClass, AttachmentManager& attachmentManager, RenderPass& renderPass) {
 	int width = 0, height = 0;
 	while (width == 0 || height == 0) {
 		glfwGetFramebufferSize(window, &width, &height);
 		glfwWaitEvents();
 	}
 
-	vkDeviceWaitIdle(*m_device);
+	vkDeviceWaitIdle(m_Devices.device);
 
-	cleanupSwapChain();
+	cleanupSwapChain(attachmentManager);
 
-	m_SwapChain->createSwapChain();
-	createImageViews();
-	createColorResources();
-	createDepthResources();
-	createFramebuffers();
+	createSwapChain();
+	createImageViews(imageClass);
+	attachmentManager.createColorResources();
+	attachmentManager.createDepthResources();
+	renderPass.createFramebuffers(attachmentManager.m_GPUColor.view(), attachmentManager.m_GPUDepth.view());
 	createSyncObjects();
 }

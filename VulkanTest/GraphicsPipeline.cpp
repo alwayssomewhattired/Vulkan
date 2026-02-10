@@ -5,7 +5,7 @@
 #include <vulkan/vulkan_core.h>
 #include <stdexcept>
 
-GraphicsPipeline::GraphicsPipeline(Shaders& shaders, VkDevice& device, SwapChain& swapChain, VkSampleCountFlagBits& msaaSamples,
+GraphicsPipeline::GraphicsPipeline(Shaders& shaders, VkDevice device, SwapChain& swapChain, VkSampleCountFlagBits msaaSamples,
 	DescriptorSetLayout& descriptorSetLayout, VkRenderPass& renderPass) :
 	m_Shaders(shaders), m_device(device), m_SwapChain(swapChain), m_msaaSamples(msaaSamples), 
 	m_DescriptorSetLayout(descriptorSetLayout), m_renderPass(renderPass){}

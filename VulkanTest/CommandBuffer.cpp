@@ -38,7 +38,7 @@ void CommandBuffer::endSingleTimeCommands(VkCommandBuffer commandBuffer) {
 
 void CommandBuffer::createCommandBuffers(CommandPool& commandPool) {
 
-	commandBuffers.resize(m_SwapChain.swapChainImageCount);
+	commandBuffers.resize(m_SwapChain.swapChainImages.size());
 
 	VkCommandBufferAllocateInfo allocInfo{};
 	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -52,7 +52,7 @@ void CommandBuffer::createCommandBuffers(CommandPool& commandPool) {
 }
 
 void CommandBuffer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex, VkRenderPass& renderPass,
-	GraphicsPipeline& graphicsPipeline, std::vector<ItemInterface>& items, DescriptorSet& descriptorSet, 
+	GraphicsPipeline& graphicsPipeline, std::vector<ItemInterface*>& items, DescriptorSet& descriptorSet, 
 	const uint32_t& currentFrame, VkImage& storageImage, VkBuffer& triangleVertexBuffer) {
 
 	VkCommandBufferBeginInfo beginInfo{};
@@ -111,16 +111,16 @@ void CommandBuffer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t 
 		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.graphicsPipeline);
 
 		for (auto& item : items) {
-			VkBuffer vertexBuffers[] = { item.vertexBuffer() };
+			VkBuffer vertexBuffers[] = { item->vertexBuffer() };
 			VkDeviceSize offsets[] = { 0 };
 			vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
 
-			vkCmdBindIndexBuffer(commandBuffer, item.indexBuffer(), 0, item.indexType());
+			vkCmdBindIndexBuffer(commandBuffer, item->indexBuffer(), 0, item->indexType());
 
 			vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.pipelineLayout, 0, 1,
 				&descriptorSets[currentFrame], 0, nullptr);
 
-			vkCmdDrawIndexed(commandBuffer, item.indexCount(), 1, 0, 0, 0);
+			vkCmdDrawIndexed(commandBuffer, item->indexCount(), 1, 0, 0, 0);
 		}
 	}
 	// mandelbulb

@@ -9,7 +9,7 @@
 class Devices {
 public:
 
-	Devices(VkSurfaceKHR& surface, VkInstance& instance, GLFWwindow* window);
+	Devices(VkSurfaceKHR surface, VkInstance instance, GLFWwindow* window);
 	void createLogicalDevice();
 	void pickPhysicalDevice();
 	bool isDeviceSuitable(VkPhysicalDevice device);
@@ -56,7 +56,7 @@ public:
 	VkSampleCountFlagBits msaaSamples = VK_SAMPLE_COUNT_1_BIT;
 
 private:
-	VkSurfaceKHR& m_surface;
-	VkInstance& m_instance;
+	VkSurfaceKHR m_surface;
+	VkInstance m_instance;
 	GLFWwindow* m_window;
 };

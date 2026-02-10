@@ -5,9 +5,13 @@
 #include <vector>
 #include <stdexcept>
 
-#include "Vertex.h"
-#include "Devices.h"
-#include "CommandBuffer.h"
+//#include "Vertex.h"
+//#include "Devices.h"
+//#include "CommandBuffer.h"
+
+class Vertex;
+class Devices;
+class CommandBuffer;
 
 // | a class of some buffer stuff
 class Buffer

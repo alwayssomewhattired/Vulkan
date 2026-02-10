@@ -1,6 +1,6 @@
 #include "Callbacks.h"
 
-void Callbacks::onKey(int key, int scancode, int action, int mods, RenderTarget& renderTarget, GLFWwindow* window) {
+void Callbacks::onKey(int key, int scancode, int action, int mods, GLFWwindow* window) {
 
 	auto& cameraEnabled = g_renderTarget.cameraEnabled;
 	auto& renderTriangle = g_renderTarget.renderTriangle;
@@ -29,27 +29,6 @@ void Callbacks::onKey(int key, int scancode, int action, int mods, RenderTarget&
 	}
 }
 
-
-void Callbacks::mouse_callback(GLFWwindow* window, double xpos, double ypos, Camera& camera) {
-
-	auto& firstMouse = camera.firstMouse;
-	auto& lastX = camera.lastX;
-	auto& lastY = camera.lastY;
-
-	if (firstMouse) {
-		lastX = (float)xpos;
-		lastY = (float)ypos;
-		firstMouse = false;
-	}
-
-	float xoffset = (float)xpos - lastX;
-	float yoffset = lastY - (float)ypos; // reversed y
-
-	lastX = (float)xpos;
-	lastY = (float)ypos;
-
-	camera.ProcessMouseMovement(xoffset, yoffset);
-}
 
 // callback inside the class
 void Callbacks::cursor_position_callback(GLFWwindow* window, double xpos, double ypos, Camera& camera) {

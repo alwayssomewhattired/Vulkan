@@ -1,5 +1,12 @@
 #include "Texture.h"
 
+#include "Image.h"
+#include "Buffer.h"
+#include "Devices.h"
+#include "CommandBuffer.h"
+#include "Constants.h"
+
+#include "Items/ItemInterface.h"
 
 Texture::Texture(Buffer& buffer, Image& image, Devices& devices, CommandBuffer& commandBuffer) : 
 	m_Buffer(buffer), m_Image(image), m_Devices(devices), m_CommandBuffer(commandBuffer) {}
@@ -166,7 +173,7 @@ void Texture::createTextureImage(const bool isDefault, const std::string& textur
 	vkDestroyBuffer(m_Devices.device, stagingBuffer, nullptr);
 	vkFreeMemory(m_Devices.device, stagingBufferMemory, nullptr);
 
-	m_Image.createImageView(outTexture.image, format, VK_IMAGE_ASPECT_COLOR_BIT, mipLevels, outTexture);
+	outTexture.view = m_Image.createImageView(outTexture.image, format, VK_IMAGE_ASPECT_COLOR_BIT, mipLevels);
 	createTextureSampler(mipLevels, outTexture);
 
 }

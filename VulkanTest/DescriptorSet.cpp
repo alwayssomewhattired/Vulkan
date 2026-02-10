@@ -1,5 +1,11 @@
 #include "DescriptorSet.h"
 
+#include "DescriptorSetLayout.h"
+#include "Devices.h"
+#include "UniformBuffer.h"
+#include "items/ItemInterface.h"
+#include "StorageImageManager.h"
+
 
 DescriptorSet::DescriptorSet(DescriptorSetLayout& descriptorSetLayout, Devices& devices, UniformBuffer& uniformBuffer, 
 	StorageImageManager& storageImageManager) : 

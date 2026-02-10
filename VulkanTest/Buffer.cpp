@@ -1,5 +1,8 @@
 #include "Buffer.h"
 
+#include "Vertex.h"
+#include "Devices.h"
+#include "CommandBuffer.h"
 
 Buffer::Buffer(Devices& devices, CommandBuffer& commandBuffer) : m_Devices(devices), m_CommandBuffer(commandBuffer){}
 

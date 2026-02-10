@@ -113,8 +113,9 @@ void Image::copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, ui
 	m_CommandBuffer.endSingleTimeCommands(commandBuffer);
 }
 
-void Image::createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags, uint32_t mipLevels, 
-	ImageBundle& outTexture) {
+// | Returns 
+VkImageView Image::createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags, uint32_t mipLevels) {
+
 	VkImageViewCreateInfo viewInfo{};
 	viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
 	viewInfo.image = image;
@@ -126,9 +127,11 @@ void Image::createImageView(VkImage image, VkFormat format, VkImageAspectFlags a
 	viewInfo.subresourceRange.baseArrayLayer = 0;
 	viewInfo.subresourceRange.layerCount = 1;
 
-	//VkImageView imageView;
-	if (vkCreateImageView(m_Devices.device, &viewInfo, nullptr, &outTexture.view) != VK_SUCCESS) {
+	VkImageView imageView;
+
+	if (vkCreateImageView(m_Devices.device, &viewInfo, nullptr, &imageView) != VK_SUCCESS) {
 		throw std::runtime_error("failed to create image view!");
 	}
 
+	return imageView;
 }

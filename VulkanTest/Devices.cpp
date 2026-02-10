@@ -14,7 +14,7 @@
 #define GLFW_EXPOSE_NATIVE_WIN32
 #include <GLFW/glfw3native.h>
 
-Devices::Devices(VkSurfaceKHR& surface, VkInstance& instance, GLFWwindow* window) 
+Devices::Devices(VkSurfaceKHR surface, VkInstance instance, GLFWwindow* window) 
 	: m_surface(surface), m_instance(instance), m_window(window){};
 
 void Devices::createLogicalDevice()

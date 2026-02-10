@@ -16,7 +16,7 @@ void StorageImageManager::createStorageImageResources() {
 		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
 		storageImage, storageImageMemory
 	);
-	m_Image.createImageView(storageImage, format, VK_IMAGE_ASPECT_COLOR_BIT, 1, m_GPUStorageImage);
+	storageImageView = m_Image.createImageView(storageImage, format, VK_IMAGE_ASPECT_COLOR_BIT, 1);
 }
 
 

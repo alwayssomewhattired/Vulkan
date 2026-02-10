@@ -3,7 +3,7 @@
 //
 //#include <glm/glm.hpp>
 //#include <glm/gtc/matrix_transform.hpp>
-#include "MathConfig.hpp"
+#include "glm_config.h"
 #include <cmath>
 #include "Camera.h"
 //#include <glm/detail/func_trigonometric.inl>

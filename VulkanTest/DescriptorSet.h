@@ -4,11 +4,17 @@
 #include <vector>
 
 #include "Constants.h"
-#include "DescriptorSetLayout.h"
-#include "Devices.h"
-#include "UniformBuffer.h"
-#include "items/ItemInterface.h"
-#include "StorageImageManager.h"
+//#include "DescriptorSetLayout.h"
+//#include "Devices.h"
+//#include "UniformBuffer.h"
+//#include "items/ItemInterface.h"
+//#include "StorageImageManager.h"
+
+class DescriptorSetLayout;
+class Devices;
+class UniformBuffer;
+class StorageImageManager;
+class ItemInterface;
 
 class DescriptorSet
 {

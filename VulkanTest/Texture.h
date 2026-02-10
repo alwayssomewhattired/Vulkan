@@ -4,16 +4,26 @@
 #include <vulkan/vulkan.h>
 #include <vulkan/vulkan_core.h>
 
+#include "glm_config.h"
+
 #include <stdexcept>
+//#include <glm/fwd.hpp>
+//#include <glm/glm.hpp>
+#include <stb_image.h>
 
-#include "Image.h"
-#include "Buffer.h"
-#include "Devices.h"
-#include "CommandBuffer.h"
-#include "Constants.h"
-#include "MathConfig.hpp"
-#include "Items/ItemInterface.h"
+//#include "Image.h"
+//#include "Buffer.h"
+//#include "Devices.h"
+//#include "CommandBuffer.h"
+//#include "Constants.h"
 
+//#include "Items/ItemInterface.h"
+
+class Image;
+class Buffer;
+class Devices;
+class CommandBuffer;
+class ItemInterface;
 
 class Texture
 {

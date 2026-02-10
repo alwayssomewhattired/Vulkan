@@ -4,12 +4,14 @@
 #include <vulkan/vulkan_core.h>
 #include <stdexcept>
 #include <chrono>
+//#include <glm/fwd.hpp>
+//#include <glm/glm.hpp>
+#include "glm_config.h"
 
 #include "Camera.h"
 #include "Constants.h"
 #include "Devices.h"
 #include "SwapChain.h"
-#include "MathConfig.hpp"
 
 class UniformBuffer
 {

@@ -1,8 +1,9 @@
 #pragma once
 
-#include "MathConfig.hpp"
 #include <cmath>
-#include <glm/fwd.hpp>
+//#include <glm/fwd.hpp>
+
+#include "glm_config.h"
 
 enum class Camera_Movement { FORWARD, BACKWARD, LEFT, RIGHT };
 
@@ -35,6 +36,8 @@ public:
 		glm::mat4 proj;
 	};
 
-	double lastX = 0, lastY = 0;
+	double lastX = 0;
+	double lastY = 0;
 	bool firstMouse = true;
+
 };

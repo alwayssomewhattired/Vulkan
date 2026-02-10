@@ -83,23 +83,23 @@ ModelLoad::ModelLoad(
 	m_CommandBuffer(commandBuffer),
 	m_Texture(texture)
 {
-	// move this inside item class
-	// | texture (default white)
-	Texture::GPUTexture whiteTex{};
-	m_Texture.createTextureImage(true, "", Constants::WHITE_PIXEL, whiteTex, VK_FORMAT_R8G8B8A8_SRGB);
-	Constants::DEFAULT_WHITE_TEXTURE_INDEX = m_Texture.gpuTextures.size();
-	m_Texture.gpuTextures.push_back(whiteTex);
-
-	// | normals (default flat)
-	Texture::GPUTexture normalTex{};
-	m_Texture.createTextureImage(true, "", Constants::NORMAL_PIXEL, normalTex, VK_FORMAT_R8G8B8A8_UNORM);
-	Constants::DEFAULT_NORMAL_TEXTURE_INDEX = m_Texture.gpuTextures.size();
-	m_Texture.gpuTextures.push_back(normalTex);
 }
 
 
 
-void ModelLoad::loadModel(const std::string& path, ItemInterface& classReference, const std::string& texturePath) {
+void ModelLoad::loadModel(const std::string& path, ItemInterface& classReference) {
+
+	// | default texture (default white)
+	Texture::GPUTexture whiteTex{};
+	m_Texture.createTextureImage(true, "", Constants::WHITE_PIXEL, whiteTex, VK_FORMAT_R8G8B8A8_SRGB);
+	Constants::DEFAULT_WHITE_TEXTURE_INDEX = classReference.gpuTextures().size();
+	classReference.gpuTextures().push_back(whiteTex);
+
+	// | default normals (default flat)
+	Texture::GPUTexture normalTex{};
+	m_Texture.createTextureImage(true, "", Constants::NORMAL_PIXEL, normalTex, VK_FORMAT_R8G8B8A8_UNORM);
+	Constants::DEFAULT_NORMAL_TEXTURE_INDEX = classReference.gpuTextures().size();
+	classReference.gpuTextures().push_back(normalTex);
 
 	auto& vertexBuffer = classReference.vertexBuffer();
 	auto& vertexMemory = classReference.vertexMemory();
@@ -246,7 +246,7 @@ void ModelLoad::loadModel(const std::string& path, ItemInterface& classReference
 
 	
 	// staging buffer
-	createBufferFn(
+	m_Buffer.createBuffer(
 		vertexSize,
 		VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
 		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
@@ -260,7 +260,7 @@ void ModelLoad::loadModel(const std::string& path, ItemInterface& classReference
 	unsigned char* data = reinterpret_cast<unsigned char*>(mapped);
 	vkUnmapMemory(device, stagingVm);
 
-	createBufferFn(
+	m_Buffer.createBuffer(
 		vertexSize,
 		VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
 		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
@@ -269,7 +269,7 @@ void ModelLoad::loadModel(const std::string& path, ItemInterface& classReference
 	);
 
 	// copy to gpu
-	copyBufferFn(stagingVb, vertexBuffer, vertexSize);
+	m_CommandBuffer.copyBuffer(stagingVb, vertexBuffer, vertexSize);
 
 	// destroy staging buffer
 	vkDestroyBuffer(device, stagingVb, nullptr);
@@ -286,7 +286,7 @@ void ModelLoad::loadModel(const std::string& path, ItemInterface& classReference
 	VkBuffer stagingIb;
 	VkDeviceMemory stagingIm;
 
-	createBufferFn(
+	m_Buffer.createBuffer(
 		indexSize,
 		VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
 		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
@@ -298,7 +298,7 @@ void ModelLoad::loadModel(const std::string& path, ItemInterface& classReference
 	memcpy(mapped, indices.data(), indexSize);
 	vkUnmapMemory(device, stagingIm);
 
-	createBufferFn(
+	m_Buffer.createBuffer(
 		indexSize,
 		VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
 		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
@@ -306,7 +306,7 @@ void ModelLoad::loadModel(const std::string& path, ItemInterface& classReference
 		indexMemory
 	);
 
-	copyBufferFn(stagingIb, indexBuffer, indexSize);
+	m_CommandBuffer.copyBuffer(stagingIb, indexBuffer, indexSize);
 
 	vkDestroyBuffer(device, stagingIb, nullptr);
 	vkFreeMemory(device, stagingIm, nullptr);
