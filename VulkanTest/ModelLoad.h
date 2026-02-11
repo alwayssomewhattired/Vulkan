@@ -14,6 +14,7 @@
 #include "Buffer.h"
 #include "CommandBuffer.h"
 #include "Texture.h"
+#include "GPUTexture.h"
 
 // | model loader AND safe-room model class
 // - yeah, not good. decouple safe-room model from model loading 

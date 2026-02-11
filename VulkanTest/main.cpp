@@ -157,8 +157,6 @@ private:
 
 	VkInstance instance;
 
-	std::unique_ptr<ModelLoad> model;
-
 	VkBuffer indexBuffer;
 	VkDeviceMemory indexBufferMemory;
 
@@ -209,7 +207,7 @@ private:
 
 		m_CommandPool = std::make_unique<CommandPool>();
 		// make command buffer + buffer here
-		m_CommandBuffer = std::make_unique<CommandBuffer>(*m_CommandPool, *m_devices);
+		m_CommandBuffer = std::make_unique<CommandBuffer>(m_CommandPool->commandPool, *m_devices, *m_SwapChain);
 		m_Buffer = std::make_unique<Buffer>(*m_devices, *m_CommandBuffer);
 		m_Image = std::make_unique<Image>(*m_devices, *m_CommandBuffer);
 		m_Texture = std::make_unique<Texture>(*m_Buffer, *m_Image, *m_devices, *m_CommandBuffer);
@@ -241,12 +239,8 @@ private:
 		m_RenderPass->createFramebuffers(m_AttachmentManager->m_GPUColor.view(), m_AttachmentManager->m_GPUDepth.view());
 
 		createModel();
-		// | we create texture image AFTER we load model file
-		/*m_Texture->createTextureImage();*/
-		// - we don't need to call these anymore, as 'createTextureImage' does this for us.
-		//createTextureImageView();
-		//createTextureSampler();
-		//createModel();
+		std::cout << "okay\n";
+
 
 		// for triangle
 		m_Buffer->createVertexBuffer(triangleVertices, triangleVertexBuffer, triangleVertexBufferMemory);
@@ -254,17 +248,18 @@ private:
 	  // incorporate for triangle in the future
 		//createIndexBuffer();
 
-		//m_Camera = std::make_unique<Camera>();
-
-		m_UniformBuffer = std::make_unique<UniformBuffer>(*m_devices, g_Camera, m_SwapChain->swapChain, 
+		m_UniformBuffer = std::make_unique<UniformBuffer>(*m_devices, g_Camera, *m_SwapChain, 
 			g_renderTarget.rotationEnabled);
 		m_UniformBuffer->createUniformBuffer(m_SilentHill3Game->m_modelUBOSize);
 
-		m_DescriptorSet = std::make_unique<DescriptorSet>(*m_DescriptorSetLayout, *m_devices, *m_UniformBuffer);
-		m_DescriptorSet->createDescriptorPool();
-
 		m_StorageImageManager = std::make_unique<StorageImageManager>(*m_Image, *m_SwapChain, *m_devices);
 		m_StorageImageManager->createStorageImageResources();
+
+		m_DescriptorSet = std::make_unique<DescriptorSet>(*m_DescriptorSetLayout, *m_devices, *m_UniformBuffer, 
+			*m_StorageImageManager);
+
+		m_DescriptorSet->createDescriptorPool();
+
 		createDescriptorSets();
 		m_DescriptorSet->createMandelbulbComputeDescriptorSets();
 		m_DescriptorSet->createMandelbulbGraphicsDescriptorSets();
@@ -396,10 +391,14 @@ private:
 	// | loads .glb file
 	void createModel() {
 		// room will be white until we find a way to pass in external file data.
-		model->loadModel("models/thedeathofallionceloved.glb", *m_home);
+
+		m_ModelLoad->loadModel("models/thedeathofallionceloved.glb", *m_home);
+
 		// - which texture of from our item class do we use?
 		//m_Texture->createTextureImage(false, "textures/Metal055C_8K-PNG_Color.png", m_home->);
-		model->loadModel("models/silent-hill-3-ps2-game-cover/source/SilentHill3ps2Game.glb", *m_SilentHill3Game);
+		// 
+
+		m_ModelLoad->loadModel("models/silent-hill-3-ps2-game-cover/source/SilentHill3ps2Game.glb", *m_SilentHill3Game);
 	}
 
 	void createDescriptorSets() {
@@ -571,12 +570,13 @@ private:
 	{ 
 		m_SwapChain->cleanupSwapChain(*m_AttachmentManager);
 
-		vkDestroySampler(*m_device, m_Texture->textureSampler, nullptr);
+		// | this code is now handled by the destructor of our GPU-side classes
+		//vkDestroySampler(*m_device, m_Texture->textureSampler, nullptr);
 
-		vkDestroyImageView(*m_device, m_Texture->textureImageView, nullptr);
+		//vkDestroyImageView(*m_device, m_Texture->textureImageView, nullptr);
 
-		vkDestroyImage(*m_device, m_Texture->textureImage, nullptr);
-		vkFreeMemory(*m_device, m_Texture->textureImageMemory, nullptr);
+		//vkDestroyImage(*m_device, m_Texture->textureImage, nullptr);
+		//vkFreeMemory(*m_device, m_Texture->textureImageMemory, nullptr);
 
 		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
 			vkDestroyBuffer(*m_device, m_UniformBuffer->uniformBuffers[i], nullptr);

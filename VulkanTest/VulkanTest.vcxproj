@@ -140,6 +140,7 @@
     <ClCompile Include="DescriptorSet.cpp" />
     <ClCompile Include="DescriptorSetLayout.cpp" />
     <ClCompile Include="Devices.cpp" />
+    <ClCompile Include="GPUTexture.cpp" />
     <ClCompile Include="GraphicsPipeline.cpp" />
     <ClCompile Include="HostToDevice.cpp" />
     <ClCompile Include="Image.cpp" />
@@ -176,6 +177,7 @@
     <ClInclude Include="DescriptorSetLayout.h" />
     <ClInclude Include="Devices.h" />
     <ClInclude Include="glm_config.h" />
+    <ClInclude Include="GPUTexture.h" />
     <ClInclude Include="GraphicsPipeline.h" />
     <ClInclude Include="HostToDevice.h" />
     <ClInclude Include="Image.h" />

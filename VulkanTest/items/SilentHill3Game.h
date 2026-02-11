@@ -7,6 +7,7 @@
 
 #include "ItemInterface.h"
 #include "../Texture.h"
+#include "../GPUTexture.h"
 
 #include <vulkan/vulkan.h>
 #include <vulkan/vulkan_core.h>
@@ -32,7 +33,7 @@ public:
 	std::vector<Vertex> m_vertices;
 	std::vector<uint32_t> m_indices;
 
-	std::vector<Texture::GPUTexture> m_gpuTextures;
+	std::vector<GPUTexture> m_gpuTextures;
 	std::vector<Texture::GPUMaterial> m_gpuMaterials;
 
 	// | begin item interface block
@@ -72,7 +73,7 @@ public:
 		return m_indices;
 	}
 
-	std::vector<Texture::GPUTexture> gpuTextures() override {
+	std::vector<GPUTexture> gpuTextures() override {
 		return m_gpuTextures;
 	}
 

@@ -13,57 +13,9 @@
 #include <functional>
 #include <iostream>
 #include <string.h>
+#include <utility>
 
 #include "Vertex.h"
-
-//struct GPUTexture {
-//	VkImage image;
-//	VkDeviceMemory memory;
-//	VkImageView view;
-//	VkSampler sampler;
-//};
-//
-//struct GPUMaterial {
-//	int baseColorTex;
-//	int normalTex;
-//	glm::vec4 baseColorFactor;
-//};
-//
-//std::vector<GPUTexture> gpuTextures;
-//std::vector<GPUMaterial> gpuMaterials;
-
-
-//void ModelLoad::uploadGltfTextureToVulkan(tinygltf::Model& model, int& textureIndex) {
-//	const tinygltf::Texture& texture = model.textures[textureIndex];
-//	const tinygltf::Image& image = model.images[texture.source];
-//	const tinygltf::Sampler& sampler = model.samplers[texture.sampler];
-//
-//	// do all the stuff here 
-//
-//	gpuTextures[textureIndex];
-//}
-//
-//void ModelLoad::buildGPUMaterial(tinygltf::Model& model, int& materialIndex) {
-//	const tinygltf::Material& material = model.materials[materialIndex];
-//
-//	GPUMaterial mat{};
-//
-//	mat.baseColorTex = material.pbrMetallicRoughness.baseColorTexture.index;
-//
-//	mat.normalTex = material.normalTexture.index;
-//
-//	mat.baseColorFactor = glm::make_vec4(material.pbrMetallicRoughness.baseColorFactor.data());
-//
-//	// handle missing textures
-//	if (mat.baseColorTex < 0)
-//		mat.baseColorTex = Constants::DEFAULT_WHITE_TEXTURE_INDEX;
-//
-//	if (mat.normalTex < 0)
-//		mat.normalTex = Constants::DEFAULT_NORMAL_TEXTURE_INDEX;
-//
-//	gpuMaterials[materialIndex] = mat;
-//}
-
 
 // | transports model data from cpu to gpu storage
 ModelLoad::ModelLoad(
@@ -87,19 +39,24 @@ ModelLoad::ModelLoad(
 
 
 
+
 void ModelLoad::loadModel(const std::string& path, ItemInterface& classReference) {
 
+	std::cout << "disco\n";
+
 	// | default texture (default white)
-	Texture::GPUTexture whiteTex{};
+	GPUTexture whiteTex(device);
+	std::cout << m_Texture.mipLevels <<  "hey" << "\n";
 	m_Texture.createTextureImage(true, "", Constants::WHITE_PIXEL, whiteTex, VK_FORMAT_R8G8B8A8_SRGB);
+
 	Constants::DEFAULT_WHITE_TEXTURE_INDEX = classReference.gpuTextures().size();
-	classReference.gpuTextures().push_back(whiteTex);
+	classReference.gpuTextures().push_back(std::move(whiteTex));
 
 	// | default normals (default flat)
-	Texture::GPUTexture normalTex{};
+	GPUTexture normalTex(device);
 	m_Texture.createTextureImage(true, "", Constants::NORMAL_PIXEL, normalTex, VK_FORMAT_R8G8B8A8_UNORM);
 	Constants::DEFAULT_NORMAL_TEXTURE_INDEX = classReference.gpuTextures().size();
-	classReference.gpuTextures().push_back(normalTex);
+	classReference.gpuTextures().push_back(std::move(normalTex));
 
 	auto& vertexBuffer = classReference.vertexBuffer();
 	auto& vertexMemory = classReference.vertexMemory();
@@ -126,7 +83,6 @@ void ModelLoad::loadModel(const std::string& path, ItemInterface& classReference
 	}
 
 	//fileDebug(model);
-
 
 	int scene = model.defaultScene;
 	const tinygltf::Scene& sceneObj = model.scenes[scene];
@@ -243,7 +199,6 @@ void ModelLoad::loadModel(const std::string& path, ItemInterface& classReference
 
 	VkBuffer stagingVb;
 	VkDeviceMemory stagingVm;
-
 	
 	// staging buffer
 	m_Buffer.createBuffer(

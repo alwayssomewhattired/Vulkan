@@ -97,17 +97,13 @@ void Texture::generateMipmaps(VkImage image, VkFormat imageFormat, int32_t texWi
 	m_CommandBuffer.endSingleTimeCommands(commandBuffer);
 }
 
-// | updates outTexture struct. does more than just create images...
-// | must be called if supplying an independent texture
-// * isDefault : if true, creates default 1x1 texture
-// * texturePath(optional) : path to seperate texture
-// * pixelData(optional) : for pixel data of texture
-// * outTexture(optional) : for struct of attached texture
+
 void Texture::createTextureImage(const bool isDefault, const std::string& texturePath, const uint8_t* pixelData, 
 	GPUTexture& outTexture, const VkFormat& format) {
+	std::cout << "back again\n";
 	int texWidth, texHeight, texChannels;
 
-	if (!pixelData) {
+	if (isDefault) {
 		texWidth = 1;
 		texHeight = 1;
 		texChannels = 4;
@@ -127,6 +123,7 @@ void Texture::createTextureImage(const bool isDefault, const std::string& textur
 
 	VkBuffer stagingBuffer;
 	VkDeviceMemory stagingBufferMemory;
+
 	m_Buffer.createBuffer(imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, 
 		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
 		stagingBuffer, stagingBufferMemory);
@@ -231,7 +228,9 @@ void Texture::buildGPUMaterial(tinygltf::Model& model, int& materialIndex, ItemI
 
 	GPUMaterial mat{};
 
-	mat.baseColorTex = material.pbrMetallicRoughness.baseColorTexture.index;
+	int baseColorTexIndex = material.pbrMetallicRoughness.baseColorTexture.index;
+
+	mat.baseColorTex = baseColorTexIndex;
 
 	mat.normalTex = material.normalTexture.index;
 
@@ -241,12 +240,12 @@ void Texture::buildGPUMaterial(tinygltf::Model& model, int& materialIndex, ItemI
 	if (mat.baseColorTex < 0)
 		mat.baseColorTex = Constants::DEFAULT_WHITE_TEXTURE_INDEX;
 	else
-		mat.baseColorTex = uploadGltfTextureToVulkan(model, materialIndex, classReference, VK_FORMAT_R8G8B8A8_SRGB);
+		mat.baseColorTex = uploadGltfTextureToVulkan(model, baseColorTexIndex, classReference, VK_FORMAT_R8G8B8A8_SRGB);
 
 	if (mat.normalTex < 0)
 		mat.normalTex = Constants::DEFAULT_NORMAL_TEXTURE_INDEX;
 	else
-		mat.normalTex = uploadGltfTextureToVulkan(model, materialIndex, classReference, VK_FORMAT_R8G8B8A8_UNORM);
+		mat.normalTex = uploadGltfTextureToVulkan(model, baseColorTexIndex, classReference, VK_FORMAT_R8G8B8A8_UNORM);
 
 	classReference.gpuMaterials()[materialIndex] = mat;
 }

@@ -1,5 +1,16 @@
 #include "CommandBuffer.h"
 
+#include "SwapChain.h"
+#include "Devices.h"
+#include "CommandPool.h"
+#include "GraphicsPipeline.h"
+#include "RenderTarget.h"
+#include "items/ItemInterface.h"
+#include "items/Home.h"
+#include "items/SilentHill3Game.h"
+#include "DescriptorSet.h"
+#include "Constants.h"
+
 CommandBuffer::CommandBuffer(VkCommandPool& commandPool, Devices& devices, SwapChain& swapChain) : 
 	m_commandPool(commandPool), m_devices(devices), m_SwapChain(swapChain) {};
 

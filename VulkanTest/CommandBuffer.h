@@ -7,15 +7,27 @@
 #include <cstdint>
 #include <vector>
 
-#include "SwapChain.h"
-#include "Devices.h"
-#include "CommandPool.h"
-#include "GraphicsPipeline.h"
-#include "RenderTarget.h"
-#include "items/ItemInterface.h"
-#include "items/Home.h"
-#include "items/SilentHill3Game.h"
-#include "DescriptorSet.h"
+//#include "SwapChain.h"
+//#include "Devices.h"
+//#include "CommandPool.h"
+//#include "GraphicsPipeline.h"
+//#include "RenderTarget.h"
+//#include "items/ItemInterface.h"
+//#include "items/Home.h"
+//#include "items/SilentHill3Game.h"
+//#include "DescriptorSet.h"
+
+class SwapChain;
+
+	class Devices;
+	class CommandPool;
+	class GraphicsPipeline;
+	class RenderTarget;
+	class ItemInterface;
+	class Home;
+	class SilentHill3Game;
+	class DescriptorSet;
+
 
 class CommandBuffer
 {

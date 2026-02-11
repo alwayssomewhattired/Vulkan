@@ -6,14 +6,16 @@
 //#include <glm/glm.hpp>
 //#include <glm/gtc/matrix_transform.hpp>
 
-#include "../glm_config.h"
 
 #include <vulkan/vulkan.h>
 #include <vulkan/vulkan_core.h>
+#include <cstdint>
 
 #include "ItemInterface.h"
 #include "../Vertex.h"
-#include <cstdint>
+#include "../glm_config.h"
+#include "../Texture.h"
+#include "../GPUTexture.h"
 
 class Home : public ItemInterface
 {
@@ -34,6 +36,9 @@ public:
 
 	std::vector<Vertex> m_vertices;
 	std::vector<uint32_t> m_indices;
+
+	std::vector<GPUTexture> m_gpuTextures;
+	std::vector<Texture::GPUMaterial> m_gpuMaterials;
 
 	// | begin item interface block
 	VkBuffer& vertexBuffer() override {
@@ -70,6 +75,14 @@ public:
 
 	std::vector<uint32_t>& indices() override {
 		return m_indices;
+	}
+
+	std::vector<GPUTexture> gpuTextures() override {
+		return m_gpuTextures;
+	}
+
+	std::vector<Texture::GPUMaterial> gpuMaterials() override {
+		return m_gpuMaterials;
 	}
 };
 

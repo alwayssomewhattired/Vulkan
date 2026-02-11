@@ -3,6 +3,7 @@
 #include "AttachmentManager.h"
 #include "Image.h"
 #include "RenderPass.h"
+#include "Constants.h"
 
 #include <stdexcept>
 #include <vulkan/vulkan_core.h>
