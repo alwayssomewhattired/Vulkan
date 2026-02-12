@@ -31,49 +31,8 @@ class Texture
 {
 public:
 	Texture(Buffer& buffer, Image& image, Devices& devices, CommandBuffer& commandBuffer);
-	// * isDefault : if true, creates default 1x1 texture
-
-	//// | non-copyabe
-	//struct GPUTexture {
-	//	VkImage image = VK_NULL_HANDLE;
-	//	VkDeviceMemory memory = VK_NULL_HANDLE;
-	//	VkImageView view = VK_NULL_HANDLE;
-	//	VkSampler sampler = VK_NULL_HANDLE;
-
-	//	// | This code block is for making our struct non-copyable
-
-	//	GPUTexture() = default;
-
-	//	// | deletes copy constructor
-	//	GPUTexture(const GPUTexture&) = delete;
-
-	//	// | deletes copy assignment operator
-	//	GPUTexture& operator=(const GPUTexture&) = delete;
-
-	//	// | move constructor
-	//	GPUTexture(GPUTexture&& other) noexcept {
-	//		*this = std::move(other);
-	//	}
-
-	//	// | move assignment operator
-	//	GPUTexture& operator=(GPUTexture&& other) noexcept {
-
-	//		// | transfers handles
-	//		image = other.image;
-	//		memory = other.memory;
-	//		view = other.view;
-	//		sampler = other.sampler;
-
-	//		// | nulls out the source
-	//		other.image = VK_NULL_HANDLE;
-	//		other.memory = VK_NULL_HANDLE;
-	//		other.view = VK_NULL_HANDLE;
-	//		other.sampler = VK_NULL_HANDLE;
-
-	//	}
-	//	
-	//};
-
+	
+	std::vector<GPUTexture> m_gpuDefaultTextures;
 
 	// - i think this should be non-copyable as well
 	struct GPUMaterial {
@@ -89,7 +48,7 @@ public:
 	// * pixelData(optional) : for pixel data of texture
 	// * outTexture(optional) : for struct of attached texture
 	void createTextureImage(const bool isDefault, const std::string& texturePath, const uint8_t* pixelData, 
-		GPUTexture& outTexture, const VkFormat& format);
+		GPUTexture& outTexture, const VkFormat& format, int width, int height);
 
 	void generateMipmaps(VkImage image, VkFormat imageFormat, int32_t texWidth, int32_t texHeight, uint32_t mipLevels);
 
@@ -105,5 +64,7 @@ private:
 	void createTextureSampler(const uint32_t& mipLevels, GPUTexture& outTex);
 	int uploadGltfTextureToVulkan(tinygltf::Model& model, int& textureIndex, ItemInterface& classReference,
 		const VkFormat& format);
+
+	void createDefaultTextures();
 };
 

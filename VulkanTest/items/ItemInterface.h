@@ -33,8 +33,8 @@ struct ItemInterface {
 	virtual std::vector<Vertex>& vertices() = 0;
 	virtual std::vector<uint32_t>& indices() = 0;
 
-	virtual std::vector<GPUTexture> gpuTextures() = 0;
-	virtual std::vector<Texture::GPUMaterial> gpuMaterials() = 0;
+	virtual std::vector<GPUTexture>& gpuTextures() = 0;
+	virtual std::vector<Texture::GPUMaterial>& gpuMaterials() = 0;
 
 	virtual ~ItemInterface() = default;
 };

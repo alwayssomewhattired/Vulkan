@@ -41,7 +41,9 @@ void Image::createImage(uint32_t width, uint32_t height, uint32_t mipLevels, VkS
 	vkBindImageMemory(m_Devices.device, image, imageMemory, 0);
 }
 
-void Image::transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipLevels) {
+void Image::transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, 
+	uint32_t mipLevels) {
+
 	VkCommandBuffer commandBuffer = m_CommandBuffer.beginSingleTimeCommands();
 
 	VkImageMemoryBarrier barrier{};
@@ -58,7 +60,6 @@ void Image::transitionImageLayout(VkImage image, VkFormat format, VkImageLayout 
 	barrier.subresourceRange.layerCount = 1;
 	barrier.srcAccessMask = 0;
 	barrier.dstAccessMask = 0;
-
 	VkPipelineStageFlags sourceStage;
 	VkPipelineStageFlags destinationStage;
 

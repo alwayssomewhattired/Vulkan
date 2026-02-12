@@ -206,10 +206,13 @@ private:
 			*m_DescriptorSetLayout, m_RenderPass->renderPass);
 
 		m_CommandPool = std::make_unique<CommandPool>();
-		// make command buffer + buffer here
+
 		m_CommandBuffer = std::make_unique<CommandBuffer>(m_CommandPool->commandPool, *m_devices, *m_SwapChain);
 		m_Buffer = std::make_unique<Buffer>(*m_devices, *m_CommandBuffer);
 		m_Image = std::make_unique<Image>(*m_devices, *m_CommandBuffer);
+
+		m_CommandPool->createCommandPool(*m_devices);
+
 		m_Texture = std::make_unique<Texture>(*m_Buffer, *m_Image, *m_devices, *m_CommandBuffer);
 
 		m_ModelLoad = std::make_unique<ModelLoad>(m_devices->device, m_devices->physicalDevice, m_CommandPool->commandPool,
@@ -234,13 +237,10 @@ private:
 		m_RenderPass->createRenderPass(*m_AttachmentManager);
 
 		m_GraphicsPipeline->createGraphicsPipeline();
-		m_CommandPool->createCommandPool(*m_devices);
 
 		m_RenderPass->createFramebuffers(m_AttachmentManager->m_GPUColor.view(), m_AttachmentManager->m_GPUDepth.view());
 
 		createModel();
-		std::cout << "okay\n";
-
 
 		// for triangle
 		m_Buffer->createVertexBuffer(triangleVertices, triangleVertexBuffer, triangleVertexBufferMemory);
@@ -250,17 +250,19 @@ private:
 
 		m_UniformBuffer = std::make_unique<UniformBuffer>(*m_devices, g_Camera, *m_SwapChain, 
 			g_renderTarget.rotationEnabled);
-		m_UniformBuffer->createUniformBuffer(m_SilentHill3Game->m_modelUBOSize);
+		m_UniformBuffer->createUniformBuffers();
+		//m_UniformBuffer->createUniformBuffer(m_SilentHill3Game->m_modelUBOSize);
 
 		m_StorageImageManager = std::make_unique<StorageImageManager>(*m_Image, *m_SwapChain, *m_devices);
 		m_StorageImageManager->createStorageImageResources();
 
 		m_DescriptorSet = std::make_unique<DescriptorSet>(*m_DescriptorSetLayout, *m_devices, *m_UniformBuffer, 
-			*m_StorageImageManager);
+			*m_StorageImageManager, *m_Texture);
 
 		m_DescriptorSet->createDescriptorPool();
 
 		createDescriptorSets();
+
 		m_DescriptorSet->createMandelbulbComputeDescriptorSets();
 		m_DescriptorSet->createMandelbulbGraphicsDescriptorSets();
 
@@ -388,7 +390,7 @@ private:
 	}
 
 
-	// | loads .glb file
+	// | loads .glb file(s)
 	void createModel() {
 		// room will be white until we find a way to pass in external file data.
 
@@ -397,13 +399,15 @@ private:
 		// - which texture of from our item class do we use?
 		//m_Texture->createTextureImage(false, "textures/Metal055C_8K-PNG_Color.png", m_home->);
 		// 
-
-		m_ModelLoad->loadModel("models/silent-hill-3-ps2-game-cover/source/SilentHill3ps2Game.glb", *m_SilentHill3Game);
+		//m_ModelLoad->loadModel("models/silent-hill-3-ps2-game-cover/source/SilentHill3ps2Game.glb", *m_SilentHill3Game);
 	}
 
+	// creates descriptor sets for models
 	void createDescriptorSets() {
 		m_DescriptorSet->createMeshDescriptorSets(*m_home);
-		m_DescriptorSet->createMeshDescriptorSets(*m_SilentHill3Game);
+		std::cout << "pasta\n";
+
+		//m_DescriptorSet->createMeshDescriptorSets(*m_SilentHill3Game);
 	}
 
 

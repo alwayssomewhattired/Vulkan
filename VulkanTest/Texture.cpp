@@ -9,7 +9,10 @@
 #include "Items/ItemInterface.h"
 
 Texture::Texture(Buffer& buffer, Image& image, Devices& devices, CommandBuffer& commandBuffer) : 
-	m_Buffer(buffer), m_Image(image), m_Devices(devices), m_CommandBuffer(commandBuffer) {}
+	m_Buffer(buffer), m_Image(image), m_Devices(devices), m_CommandBuffer(commandBuffer) 
+{
+	createDefaultTextures();
+}
 
 void Texture::generateMipmaps(VkImage image, VkFormat imageFormat, int32_t texWidth, int32_t texHeight, uint32_t mipLevels) {
 	VkFormatProperties formatProperties;
@@ -99,16 +102,11 @@ void Texture::generateMipmaps(VkImage image, VkFormat imageFormat, int32_t texWi
 
 
 void Texture::createTextureImage(const bool isDefault, const std::string& texturePath, const uint8_t* pixelData, 
-	GPUTexture& outTexture, const VkFormat& format) {
-	std::cout << "back again\n";
-	int texWidth, texHeight, texChannels;
+	GPUTexture& outTexture, const VkFormat& format, int texWidth, int texHeight) {
 
-	if (isDefault) {
-		texWidth = 1;
-		texHeight = 1;
-		texChannels = 4;
-	}
-	else if (!texturePath.empty())
+	int texChannels = 4;
+
+	if (!texturePath.empty())
 		pixelData = stbi_load(texturePath.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
 
 	if (pixelData)
@@ -127,7 +125,7 @@ void Texture::createTextureImage(const bool isDefault, const std::string& textur
 	m_Buffer.createBuffer(imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, 
 		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
 		stagingBuffer, stagingBufferMemory);
-
+	
 	void* data;
 	vkMapMemory(m_Devices.device, stagingBufferMemory, 0, imageSize, 0, &data);
 	memcpy(data, pixelData, static_cast<size_t>(imageSize));
@@ -149,6 +147,7 @@ void Texture::createTextureImage(const bool isDefault, const std::string& textur
 		outTexture.memory
 	);
 
+	 //this next line fails
 	m_Image.transitionImageLayout(outTexture.image, format, VK_IMAGE_LAYOUT_UNDEFINED,
 		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 		mipLevels);
@@ -172,10 +171,9 @@ void Texture::createTextureImage(const bool isDefault, const std::string& textur
 
 	outTexture.view = m_Image.createImageView(outTexture.image, format, VK_IMAGE_ASPECT_COLOR_BIT, mipLevels);
 	createTextureSampler(mipLevels, outTexture);
-
 }
 
-void Texture::createTextureSampler(const uint32_t& mipLevels, Texture::GPUTexture& outTex) {
+void Texture::createTextureSampler(const uint32_t& mipLevels, GPUTexture& outTex) {
 	VkSamplerCreateInfo samplerInfo{};
 	samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
 	samplerInfo.magFilter = VK_FILTER_LINEAR;
@@ -212,12 +210,12 @@ int Texture::uploadGltfTextureToVulkan(tinygltf::Model& model, int& textureIndex
 	// - use sampler at some point
 	const tinygltf::Sampler& sampler = model.samplers[texture.sampler];
 
-	GPUTexture gpuTex{};
+	GPUTexture gpuTex(m_Devices.device);
 
 	const uint8_t* pixelData = image.image.data();
-	createTextureImage(false, "", pixelData, gpuTex, format);
+	createTextureImage(false, "", pixelData, gpuTex, format, image.width, image.height);
 
-	classReference.gpuTextures().push_back(gpuTex);
+	classReference.gpuTextures().push_back(std::move(gpuTex));
 
 	return static_cast<int>(classReference.gpuTextures().size() - 1);
 }
@@ -248,4 +246,20 @@ void Texture::buildGPUMaterial(tinygltf::Model& model, int& materialIndex, ItemI
 		mat.normalTex = uploadGltfTextureToVulkan(model, baseColorTexIndex, classReference, VK_FORMAT_R8G8B8A8_UNORM);
 
 	classReference.gpuMaterials()[materialIndex] = mat;
+}
+
+void Texture::createDefaultTextures() {
+
+	// default base-color (default white)
+	GPUTexture whiteTex(m_Devices.device);
+	createTextureImage(true, "", Constants::WHITE_PIXEL, whiteTex, VK_FORMAT_R8G8B8A8_SRGB, 1, 1);
+	Constants::DEFAULT_WHITE_TEXTURE_INDEX = m_gpuDefaultTextures.size();
+	m_gpuDefaultTextures.push_back(std::move(whiteTex));
+
+	// | default normals (default flat)
+	GPUTexture normalTex(m_Devices.device);
+	createTextureImage(true, "", Constants::NORMAL_PIXEL, normalTex, VK_FORMAT_R8G8B8A8_UNORM, 1, 1);
+	Constants::DEFAULT_NORMAL_TEXTURE_INDEX = m_gpuDefaultTextures.size();
+	m_gpuDefaultTextures.push_back(std::move(normalTex));
+
 }

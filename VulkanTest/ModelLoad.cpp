@@ -44,20 +44,6 @@ void ModelLoad::loadModel(const std::string& path, ItemInterface& classReference
 
 	std::cout << "disco\n";
 
-	// | default texture (default white)
-	GPUTexture whiteTex(device);
-	std::cout << m_Texture.mipLevels <<  "hey" << "\n";
-	m_Texture.createTextureImage(true, "", Constants::WHITE_PIXEL, whiteTex, VK_FORMAT_R8G8B8A8_SRGB);
-
-	Constants::DEFAULT_WHITE_TEXTURE_INDEX = classReference.gpuTextures().size();
-	classReference.gpuTextures().push_back(std::move(whiteTex));
-
-	// | default normals (default flat)
-	GPUTexture normalTex(device);
-	m_Texture.createTextureImage(true, "", Constants::NORMAL_PIXEL, normalTex, VK_FORMAT_R8G8B8A8_UNORM);
-	Constants::DEFAULT_NORMAL_TEXTURE_INDEX = classReference.gpuTextures().size();
-	classReference.gpuTextures().push_back(std::move(normalTex));
-
 	auto& vertexBuffer = classReference.vertexBuffer();
 	auto& vertexMemory = classReference.vertexMemory();
 	auto& indexBuffer = classReference.indexBuffer();
@@ -191,7 +177,6 @@ void ModelLoad::loadModel(const std::string& path, ItemInterface& classReference
 	classReference.gpuTextures().clear();
 	for (int i = 0; i < model.materials.size(); ++i)
 		m_Texture.buildGPUMaterial(model, i, classReference);
-
 
 	// | Vertex 
 

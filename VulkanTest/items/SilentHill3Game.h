@@ -73,11 +73,11 @@ public:
 		return m_indices;
 	}
 
-	std::vector<GPUTexture> gpuTextures() override {
+	std::vector<GPUTexture>& gpuTextures() override {
 		return m_gpuTextures;
 	}
 
-	std::vector<Texture::GPUMaterial> gpuMaterials() override {
+	std::vector<Texture::GPUMaterial>& gpuMaterials() override {
 		return m_gpuMaterials;
 	}
 

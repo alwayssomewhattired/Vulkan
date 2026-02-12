@@ -5,12 +5,13 @@
 #include "UniformBuffer.h"
 #include "items/ItemInterface.h"
 #include "StorageImageManager.h"
+#include "Texture.h"
 
 
 DescriptorSet::DescriptorSet(DescriptorSetLayout& descriptorSetLayout, Devices& devices, UniformBuffer& uniformBuffer, 
-	StorageImageManager& storageImageManager) : 
+	StorageImageManager& storageImageManager, Texture& texture) : 
 	m_DescriptorSetLayout(descriptorSetLayout), m_Devices(devices), m_UniformBuffer(uniformBuffer),
-	m_StorageImageManager(storageImageManager) {}
+	m_StorageImageManager(storageImageManager), m_Texture(texture) {}
 
 void DescriptorSet::createDescriptorPool() {
 	const uint32_t descriptorCount = 4;
@@ -38,7 +39,13 @@ void DescriptorSet::createDescriptorPool() {
 void DescriptorSet::createMeshDescriptorSets(ItemInterface& classReference) {
 
 	const auto& materials = classReference.gpuMaterials();
-	const auto& textures = classReference.gpuTextures();
+
+
+	auto& textures = classReference.gpuTextures();
+	// | Default handling
+	if (textures.size() == 0) {
+		textures = m_Texture.m_gpuDefaultTextures;
+	}
 
 	// | indexing is: descriptorSets[frame * materials.size() + materialIndex]
 	descriptorSets.resize(Constants::MAX_FRAMES_IN_FLIGHT * materials.size());
@@ -60,7 +67,6 @@ void DescriptorSet::createMeshDescriptorSets(ItemInterface& classReference) {
 			VkDescriptorSet dstSet = descriptorSets[dsIndex];
 
 			const auto& material = materials[matIdx];
-
 			VkDescriptorBufferInfo bufferInfo{};
 			bufferInfo.buffer = m_UniformBuffer.uniformBuffers[frame];
 			bufferInfo.offset = 0;
@@ -70,7 +76,7 @@ void DescriptorSet::createMeshDescriptorSets(ItemInterface& classReference) {
 			modelBufferInfo.buffer = m_UniformBuffer.modelUniformBuffers[frame];
 			modelBufferInfo.offset = 0;
 			modelBufferInfo.range = sizeof(UniformBuffer::ModelUBO);
-
+			
 			VkDescriptorImageInfo baseColorInfo{};
 			baseColorInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 			baseColorInfo.imageView = textures[material.baseColorTex].view;
@@ -80,6 +86,7 @@ void DescriptorSet::createMeshDescriptorSets(ItemInterface& classReference) {
 			normalInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 			normalInfo.imageView = textures[material.normalTex].view;
 			normalInfo.sampler = textures[material.normalTex].sampler;
+
 
 			std::array<VkWriteDescriptorSet, 4> descriptorWrites{};
 			descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;

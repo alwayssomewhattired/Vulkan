@@ -1,6 +1,6 @@
 #include "GPUTexture.h"
 
-GPUTexture::GPUTexture(VkDevice device) : m_device(device) {};
+GPUTexture::GPUTexture(VkDevice device) : m_device(device) {}
 
 GPUTexture::~GPUTexture() {
     if (sampler)
@@ -12,3 +12,5 @@ GPUTexture::~GPUTexture() {
     if (memory)
         vkFreeMemory(m_device, memory, nullptr);
 }
+
+

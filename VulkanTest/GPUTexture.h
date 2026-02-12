@@ -1,53 +1,53 @@
 #pragma once
 
 #include <vulkan/vulkan.h>
-#include <vulkan/vulkan_core.h>
 #include <utility>
 
-// | non-copyabe
 class GPUTexture {
-	
+
 public:
 
-	GPUTexture(VkDevice device);
+    GPUTexture(VkDevice device);
+    ~GPUTexture();
 
-	VkImage image = VK_NULL_HANDLE;
-	VkDeviceMemory memory = VK_NULL_HANDLE;
-	VkImageView view = VK_NULL_HANDLE;
-	VkSampler sampler = VK_NULL_HANDLE;
+    GPUTexture(const GPUTexture&) = delete;
+    GPUTexture& operator=(const GPUTexture&) = delete;
 
-	// | This code block is for making our struct non-copyable
+    GPUTexture(GPUTexture&& other) noexcept
+        : image(other.image),
+        memory(other.memory),
+        view(other.view),
+        sampler(other.sampler),
+        m_device(other.m_device)
+    {
+        other.image = VK_NULL_HANDLE;
+        other.memory = VK_NULL_HANDLE;
+        other.view = VK_NULL_HANDLE;
+        other.sampler = VK_NULL_HANDLE;
+    }
 
-	~GPUTexture();
+    GPUTexture& operator=(GPUTexture&& other) noexcept {
+        if (this != &other) {
 
-	// | deletes copy constructor
-	GPUTexture(const GPUTexture&) = delete;
+            image = other.image;
+            memory = other.memory;
+            view = other.view;
+            sampler = other.sampler;
+            m_device = other.m_device;
 
-	// | deletes copy assignment operator
-	GPUTexture& operator=(const GPUTexture&) = delete;
+            other.image = VK_NULL_HANDLE;
+            other.memory = VK_NULL_HANDLE;
+            other.view = VK_NULL_HANDLE;
+            other.sampler = VK_NULL_HANDLE;
+        }
+        return *this;
+    }
 
-	// | move constructor
-	GPUTexture(GPUTexture&& other) noexcept {
-		*this = std::move(other);
-	}
-
-	// | move assignment operator
-	GPUTexture& operator=(GPUTexture&& other) noexcept {
-
-		// | transfers handles
-		image = other.image;
-		memory = other.memory;
-		view = other.view;
-		sampler = other.sampler;
-
-		// | nulls out the source
-		other.image = VK_NULL_HANDLE;
-		other.memory = VK_NULL_HANDLE;
-		other.view = VK_NULL_HANDLE;
-		other.sampler = VK_NULL_HANDLE;
-
-	}
+    VkImage image = VK_NULL_HANDLE;
+    VkDeviceMemory memory = VK_NULL_HANDLE;
+    VkImageView view = VK_NULL_HANDLE;
+    VkSampler sampler = VK_NULL_HANDLE;
 
 private:
-	VkDevice m_device;
+    VkDevice m_device = VK_NULL_HANDLE;
 };

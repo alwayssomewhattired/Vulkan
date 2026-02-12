@@ -15,12 +15,13 @@ class Devices;
 class UniformBuffer;
 class StorageImageManager;
 class ItemInterface;
+class Texture;
 
 class DescriptorSet
 {
 public:
 	DescriptorSet(DescriptorSetLayout& descriptorSetLayout, Devices& devices, UniformBuffer& uniformBuffer, 
-		StorageImageManager& storageImageManager);
+		StorageImageManager& storageImageManager, Texture& texture);
 	// | GEOMETRY
 	void createMeshDescriptorSets(ItemInterface& classReference);
 	void createMandelbulbComputeDescriptorSets();
@@ -38,6 +39,6 @@ private:
 	DescriptorSetLayout& m_DescriptorSetLayout;
 	UniformBuffer& m_UniformBuffer;
 	StorageImageManager& m_StorageImageManager;
-
+	Texture& m_Texture;
 };
 
