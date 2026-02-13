@@ -89,6 +89,8 @@ void ModelLoad::loadModel(const std::string& path, ItemInterface& classReference
 
 	const tinygltf::Mesh& mesh = *meshPtr;
 
+	// - this literally gets the first primitive from the mesh and that's it
+	// - we need to iterate over all the primitives
 	const auto& primitive = mesh.primitives[0];
 
 	// POSITION
@@ -173,11 +175,9 @@ void ModelLoad::loadModel(const std::string& path, ItemInterface& classReference
 
 	// | materials and textures
 	classReference.gpuMaterials().resize(model.materials.size());
-	//classReference.gpuTextures().clear();
-
 	for (int i = 0; i < model.materials.size(); ++i) {
-
 		m_Texture.buildGPUMaterial(model, i, classReference);
+
 	}
 
 	// | Vertex 

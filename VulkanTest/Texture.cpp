@@ -207,18 +207,23 @@ void Texture::createTextureSampler(const uint32_t& mipLevels, GPUTexture& outTex
 int Texture::uploadGltfTextureToVulkan(tinygltf::Model& model, int& textureIndex, ItemInterface& classReference, 
 	const VkFormat& format) {
 
-	std::cout << "pacman\n";
-	// - we fail here
+	GPUTexture gpuTex(m_Devices.device);
+
+	if (model.textures.empty()) {
+		createTextureImage(false, classReference.optionalTexturePath(), nullptr, gpuTex, format, 0, 0);
+		m_gpuTextures.push_back(std::move(gpuTex));
+
+		return static_cast<int>(m_gpuTextures.size() - 1);
+	}
+
 	const tinygltf::Texture& texture = model.textures[textureIndex];
 	const tinygltf::Image& image = model.images[texture.source];
 	// - use sampler at some point
 	const tinygltf::Sampler& sampler = model.samplers[texture.sampler];
 
-	GPUTexture gpuTex(m_Devices.device);
 
 	const uint8_t* pixelData = image.image.data();
-	
-	createTextureImage(false, "textures/Metal055C_8K-PNG_Color.png", pixelData, gpuTex, format, image.width, image.height);
+	createTextureImage(false, classReference.optionalTexturePath(), pixelData, gpuTex, format, image.width, image.height);
 
 	m_gpuTextures.push_back(std::move(gpuTex));
 
@@ -231,6 +236,8 @@ void Texture::buildGPUMaterial(tinygltf::Model& model, int& materialIndex, ItemI
 
 	GPUMaterial mat{};
 
+	// do loading of stbi load
+
 	int baseColorTexIndex = material.pbrMetallicRoughness.baseColorTexture.index;
 
 	mat.baseColorTex = baseColorTexIndex;
@@ -242,10 +249,12 @@ void Texture::buildGPUMaterial(tinygltf::Model& model, int& materialIndex, ItemI
 	mat.baseColorFactor = glm::make_vec4(material.pbrMetallicRoughness.baseColorFactor.data());
 
 	// handle missing textures
-	if (mat.baseColorTex < 0)
+	if (mat.baseColorTex < 0 && classReference.optionalTexturePath().empty())
 		mat.baseColorTex = Constants::DEFAULT_WHITE_TEXTURE_INDEX;
-	else
+	else {
+
 		mat.baseColorTex = uploadGltfTextureToVulkan(model, baseColorTexIndex, classReference, VK_FORMAT_R8G8B8A8_SRGB);
+	}
 
 	if (mat.normalTex < 0) {
 

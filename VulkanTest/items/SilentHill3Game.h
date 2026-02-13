@@ -35,6 +35,8 @@ public:
 
 	std::vector<Texture::GPUMaterial> m_gpuMaterials;
 
+	std::string m_optionalTexturePath = "";
+
 	// | begin item interface block
 	VkBuffer& vertexBuffer() override {
 		return m_vertexBuffer;
@@ -74,6 +76,10 @@ public:
 
 	std::vector<Texture::GPUMaterial>& gpuMaterials() override {
 		return m_gpuMaterials;
+	}
+
+	std::string& optionalTexturePath() override {
+		return m_optionalTexturePath;
 	}
 
 	std::vector<VkDescriptorSet> m_descriptorSets;

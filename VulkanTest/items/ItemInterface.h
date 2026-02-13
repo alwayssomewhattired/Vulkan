@@ -35,5 +35,7 @@ struct ItemInterface {
 
 	virtual std::vector<Texture::GPUMaterial>& gpuMaterials() = 0;
 
+	virtual std::string& optionalTexturePath() = 0;
+
 	virtual ~ItemInterface() = default;
 };
