@@ -111,7 +111,6 @@ private:
 	std::unique_ptr<VkQueue> m_graphicsQueue = nullptr;
 
 	std::unique_ptr<SwapChain> m_SwapChain = nullptr;
-	//std::unique_ptr<size_t> m_swapChainImageCount = nullptr;
 
 	std::unique_ptr<DescriptorSetLayout> m_DescriptorSetLayout = nullptr;
 
@@ -192,8 +191,6 @@ private:
 		m_SwapChainSupportDetails = std::make_unique<Devices::SwapChainSupportDetails>(m_devices->m_SwapChainSupportDetails);
 		m_graphicsQueue = std::make_unique<VkQueue>(m_devices->graphicsQueue);
 
-		//m_HostToDevice = std::make_unique<HostToDevice>(*m_device, *m_physicalDevice);
-
 		m_SwapChain = std::make_unique<SwapChain>(*m_devices, surface);
 
 		m_DescriptorSetLayout = std::make_unique<DescriptorSetLayout>(m_devices->device);
@@ -225,7 +222,6 @@ private:
 		items.push_back(m_SilentHill3Game.get());
 
 		m_SwapChain->createSwapChain();
-		//m_swapChainImageCount = std::make_unique<size_t>(m_SwapChain->swapChainImageCount);
 		m_SwapChain->createImageViews(*m_Image);
 		m_DescriptorSetLayout->createMeshDescriptorSetLayout();
 		m_DescriptorSetLayout->createMandelbulbComputeDescriptorSetLayout();
@@ -242,16 +238,19 @@ private:
 
 		createModel();
 
-		// for triangle
+		// | triangle vertex buffer 
 		m_Buffer->createVertexBuffer(triangleVertices, triangleVertexBuffer, triangleVertexBufferMemory);
 
-	  // incorporate for triangle in the future
+	  // - incorporate for triangle in the future
 		//createIndexBuffer();
 
 		m_UniformBuffer = std::make_unique<UniformBuffer>(*m_devices, g_Camera, *m_SwapChain, 
 			g_renderTarget.rotationEnabled);
+
 		m_UniformBuffer->createUniformBuffers();
-		//m_UniformBuffer->createUniformBuffer(m_SilentHill3Game->m_modelUBOSize);
+		std::cout << "end line\n";
+
+		m_UniformBuffer->createUniformBuffer(m_SilentHill3Game->m_modelUBOSize);
 
 		m_StorageImageManager = std::make_unique<StorageImageManager>(*m_Image, *m_SwapChain, *m_devices);
 		m_StorageImageManager->createStorageImageResources();
@@ -399,7 +398,7 @@ private:
 		// - which texture of from our item class do we use?
 		//m_Texture->createTextureImage(false, "textures/Metal055C_8K-PNG_Color.png", m_home->);
 		// 
-		//m_ModelLoad->loadModel("models/silent-hill-3-ps2-game-cover/source/SilentHill3ps2Game.glb", *m_SilentHill3Game);
+		m_ModelLoad->loadModel("models/silent-hill-3-ps2-game-cover/source/SilentHill3ps2Game.glb", *m_SilentHill3Game);
 	}
 
 	// creates descriptor sets for models

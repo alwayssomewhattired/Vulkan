@@ -33,7 +33,6 @@ public:
 	std::vector<Vertex> m_vertices;
 	std::vector<uint32_t> m_indices;
 
-	std::vector<GPUTexture> m_gpuTextures;
 	std::vector<Texture::GPUMaterial> m_gpuMaterials;
 
 	// | begin item interface block
@@ -71,10 +70,6 @@ public:
 
 	std::vector<uint32_t>& indices() override {
 		return m_indices;
-	}
-
-	std::vector<GPUTexture>& gpuTextures() override {
-		return m_gpuTextures;
 	}
 
 	std::vector<Texture::GPUMaterial>& gpuMaterials() override {

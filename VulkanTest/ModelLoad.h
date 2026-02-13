@@ -16,8 +16,7 @@
 #include "Texture.h"
 #include "GPUTexture.h"
 
-// | model loader AND safe-room model class
-// - yeah, not good. decouple safe-room model from model loading 
+// | model loader
 class ModelLoad
 {
 public:
@@ -43,12 +42,5 @@ private:
 	CommandBuffer& m_CommandBuffer;
 	Texture& m_Texture; 
 
-	//void uploadGltfTextureToVulkan(tinygltf::Model& model, int& textureIndex, ItemInterface& classReference);
-	//void buildGPUMaterial(tinygltf::Model& model, int& materialIndex, ItemInterface& classReference);
-	//GPUTexture create1x1Texture(const uint8_t* rgbaPixel, VkFormat format);
 	void fileDebug(const tinygltf::Model& model);
-
-	// | staging mesh vertices
-	//std::vector<Vertex> vertices;
-	//std::vector<uint32_t> indices;
 };

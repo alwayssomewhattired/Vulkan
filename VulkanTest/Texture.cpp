@@ -171,6 +171,7 @@ void Texture::createTextureImage(const bool isDefault, const std::string& textur
 
 	outTexture.view = m_Image.createImageView(outTexture.image, format, VK_IMAGE_ASPECT_COLOR_BIT, mipLevels);
 	createTextureSampler(mipLevels, outTexture);
+
 }
 
 void Texture::createTextureSampler(const uint32_t& mipLevels, GPUTexture& outTex) {
@@ -205,6 +206,9 @@ void Texture::createTextureSampler(const uint32_t& mipLevels, GPUTexture& outTex
 
 int Texture::uploadGltfTextureToVulkan(tinygltf::Model& model, int& textureIndex, ItemInterface& classReference, 
 	const VkFormat& format) {
+
+	std::cout << "pacman\n";
+	// - we fail here
 	const tinygltf::Texture& texture = model.textures[textureIndex];
 	const tinygltf::Image& image = model.images[texture.source];
 	// - use sampler at some point
@@ -213,11 +217,12 @@ int Texture::uploadGltfTextureToVulkan(tinygltf::Model& model, int& textureIndex
 	GPUTexture gpuTex(m_Devices.device);
 
 	const uint8_t* pixelData = image.image.data();
-	createTextureImage(false, "", pixelData, gpuTex, format, image.width, image.height);
+	
+	createTextureImage(false, "textures/Metal055C_8K-PNG_Color.png", pixelData, gpuTex, format, image.width, image.height);
 
-	classReference.gpuTextures().push_back(std::move(gpuTex));
+	m_gpuTextures.push_back(std::move(gpuTex));
 
-	return static_cast<int>(classReference.gpuTextures().size() - 1);
+	return static_cast<int>(m_gpuTextures.size() - 1);
 }
 
 void Texture::buildGPUMaterial(tinygltf::Model& model, int& materialIndex, ItemInterface& classReference) {
@@ -230,7 +235,9 @@ void Texture::buildGPUMaterial(tinygltf::Model& model, int& materialIndex, ItemI
 
 	mat.baseColorTex = baseColorTexIndex;
 
-	mat.normalTex = material.normalTexture.index;
+	int normalTexIndex = material.normalTexture.index;
+
+	mat.normalTex = normalTexIndex;
 
 	mat.baseColorFactor = glm::make_vec4(material.pbrMetallicRoughness.baseColorFactor.data());
 
@@ -240,10 +247,14 @@ void Texture::buildGPUMaterial(tinygltf::Model& model, int& materialIndex, ItemI
 	else
 		mat.baseColorTex = uploadGltfTextureToVulkan(model, baseColorTexIndex, classReference, VK_FORMAT_R8G8B8A8_SRGB);
 
-	if (mat.normalTex < 0)
+	if (mat.normalTex < 0) {
+
 		mat.normalTex = Constants::DEFAULT_NORMAL_TEXTURE_INDEX;
-	else
-		mat.normalTex = uploadGltfTextureToVulkan(model, baseColorTexIndex, classReference, VK_FORMAT_R8G8B8A8_UNORM);
+	}
+	else {
+		mat.normalTex = uploadGltfTextureToVulkan(model, normalTexIndex, classReference, VK_FORMAT_R8G8B8A8_UNORM);
+
+	}
 
 	classReference.gpuMaterials()[materialIndex] = mat;
 }
@@ -253,13 +264,13 @@ void Texture::createDefaultTextures() {
 	// default base-color (default white)
 	GPUTexture whiteTex(m_Devices.device);
 	createTextureImage(true, "", Constants::WHITE_PIXEL, whiteTex, VK_FORMAT_R8G8B8A8_SRGB, 1, 1);
-	Constants::DEFAULT_WHITE_TEXTURE_INDEX = m_gpuDefaultTextures.size();
-	m_gpuDefaultTextures.push_back(std::move(whiteTex));
+	Constants::DEFAULT_WHITE_TEXTURE_INDEX = m_gpuTextures.size();
+	m_gpuTextures.push_back(std::move(whiteTex));
 
 	// | default normals (default flat)
 	GPUTexture normalTex(m_Devices.device);
 	createTextureImage(true, "", Constants::NORMAL_PIXEL, normalTex, VK_FORMAT_R8G8B8A8_UNORM, 1, 1);
-	Constants::DEFAULT_NORMAL_TEXTURE_INDEX = m_gpuDefaultTextures.size();
-	m_gpuDefaultTextures.push_back(std::move(normalTex));
+	Constants::DEFAULT_NORMAL_TEXTURE_INDEX = m_gpuTextures.size();
+	m_gpuTextures.push_back(std::move(normalTex));
 
 }

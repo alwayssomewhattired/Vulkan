@@ -37,15 +37,10 @@ void DescriptorSet::createDescriptorPool() {
 // | generic descriptor set creator
 // - check if this is correct
 void DescriptorSet::createMeshDescriptorSets(ItemInterface& classReference) {
-
+	
 	const auto& materials = classReference.gpuMaterials();
 
-
-	auto& textures = classReference.gpuTextures();
-	// | Default handling
-	if (textures.size() == 0) {
-		textures = m_Texture.m_gpuDefaultTextures;
-	}
+	const auto& textures = m_Texture.m_gpuTextures;
 
 	// | indexing is: descriptorSets[frame * materials.size() + materialIndex]
 	descriptorSets.resize(Constants::MAX_FRAMES_IN_FLIGHT * materials.size());
@@ -126,11 +121,6 @@ void DescriptorSet::createMeshDescriptorSets(ItemInterface& classReference) {
 
 		}
 	}
-
-	//m_HostToDevice->createDescriptorSets(m_SilentHill3Game->m_descriptorSets, m_DescriptorSetLayout->descriptorSetLayout, 
-	//	descriptorPool,
-	//	m_UniformBuffer.uniformBuffers, m_UniformBuffer.modelUniformBuffers, textureImageView, textureSampler, 
-	//	m_SilentHill3Game->m_modelUBOSize);
 }
 
 void DescriptorSet::createMandelbulbComputeDescriptorSets() {

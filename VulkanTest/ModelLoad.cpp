@@ -172,11 +172,13 @@ void ModelLoad::loadModel(const std::string& path, ItemInterface& classReference
 		throw std::runtime_error("Unsupported index component type");
 
 	// | materials and textures
-
 	classReference.gpuMaterials().resize(model.materials.size());
-	classReference.gpuTextures().clear();
-	for (int i = 0; i < model.materials.size(); ++i)
+	//classReference.gpuTextures().clear();
+
+	for (int i = 0; i < model.materials.size(); ++i) {
+
 		m_Texture.buildGPUMaterial(model, i, classReference);
+	}
 
 	// | Vertex 
 

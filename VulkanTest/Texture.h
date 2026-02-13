@@ -32,7 +32,9 @@ class Texture
 public:
 	Texture(Buffer& buffer, Image& image, Devices& devices, CommandBuffer& commandBuffer);
 	
-	std::vector<GPUTexture> m_gpuDefaultTextures;
+	// | central texture storage
+	// | (use indices from item class to access elements)
+	std::vector<GPUTexture> m_gpuTextures;
 
 	// - i think this should be non-copyable as well
 	struct GPUMaterial {
