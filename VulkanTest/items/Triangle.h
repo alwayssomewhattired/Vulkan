@@ -1,23 +1,28 @@
+
 #pragma once
-#include <glm/fwd.hpp>
+
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
+#include <vulkan/vulkan.h>
+#include <vulkan/vulkan_core.h>
+#include <cstdint>
+#include <vector>
+#include <string>
+
 #include "ItemInterface.h"
+#include "../Vertex.h"
+#include "../glm_config.h"
 #include "../Texture.h"
 #include "../GPUTexture.h"
 
-#include <vulkan/vulkan.h>
-#include <vulkan/vulkan_core.h>
-#include <vector>
-#include <functional>
-#include <cstdint>
+class Triangle : public ItemInterface
+{
 
-class SilentHill3Game : public ItemInterface {
 public:
-	SilentHill3Game(VkDevice& device, VkPhysicalDevice& physicalDevice);
+	glm::mat4 modelMatrix = glm::translate(glm::mat4(1.0f), glm::vec3(0, 0, -3));
 
 	VkBuffer m_vertexBuffer;
 	VkDeviceMemory m_vertexMemory;
@@ -39,7 +44,13 @@ public:
 
 	std::vector<VkDescriptorSet> m_descriptorSets;
 
-	// | begin item interface block
+	// | vertices of simple triangle
+	const std::vector<Vertex> triangleVertices = {
+	{{ 0.0f, -0.5f, 0.0f }, {1.0f, 0.0f, 0.0f}},
+	{{ 0.5f,  0.5f, 0.0f }, {0.0f, 1.0f, 0.0f}},
+	{{-0.5f,  0.5f, 0.0f }, {0.0f, 0.0f, 1.0f}}
+	};
+
 	VkBuffer& vertexBuffer() override {
 		return m_vertexBuffer;
 	};
@@ -88,16 +99,5 @@ public:
 		return m_descriptorSets;
 	}
 
-	size_t m_modelUBOSize = sizeof(SilentHill3GamePC);
-
-private:
-
-	// | holds model matrices
-	struct SilentHill3GamePC {
-		alignas(16) glm::mat4 model;
-	};
-	VkDevice& m_device;
-	VkPhysicalDevice& m_physicalDevice;
-
-
 };
+

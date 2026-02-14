@@ -27,6 +27,7 @@
 #include "UniformBuffer.h"
 #include "DescriptorSet.h"
 #include "StorageImageManager.h"
+#include "items/Triangle.h"
 #include "items/Home.h"
 #include "items/SilentHill3Game.h"
 #include "RenderTarget.h"
@@ -54,16 +55,7 @@ const uint32_t WIDTH = 800;
 const uint32_t HEIGHT = 600;
 const int MAX_FRAMES_IN_FLIGHT = Constants::MAX_FRAMES_IN_FLIGHT;
 
-const std::string TEXTURE_PATH = "textures/Metal055C_8K-PNG_Color.png";
-
 const bool enableValidationLayers = Constants::enableValidationLayers;
-
-// | vertices of simple triangle
-const std::vector<Vertex> triangleVertices = {
-{{ 0.0f, -0.5f, 0.0f }, {1.0f, 0.0f, 0.0f}},
-{{ 0.5f,  0.5f, 0.0f }, {0.0f, 1.0f, 0.0f}},
-{{-0.5f,  0.5f, 0.0f }, {0.0f, 0.0f, 1.0f}}
-};
 
 
 // | unknown thing that I'm too scared to touch
@@ -134,7 +126,8 @@ private:
 
 	std::unique_ptr<Texture> m_Texture = nullptr;
 
-	std::unique_ptr<Home> m_home = nullptr;
+	std::unique_ptr<Triangle> m_Triangle = nullptr;
+	std::unique_ptr<Home> m_Home = nullptr;
 	std::unique_ptr<SilentHill3Game> m_SilentHill3Game = nullptr;
 
 	std::unique_ptr<UniformBuffer> m_UniformBuffer = nullptr;
@@ -156,11 +149,9 @@ private:
 
 	VkInstance instance;
 
+	// - what even is this and why is it here?
 	VkBuffer indexBuffer;
 	VkDeviceMemory indexBufferMemory;
-
-	VkBuffer triangleVertexBuffer;
-	VkDeviceMemory triangleVertexBufferMemory;
 
 	uint32_t currentFrame = 0;
 	bool framebufferResized = false;
@@ -215,10 +206,11 @@ private:
 		m_ModelLoad = std::make_unique<ModelLoad>(m_devices->device, m_devices->physicalDevice, m_CommandPool->commandPool,
 			m_devices->graphicsQueue, *m_Buffer, *m_CommandBuffer, *m_Texture);
 
-		m_home = std::make_unique<Home>();
+		m_Triangle = std::make_unique<Triangle>();
+		m_Home = std::make_unique<Home>();
 		m_SilentHill3Game = std::make_unique<SilentHill3Game>(m_devices->device, m_devices->physicalDevice);
 
-		items.push_back(m_home.get());
+		items.push_back(m_Home.get());
 		items.push_back(m_SilentHill3Game.get());
 
 		m_SwapChain->createSwapChain();
@@ -239,7 +231,7 @@ private:
 		createModel();
 
 		// | triangle vertex buffer 
-		m_Buffer->createVertexBuffer(triangleVertices, triangleVertexBuffer, triangleVertexBufferMemory);
+		m_Buffer->createVertexBuffer(m_Triangle->triangleVertices, m_Triangle->vertexBuffer(), m_Triangle->vertexMemory());
 
 	  // - incorporate for triangle in the future
 		//createIndexBuffer();
@@ -248,7 +240,6 @@ private:
 			g_renderTarget.rotationEnabled);
 
 		m_UniformBuffer->createUniformBuffers();
-		std::cout << "end line\n";
 
 		m_UniformBuffer->createUniformBuffer(m_SilentHill3Game->m_modelUBOSize);
 
@@ -257,8 +248,6 @@ private:
 
 		m_DescriptorSet = std::make_unique<DescriptorSet>(*m_DescriptorSetLayout, *m_devices, *m_UniformBuffer, 
 			*m_StorageImageManager, *m_Texture);
-
-		m_DescriptorSet->createDescriptorPool();
 
 		createDescriptorSets();
 
@@ -391,62 +380,20 @@ private:
 
 	// | loads .glb file(s)
 	void createModel() {
-		// room will be white until we find a way to pass in external file data.
 
-		m_ModelLoad->loadModel("models/thedeathofallionceloved.glb", *m_home);
+		m_ModelLoad->loadModel("models/thedeathofallionceloved.glb", *m_Home);
 
-		// - which texture of from our item class do we use?
-		//m_Texture->createTextureImage(false, "textures/Metal055C_8K-PNG_Color.png", m_home->);
-		// 
 		m_ModelLoad->loadModel("models/silent-hill-3-ps2-game-cover/source/SilentHill3ps2Game.glb", *m_SilentHill3Game);
 	}
 
 	// creates descriptor sets for models
 	void createDescriptorSets() {
-		m_DescriptorSet->createMeshDescriptorSets(*m_home);
-		std::cout << "pasta\n";
+		m_DescriptorSet->createDescriptorPool();
+		m_DescriptorSet->createMeshDescriptorSets(*m_Home);
 
-		//m_DescriptorSet->createMeshDescriptorSets(*m_SilentHill3Game);
+		m_DescriptorSet->createDescriptorPool();
+		m_DescriptorSet->createMeshDescriptorSets(*m_SilentHill3Game);
 	}
-
-
-
-	//void createSyncObjects() {
-
-	//	imageAvailableSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
-	//	renderFinishedSemaphores.resize(*m_swapChainImageCount);
-	//	imagesInFlight.resize(*m_swapChainImageCount, VK_NULL_HANDLE);
-	//	inFlightFences.resize(MAX_FRAMES_IN_FLIGHT);
-
-	//	VkSemaphoreCreateInfo semaphoreInfo{};
-	//	semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-
-	//	VkFenceCreateInfo fenceInfo{};
-	//	fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-	//	fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
-	//	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-	//		if (vkCreateSemaphore(*m_device, &semaphoreInfo, nullptr, &imageAvailableSemaphores[i]) != VK_SUCCESS ||
-	//			vkCreateFence(*m_device, &fenceInfo, nullptr, &inFlightFences[i]) != VK_SUCCESS )
-	//		{
-	//			throw std::runtime_error("failed to create per-frame sync objects!");
-	//		}
-	//	}
-	//	for (size_t i = 0; i < *m_swapChainImageCount; i++) {
-	//		if (vkCreateSemaphore(*m_device, &semaphoreInfo, nullptr, &renderFinishedSemaphores[i]) != VK_SUCCESS)
-	//		{
-	//			throw std::runtime_error("failed to create per-image sync objects!");
-	//		}
-	//	}
-	//}
-
-	//void createImageViews() {
-	//	m_SwapChain->swapChainImageViews.resize(m_SwapChain->swapChainImages.size());
-
-	//	for (size_t i = 0; i < m_SwapChain->swapChainImages.size(); i++) {
-	//		m_SwapChain->swapChainImageViews[i] = m_Image->createImageView(m_SwapChain->swapChainImages[i], 
-	//			m_SwapChain->swapChainImageFormat, VK_IMAGE_ASPECT_COLOR_BIT, 1);
-	//	}
-	//}
 
 
 	void drawFrame() {
@@ -488,7 +435,7 @@ private:
 
 		m_CommandBuffer->recordCommandBuffer(m_CommandBuffer->commandBuffers[imageIndex], imageIndex, m_RenderPass->renderPass,
 			*m_GraphicsPipeline, items, *m_DescriptorSet, currentFrame, m_StorageImageManager->m_GPUStorageImage.image(), 
-			triangleVertexBuffer);
+			*m_Triangle);
 
 		VkSubmitInfo submitInfo{};
 		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -573,14 +520,6 @@ private:
 	{ 
 		m_SwapChain->cleanupSwapChain(*m_AttachmentManager);
 
-		// | this code is now handled by the destructor of our GPU-side classes
-		//vkDestroySampler(*m_device, m_Texture->textureSampler, nullptr);
-
-		//vkDestroyImageView(*m_device, m_Texture->textureImageView, nullptr);
-
-		//vkDestroyImage(*m_device, m_Texture->textureImage, nullptr);
-		//vkFreeMemory(*m_device, m_Texture->textureImageMemory, nullptr);
-
 		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
 			vkDestroyBuffer(*m_device, m_UniformBuffer->uniformBuffers[i], nullptr);
 			vkFreeMemory(*m_device, m_UniformBuffer->uniformBuffersMemory[i], nullptr);
@@ -593,8 +532,8 @@ private:
 		vkDestroyBuffer(*m_device, indexBuffer, nullptr);
 		vkFreeMemory(*m_device, indexBufferMemory, nullptr);
 
-		vkDestroyBuffer(*m_device, triangleVertexBuffer, nullptr);
-		vkFreeMemory(*m_device, triangleVertexBufferMemory, nullptr);
+		vkDestroyBuffer(*m_device, m_Triangle->vertexBuffer(), nullptr);
+		vkFreeMemory(*m_device, m_Triangle->vertexMemory(), nullptr);
 
 		vkDestroyPipeline(*m_device, m_GraphicsPipeline->graphicsPipeline, nullptr);
 		vkDestroyPipelineLayout(*m_device, m_GraphicsPipeline->pipelineLayout, nullptr);
@@ -626,7 +565,6 @@ private:
 
 int main()
 {
-
 
 	HelloTriangleApplication app;
 

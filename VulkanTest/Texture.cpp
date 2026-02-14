@@ -248,10 +248,10 @@ void Texture::buildGPUMaterial(tinygltf::Model& model, int& materialIndex, ItemI
 
 	mat.baseColorFactor = glm::make_vec4(material.pbrMetallicRoughness.baseColorFactor.data());
 
-	// handle missing textures
-	if (mat.baseColorTex < 0 && classReference.optionalTexturePath().empty())
+	if (mat.baseColorTex < 0 && classReference.optionalTexturePath().empty()) {
+		std::cout << "mort\n";
 		mat.baseColorTex = Constants::DEFAULT_WHITE_TEXTURE_INDEX;
-	else {
+	} else {
 
 		mat.baseColorTex = uploadGltfTextureToVulkan(model, baseColorTexIndex, classReference, VK_FORMAT_R8G8B8A8_SRGB);
 	}
@@ -259,8 +259,7 @@ void Texture::buildGPUMaterial(tinygltf::Model& model, int& materialIndex, ItemI
 	if (mat.normalTex < 0) {
 
 		mat.normalTex = Constants::DEFAULT_NORMAL_TEXTURE_INDEX;
-	}
-	else {
+	} else {
 		mat.normalTex = uploadGltfTextureToVulkan(model, normalTexIndex, classReference, VK_FORMAT_R8G8B8A8_UNORM);
 
 	}

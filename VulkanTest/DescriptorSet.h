@@ -4,11 +4,6 @@
 #include <vector>
 
 #include "Constants.h"
-//#include "DescriptorSetLayout.h"
-//#include "Devices.h"
-//#include "UniformBuffer.h"
-//#include "items/ItemInterface.h"
-//#include "StorageImageManager.h"
 
 class DescriptorSetLayout;
 class Devices;
@@ -29,7 +24,9 @@ public:
 	void createDescriptorPool();
 
 	VkDescriptorPool descriptorPool;
-	std::vector<VkDescriptorSet> descriptorSets;
+
+	// - we moved this to be stored per item class
+	//std::vector<VkDescriptorSet> descriptorSets;
 
 	std::vector<VkDescriptorSet> mandelbulbComputeDescriptorSets;
 	std::vector<VkDescriptorSet> mandelbulbGraphicsDescriptorSets;

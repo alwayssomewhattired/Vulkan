@@ -156,7 +156,7 @@
     <ClCompile Include="SwapChain.cpp" />
     <ClCompile Include="Texture.cpp" />
     <ClCompile Include="tinygltf_impl.cpp" />
-    <ClCompile Include="Triangle.cpp" />
+    <ClCompile Include="items\Triangle.cpp" />
     <ClCompile Include="UniformBuffer.cpp" />
     <ClCompile Include="ValidationLayers.cpp" />
   </ItemGroup>
@@ -193,7 +193,7 @@
     <ClInclude Include="StorageImageManager.h" />
     <ClInclude Include="SwapChain.h" />
     <ClInclude Include="Texture.h" />
-    <ClInclude Include="Triangle.h" />
+    <ClInclude Include="items\Triangle.h" />
     <ClInclude Include="UniformBuffer.h" />
     <ClInclude Include="ValidationLayers.h" />
     <ClInclude Include="Vertex.h" />

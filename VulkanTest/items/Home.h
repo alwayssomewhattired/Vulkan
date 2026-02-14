@@ -1,11 +1,5 @@
 #pragma once
 
-//#include <glm/fwd.hpp>
-//#define GLM_FORCE_RADIANS
-//#define GLM_FORCE_DEPTH_ZERO_TO_ONE
-//#include <glm/glm.hpp>
-//#include <glm/gtc/matrix_transform.hpp>
-
 
 #include <vulkan/vulkan.h>
 #include <vulkan/vulkan_core.h>
@@ -37,13 +31,11 @@ public:
 	std::vector<Vertex> m_vertices;
 	std::vector<uint32_t> m_indices;
 
-	//std::vector<GPUTexture> m_gpuTextures;
-
-	//std::vector<uint32_t> m_gpuTexturesIndices;
-
 	std::vector<Texture::GPUMaterial> m_gpuMaterials;
 
 	std::string m_optionalTexturePath = "textures/Metal055C_8K-PNG_Color.png";
+
+	std::vector<VkDescriptorSet> m_descriptorSets;
 
 	// | begin item interface block
 	VkBuffer& vertexBuffer() override {
@@ -82,20 +74,16 @@ public:
 		return m_indices;
 	}
 
-	//std::vector<GPUTexture>& gpuTextures() override {
-	//	return m_gpuTextures;
-	//}
-
-	//std::vector<uint32_t>& gpuTexturesIndices() override {
-	//	return m_gpuTexturesIndices;
-	//}
-
 	std::vector<Texture::GPUMaterial>& gpuMaterials() override {
 		return m_gpuMaterials;
 	}
 
 	std::string& optionalTexturePath() override {
 		return m_optionalTexturePath;
+	}
+
+	std::vector<VkDescriptorSet>& descriptorSets() override {
+		return m_descriptorSets;
 	}
 };
 

@@ -37,5 +37,7 @@ struct ItemInterface {
 
 	virtual std::string& optionalTexturePath() = 0;
 
+	virtual std::vector<VkDescriptorSet>& descriptorSets() = 0;
+
 	virtual ~ItemInterface() = default;
 };

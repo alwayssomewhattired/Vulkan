@@ -35,17 +35,18 @@ void DescriptorSet::createDescriptorPool() {
 }
 
 // | generic descriptor set creator
-// - check if this is correct
 void DescriptorSet::createMeshDescriptorSets(ItemInterface& classReference) {
 	
 	const auto& materials = classReference.gpuMaterials();
 
 	const auto& textures = m_Texture.m_gpuTextures;
 
+	auto& descriptorSets = classReference.descriptorSets();
+
 	// | indexing is: descriptorSets[frame * materials.size() + materialIndex]
 	descriptorSets.resize(Constants::MAX_FRAMES_IN_FLIGHT * materials.size());
 
-	std::vector<VkDescriptorSetLayout> layouts(Constants::MAX_FRAMES_IN_FLIGHT, m_DescriptorSetLayout.descriptorSetLayout);
+	std::vector<VkDescriptorSetLayout> layouts(descriptorSets.size(), m_DescriptorSetLayout.descriptorSetLayout);
 	VkDescriptorSetAllocateInfo allocInfo{};
 	allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
 	allocInfo.descriptorPool = descriptorPool;
@@ -115,7 +116,6 @@ void DescriptorSet::createMeshDescriptorSets(ItemInterface& classReference) {
 			descriptorWrites[3].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 			descriptorWrites[3].descriptorCount = 1;
 			descriptorWrites[3].pImageInfo = &normalInfo;
-
 			vkUpdateDescriptorSets(m_Devices.device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 
 				0, nullptr);
 

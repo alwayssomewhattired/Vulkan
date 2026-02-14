@@ -64,7 +64,7 @@ void CommandBuffer::createCommandBuffers(CommandPool& commandPool) {
 
 void CommandBuffer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex, VkRenderPass& renderPass,
 	GraphicsPipeline& graphicsPipeline, std::vector<ItemInterface*>& items, DescriptorSet& descriptorSet, 
-	const uint32_t& currentFrame, VkImage& storageImage, VkBuffer& triangleVertexBuffer) {
+	const uint32_t& currentFrame, VkImage& storageImage, ItemInterface& triangleClass) {
 
 	VkCommandBufferBeginInfo beginInfo{};
 	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -104,7 +104,6 @@ void CommandBuffer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t 
 
 	vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-	auto& descriptorSets = descriptorSet.descriptorSets;
 	auto& renderTriangle = g_renderTarget.renderTriangle;
 	auto& renderMandelbulb = g_renderTarget.renderMandelbulb;
 	auto& mandelbulbComputeDescriptorSets = descriptorSet.mandelbulbComputeDescriptorSets;
@@ -122,6 +121,7 @@ void CommandBuffer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t 
 		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.graphicsPipeline);
 
 		for (auto& item : items) {
+			auto& descriptorSets = item->descriptorSets();
 			VkBuffer vertexBuffers[] = { item->vertexBuffer() };
 			VkDeviceSize offsets[] = { 0 };
 			vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
@@ -218,12 +218,12 @@ void CommandBuffer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t 
 	else if (renderTriangle && !renderMandelbulb) {
 		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.graphicsPipeline);
 
-		VkBuffer triangleVertexBuffers[] = { triangleVertexBuffer };
+		VkBuffer triangleVertexBuffers[] = { triangleClass.vertexBuffer()};
 		VkDeviceSize triangleOffsets[] = { 0 };
 		vkCmdBindVertexBuffers(commandBuffer, 0, 1, triangleVertexBuffers, triangleOffsets);
 
 		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.pipelineLayout, 0, 1,
-			&descriptorSets[currentFrame], 0, nullptr);
+			&triangleClass.descriptorSets()[currentFrame], 0, nullptr);
 
 		vkCmdDraw(commandBuffer, 3, 1, 0, 0);
 	}
