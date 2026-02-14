@@ -51,5 +51,9 @@ void main() {
 	//vec3 Lo += (kD * albedo / PI + specular) * radiance * NdotL;
 	//// | end PBR lighting
 
-	outColor = texture(texSampler, fragTextCoord);
+	// | flip texture 
+	vec2 uv = fragTextCoord;
+	uv.y = 1.0 - uv.y;
+
+	outColor = texture(texSampler, uv);
 }

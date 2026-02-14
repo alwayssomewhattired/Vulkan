@@ -14,21 +14,38 @@ DescriptorSet::DescriptorSet(DescriptorSetLayout& descriptorSetLayout, Devices& 
 	m_StorageImageManager(storageImageManager), m_Texture(texture) {}
 
 void DescriptorSet::createDescriptorPool() {
-	const uint32_t descriptorCount = 4;
+
+	constexpr uint32_t meshSets = 4;
+	constexpr uint32_t computeSets = 4;
+	constexpr uint32_t graphicsSets = 4;
+
+	constexpr uint32_t totalSets = meshSets + computeSets + graphicsSets;
+
+	// | per-set usage
+	constexpr uint32_t uboPerSet = 3;
+	constexpr uint32_t samplerPerMesh = 2;
+	constexpr uint32_t storagePerComp = 1;
+
 
 	std::array<VkDescriptorPoolSize, 3> poolSizes{};
+
+	// | UBOs
 	poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-	poolSizes[0].descriptorCount = descriptorCount * 3; // camera + model + mandelbulb per set
+	poolSizes[0].descriptorCount = totalSets * uboPerSet;
+
+	// Samplers (mesh only)
 	poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-	poolSizes[1].descriptorCount = descriptorCount; // one texture per set
+	poolSizes[1].descriptorCount = meshSets * samplerPerMesh;
+
+	// | Storage images (compute only)
 	poolSizes[2].type = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-	poolSizes[2].descriptorCount = descriptorCount; // one storage image per compute set
+	poolSizes[2].descriptorCount = computeSets * storagePerComp;
 
 	VkDescriptorPoolCreateInfo poolInfo{};
 	poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
 	poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
 	poolInfo.pPoolSizes = poolSizes.data();
-	poolInfo.maxSets = descriptorCount * 4; // 4 mesh + 4 compute + 4 graphics = 12
+	poolInfo.maxSets = totalSets;
 
 	if (vkCreateDescriptorPool(m_Devices.device, &poolInfo, nullptr, &descriptorPool) != VK_SUCCESS)
 		throw std::runtime_error("failed to create descriptor pool!");

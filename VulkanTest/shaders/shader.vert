@@ -11,6 +11,8 @@ layout(set = 0, binding = 1) uniform ModelUBO {
     mat4 model;
 } modelUbo;
 
+
+// - set this up first
 layout(push_constant) uniform SilentHill3GamePC {
     mat4 model;
 } silentHill3GamePC;
