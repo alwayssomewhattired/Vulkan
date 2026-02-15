@@ -75,7 +75,6 @@ void DescriptorSet::createMeshDescriptorSets(ItemInterface& classReference) {
 
 	for (size_t frame = 0; frame < Constants::MAX_FRAMES_IN_FLIGHT; frame++) {
 		for (size_t matIdx = 0; matIdx < materials.size(); ++matIdx) {
-
 			size_t dsIndex = frame * materials.size() + matIdx;
 			VkDescriptorSet dstSet = descriptorSets[dsIndex];
 
@@ -90,6 +89,7 @@ void DescriptorSet::createMeshDescriptorSets(ItemInterface& classReference) {
 			modelBufferInfo.offset = 0;
 			modelBufferInfo.range = sizeof(UniformBuffer::ModelUBO);
 			
+			assert(material.baseColorTex < textures.size());
 			VkDescriptorImageInfo baseColorInfo{};
 			baseColorInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 			baseColorInfo.imageView = textures[material.baseColorTex].view;

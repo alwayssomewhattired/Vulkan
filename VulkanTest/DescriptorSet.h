@@ -25,9 +25,6 @@ public:
 
 	VkDescriptorPool descriptorPool;
 
-	// - we moved this to be stored per item class
-	//std::vector<VkDescriptorSet> descriptorSets;
-
 	std::vector<VkDescriptorSet> mandelbulbComputeDescriptorSets;
 	std::vector<VkDescriptorSet> mandelbulbGraphicsDescriptorSets;
 

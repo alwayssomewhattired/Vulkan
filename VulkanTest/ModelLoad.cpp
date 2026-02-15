@@ -175,171 +175,84 @@ void ModelLoad::loadModel(const std::string& path, ItemInterface& classReference
 	// - this literally gets the first primitive from the mesh and that's it
 	// - we need to iterate over all the primitives
 
-		const auto& primitive = mesh.primitives[0];
-		modelFileParse(model, primitive, vertexCount, vertices, indexType, indices, classReference);
+	const auto& primitive = mesh.primitives[0];
+	modelFileParse(model, primitive, vertexCount, vertices, indexType, indices, classReference);
 
-		//// POSITION
-		////
-		//const auto& posAccessor = model.accessors[primitive.attributes.at("POSITION")];
-		//const auto& posView = model.bufferViews[posAccessor.bufferView];
-		//const auto& posBuffer = model.buffers[posView.buffer];
+	// | Vertex 
 
-		//const size_t posOffsetInBuffer = posView.byteOffset + posAccessor.byteOffset;
-		//const size_t posStride = posView.byteStride ? posView.byteStride : (3 * sizeof(float));
-		//const unsigned char* base = posBuffer.data.data() + posOffsetInBuffer;
-		//vertexCount = posAccessor.count;
-		//vertices.resize(vertexCount);
+	VkDeviceSize vertexSize = sizeof(Vertex) * vertices.size();
 
-		//for (size_t i = 0; i < vertexCount; ++i) {
-		//	const float* p = reinterpret_cast<const float*>(base + i * posStride);
-		//	vertices[i].pos = glm::vec3(p[0], p[1], p[2]);
-		//}
+	VkBuffer stagingVb;
+	VkDeviceMemory stagingVm;
 
-		//// COLOR
-		////
-		//for (size_t i = 0; i < vertexCount; ++i) {
-		//	vertices[i].color = glm::vec3(1.0f); // default color (white)
-		//}
+	// staging buffer
+	m_Buffer.createBuffer(
+		vertexSize,
+		VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+		stagingVb,
+		stagingVm
+	);
 
-		//// TEXCOORDS
-		////
-		//bool hasTexcoords = primitive.attributes.find("TEXCOORD_0") != primitive.attributes.end();
+	void* mapped;
+	vkMapMemory(device, stagingVm, 0, vertexSize, 0, &mapped);
+	memcpy(mapped, vertices.data(), static_cast<size_t>(vertexSize));
+	unsigned char* data = reinterpret_cast<unsigned char*>(mapped);
+	vkUnmapMemory(device, stagingVm);
 
-		//if (hasTexcoords) {
-		//	const auto& texAccessor = model.accessors[primitive.attributes.at("TEXCOORD_0")];
+	m_Buffer.createBuffer(
+		vertexSize,
+		VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+		vertexBuffer,
+		vertexMemory
+	);
 
-		//	if (texAccessor.type != TINYGLTF_TYPE_VEC2 || texAccessor.componentType != TINYGLTF_COMPONENT_TYPE_FLOAT)
-		//		throw std::runtime_error("Unsupported TEXCOORD_0 format!");
+	// copy to gpu
+	m_CommandBuffer.copyBuffer(stagingVb, vertexBuffer, vertexSize);
 
-		//	const auto& texView = model.bufferViews[texAccessor.bufferView];
-		//	const auto& texBuffer = model.buffers[texView.buffer];
-
-		//	const  size_t texOffsetInBuffer = texView.byteOffset + texAccessor.byteOffset;
-		//	const size_t texStride = texView.byteStride ? texView.byteStride : (2 * sizeof(float));
-		//	const unsigned char* texBase = texBuffer.data.data() + texOffsetInBuffer;
-		//	size_t texCount = texAccessor.count;
-
-		//	size_t common = std::min(vertexCount, texCount);
-		//	for (size_t i = 0; i < common; ++i) {
-		//		const float* t = reinterpret_cast<const float*>(texBase + i * texStride);
-		//		vertices[i].texCoord = glm::vec2(t[0], 1.0f - t[1]);
-		//	}
-
-		//	for (size_t i = common; i < vertexCount; ++i) vertices[i].texCoord = glm::vec2(0.0f);
-
-		//}
-
-		//// INDICES
-		////
-		//const auto& idxAccessor = model.accessors[primitive.indices];
-		//const auto& idxView = model.bufferViews[idxAccessor.bufferView];
-		//const auto& idxBuffer = model.buffers[idxView.buffer];
-
-		//const size_t idxOffsetInBuffer = idxView.byteOffset + idxAccessor.byteOffset;
-		//const unsigned char* idxBase = idxBuffer.data.data() + idxOffsetInBuffer;
-
-		//indices.resize(idxAccessor.count);
-
-		//if (idxAccessor.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT) {
-		//	const uint16_t* src = reinterpret_cast<const uint16_t*>(idxBase);
-		//	for (size_t i = 0; i < idxAccessor.count; ++i) indices[i] = static_cast<uint32_t>(src[i]);
-		//	indexType = VK_INDEX_TYPE_UINT32; // remember this for vkCmdBindIndexBuffer or vkCmdDrawIndexed
-		//}
-		//else if (idxAccessor.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT) {
-		//	const uint32_t* src = reinterpret_cast<const uint32_t*>(idxBase);
-		//	for (size_t i = 0; i < idxAccessor.count; ++i) indices[i] = src[i];
-		//	indexType = VK_INDEX_TYPE_UINT32;
-		//}
-		//else if (idxAccessor.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE) {
-		//	const uint8_t* src = reinterpret_cast<const uint8_t*>(idxBase);
-		//	for (size_t i = 0; i < idxAccessor.count; ++i) indices[i] = static_cast<uint32_t>(src[i]);
-		//	indexType = VK_INDEX_TYPE_UINT32; // no uint8 in Vulkan so we must expand it to 16 or 32 when uploading
-		//}
-		//else
-		//	throw std::runtime_error("Unsupported index component type");
-
-		//// | materials and textures
-		//classReference.gpuMaterials().resize(model.materials.size());
-		//for (int i = 0; i < model.materials.size(); ++i) {
-		//	m_Texture.buildGPUMaterial(model, i, classReference);
-
-		//}
-
-		// | Vertex 
-
-		VkDeviceSize vertexSize = sizeof(Vertex) * vertices.size();
-
-		VkBuffer stagingVb;
-		VkDeviceMemory stagingVm;
-
-		// staging buffer
-		m_Buffer.createBuffer(
-			vertexSize,
-			VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-			stagingVb,
-			stagingVm
-		);
-
-		void* mapped;
-		vkMapMemory(device, stagingVm, 0, vertexSize, 0, &mapped);
-		memcpy(mapped, vertices.data(), static_cast<size_t>(vertexSize));
-		unsigned char* data = reinterpret_cast<unsigned char*>(mapped);
-		vkUnmapMemory(device, stagingVm);
-
-		m_Buffer.createBuffer(
-			vertexSize,
-			VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
-			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-			vertexBuffer,
-			vertexMemory
-		);
-
-		// copy to gpu
-		m_CommandBuffer.copyBuffer(stagingVb, vertexBuffer, vertexSize);
-
-		// destroy staging buffer
-		vkDestroyBuffer(device, stagingVb, nullptr);
-		vkFreeMemory(device, stagingVm, nullptr);
+	// destroy staging buffer
+	vkDestroyBuffer(device, stagingVb, nullptr);
+	vkFreeMemory(device, stagingVm, nullptr);
 
 
-		// indices
+	// indices
 
-		indexType = VK_INDEX_TYPE_UINT32;
-		indexCount = static_cast<uint32_t>(indices.size());
+	indexType = VK_INDEX_TYPE_UINT32;
+	indexCount = static_cast<uint32_t>(indices.size());
 
-		VkDeviceSize indexSize = sizeof(uint32_t) * indices.size();
+	VkDeviceSize indexSize = sizeof(uint32_t) * indices.size();
 
-		VkBuffer stagingIb;
-		VkDeviceMemory stagingIm;
+	VkBuffer stagingIb;
+	VkDeviceMemory stagingIm;
 
-		m_Buffer.createBuffer(
-			indexSize,
-			VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-			stagingIb,
-			stagingIm
-		);
+	m_Buffer.createBuffer(
+		indexSize,
+		VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+		stagingIb,
+		stagingIm
+	);
 
-		vkMapMemory(device, stagingIm, 0, indexSize, 0, &mapped);
-		memcpy(mapped, indices.data(), indexSize);
-		vkUnmapMemory(device, stagingIm);
+	vkMapMemory(device, stagingIm, 0, indexSize, 0, &mapped);
+	memcpy(mapped, indices.data(), indexSize);
+	vkUnmapMemory(device, stagingIm);
 
-		m_Buffer.createBuffer(
-			indexSize,
-			VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
-			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-			indexBuffer,
-			indexMemory
-		);
+	m_Buffer.createBuffer(
+		indexSize,
+		VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+		indexBuffer,
+		indexMemory
+	);
 
-		m_CommandBuffer.copyBuffer(stagingIb, indexBuffer, indexSize);
+	m_CommandBuffer.copyBuffer(stagingIb, indexBuffer, indexSize);
 
-		vkDestroyBuffer(device, stagingIb, nullptr);
-		vkFreeMemory(device, stagingIm, nullptr);
+	vkDestroyBuffer(device, stagingIb, nullptr);
+	vkFreeMemory(device, stagingIm, nullptr);
 
-		assert(indexType == VK_INDEX_TYPE_UINT32);
-		assert(indexSize == sizeof(uint32_t) * indexCount);
+	assert(indexType == VK_INDEX_TYPE_UINT32);
+	assert(indexSize == sizeof(uint32_t) * indexCount);
 
 }
 

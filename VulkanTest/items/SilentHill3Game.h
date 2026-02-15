@@ -92,10 +92,16 @@ public:
 
 private:
 
+	// - we need to actually make our shader use this push constants.
+	// - currently we are using the same ubo as our 'home' model.
+	// - this is causing our flickering of texture
+	// - because we are racing the gpu.
+
 	// | holds model matrices
 	struct SilentHill3GamePC {
 		alignas(16) glm::mat4 model;
 	};
+
 	VkDevice& m_device;
 	VkPhysicalDevice& m_physicalDevice;
 

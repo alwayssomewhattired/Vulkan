@@ -393,6 +393,7 @@ private:
 
 		m_DescriptorSet->createDescriptorPool();
 		m_DescriptorSet->createMeshDescriptorSets(*m_SilentHill3Game);
+
 	}
 
 

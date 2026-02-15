@@ -9,17 +9,9 @@
 #include "GPUTexture.h"
 
 #include <stdexcept>
-//#include <glm/fwd.hpp>
-//#include <glm/glm.hpp>
+
 #include <stb_image.h>
 
-//#include "Image.h"
-//#include "Buffer.h"
-//#include "Devices.h"
-//#include "CommandBuffer.h"
-//#include "Constants.h"
-
-//#include "Items/ItemInterface.h"
 
 class Image;
 class Buffer;
@@ -35,6 +27,11 @@ public:
 	// | central texture storage
 	// | (use indices from item class to access elements)
 	std::vector<GPUTexture> m_gpuTextures;
+
+	// | organised, unique gltf-index to gpu-texture-index cache 
+	std::unordered_map<int, int> m_gltfToGpuTexture;
+
+
 
 	// - i think this should be non-copyable as well
 	struct GPUMaterial {
@@ -68,5 +65,11 @@ private:
 		const VkFormat& format);
 
 	void createDefaultTextures();
+
+	int getOrCreateGpuTexture(
+		tinygltf::Model& model,
+		int gltfTexIndex,
+		ItemInterface& classReference,
+		VkFormat format);
 };
 

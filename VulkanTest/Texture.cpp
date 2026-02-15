@@ -207,6 +207,12 @@ void Texture::createTextureSampler(const uint32_t& mipLevels, GPUTexture& outTex
 int Texture::uploadGltfTextureToVulkan(tinygltf::Model& model, int& textureIndex, ItemInterface& classReference, 
 	const VkFormat& format) {
 
+	// | Checks if texture already stored and if so,
+	// | returns index of said texture
+	auto it = m_gltfToGpuTexture.find(textureIndex);
+	if (it != m_gltfToGpuTexture.end())
+		return it->second;
+
 	GPUTexture gpuTex(m_Devices.device);
 
 	if (model.textures.empty()) {
@@ -226,46 +232,62 @@ int Texture::uploadGltfTextureToVulkan(tinygltf::Model& model, int& textureIndex
 	createTextureImage(false, classReference.optionalTexturePath(), pixelData, gpuTex, format, image.width, image.height);
 
 	m_gpuTextures.push_back(std::move(gpuTex));
+	int gpuIndex = static_cast<int>(m_gpuTextures.size() - 1);
+	m_gltfToGpuTexture[textureIndex] = gpuIndex;
 
-	return static_cast<int>(m_gpuTextures.size() - 1);
+	return gpuIndex;
+
 }
 
-void Texture::buildGPUMaterial(tinygltf::Model& model, int& materialIndex, ItemInterface& classReference) {
 
-	const tinygltf::Material& material = model.materials[materialIndex];
+int Texture::getOrCreateGpuTexture(
+	tinygltf::Model& model,
+	int gltfTexIndex,
+	ItemInterface& classReference,
+	VkFormat format)
+{
+	if (gltfTexIndex < 0 && classReference.optionalTexturePath().empty())
+		return Constants::DEFAULT_WHITE_TEXTURE_INDEX;
 
+	auto it = m_gltfToGpuTexture.find(gltfTexIndex);
+	if (it != m_gltfToGpuTexture.end())
+		return it->second;
+
+	int gpuIndex = uploadGltfTextureToVulkan(
+		model, gltfTexIndex, classReference, format);
+
+	m_gltfToGpuTexture[gltfTexIndex] = gpuIndex;
+	return gpuIndex;
+}
+
+void Texture::buildGPUMaterial(
+	tinygltf::Model& model,
+	int& materialIndex,
+	ItemInterface& classReference)
+{
+	const auto& material = model.materials[materialIndex];
 	GPUMaterial mat{};
 
-	// do loading of stbi load
+	mat.baseColorFactor = glm::make_vec4(
+		material.pbrMetallicRoughness.baseColorFactor.data());
 
-	int baseColorTexIndex = material.pbrMetallicRoughness.baseColorTexture.index;
+	mat.baseColorTex = getOrCreateGpuTexture(
+		model,
+		material.pbrMetallicRoughness.baseColorTexture.index,
+		classReference,
+		VK_FORMAT_R8G8B8A8_SRGB
+	);
 
-	mat.baseColorTex = baseColorTexIndex;
-
-	int normalTexIndex = material.normalTexture.index;
-
-	mat.normalTex = normalTexIndex;
-
-	mat.baseColorFactor = glm::make_vec4(material.pbrMetallicRoughness.baseColorFactor.data());
-
-	if (mat.baseColorTex < 0 && classReference.optionalTexturePath().empty()) {
-		std::cout << "mort\n";
-		mat.baseColorTex = Constants::DEFAULT_WHITE_TEXTURE_INDEX;
-	} else {
-
-		mat.baseColorTex = uploadGltfTextureToVulkan(model, baseColorTexIndex, classReference, VK_FORMAT_R8G8B8A8_SRGB);
-	}
-
-	if (mat.normalTex < 0) {
-
-		mat.normalTex = Constants::DEFAULT_NORMAL_TEXTURE_INDEX;
-	} else {
-		mat.normalTex = uploadGltfTextureToVulkan(model, normalTexIndex, classReference, VK_FORMAT_R8G8B8A8_UNORM);
-
-	}
+	mat.normalTex = getOrCreateGpuTexture(
+		model,
+		material.normalTexture.index,
+		classReference,
+		VK_FORMAT_R8G8B8A8_UNORM
+	);
 
 	classReference.gpuMaterials()[materialIndex] = mat;
 }
+
 
 void Texture::createDefaultTextures() {
 
