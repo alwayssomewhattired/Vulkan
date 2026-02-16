@@ -10,6 +10,7 @@
 #include "items/SilentHill3Game.h"
 #include "DescriptorSet.h"
 #include "Constants.h"
+#include "UniformBuffer.h"
 
 CommandBuffer::CommandBuffer(VkCommandPool& commandPool, Devices& devices, SwapChain& swapChain) : 
 	m_commandPool(commandPool), m_devices(devices), m_SwapChain(swapChain) {};
@@ -64,7 +65,7 @@ void CommandBuffer::createCommandBuffers(CommandPool& commandPool) {
 
 void CommandBuffer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex, VkRenderPass& renderPass,
 	GraphicsPipeline& graphicsPipeline, std::vector<ItemInterface*>& items, DescriptorSet& descriptorSet, 
-	const uint32_t& currentFrame, VkImage& storageImage, ItemInterface& triangleClass) {
+	const uint32_t& currentFrame, VkImage& storageImage, ItemInterface& triangleClass, UniformBuffer& uniformBuffer) {
 
 	VkCommandBufferBeginInfo beginInfo{};
 	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -120,6 +121,7 @@ void CommandBuffer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t 
 
 		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.graphicsPipeline);
 
+		uint32_t modelIndex = 0;
 		for (auto& item : items) {
 			auto& descriptorSets = item->descriptorSets();
 			VkBuffer vertexBuffers[] = { item->vertexBuffer() };
@@ -128,10 +130,13 @@ void CommandBuffer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t 
 
 			vkCmdBindIndexBuffer(commandBuffer, item->indexBuffer(), 0, item->indexType());
 
+			uint32_t dynamicOffset = (currentFrame * items.size() + modelIndex) * uniformBuffer.alignedModelUBOSize;
 			vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.pipelineLayout, 0, 1,
-				&descriptorSets[currentFrame], 0, nullptr);
+				&descriptorSets[currentFrame], 1, &dynamicOffset);
 
 			vkCmdDrawIndexed(commandBuffer, item->indexCount(), 1, 0, 0, 0);
+
+			modelIndex++;
 		}
 	}
 	// mandelbulb

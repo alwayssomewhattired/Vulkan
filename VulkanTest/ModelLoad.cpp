@@ -118,7 +118,7 @@ void ModelLoad::modelFileParse(tinygltf::Model& model, const tinygltf::Primitive
 		throw std::runtime_error("Unsupported index component type");
 
 	// | materials and textures
-	classReference.gpuMaterials().resize(model.materials.size());
+	classReference.gltfMaterials().resize(model.materials.size());
 	for (int i = 0; i < model.materials.size(); ++i) {
 		m_Texture.buildGPUMaterial(model, i, classReference);
 

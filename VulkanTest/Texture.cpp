@@ -266,7 +266,7 @@ void Texture::buildGPUMaterial(
 	ItemInterface& classReference)
 {
 	const auto& material = model.materials[materialIndex];
-	GPUMaterial mat{};
+	GLTFMaterial mat{};
 
 	mat.baseColorFactor = glm::make_vec4(
 		material.pbrMetallicRoughness.baseColorFactor.data());
@@ -285,7 +285,7 @@ void Texture::buildGPUMaterial(
 		VK_FORMAT_R8G8B8A8_UNORM
 	);
 
-	classReference.gpuMaterials()[materialIndex] = mat;
+	classReference.gltfMaterials()[materialIndex] = mat;
 }
 
 

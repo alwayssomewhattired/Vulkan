@@ -7,16 +7,6 @@
 #include <cstdint>
 #include <vector>
 
-//#include "SwapChain.h"
-//#include "Devices.h"
-//#include "CommandPool.h"
-//#include "GraphicsPipeline.h"
-//#include "RenderTarget.h"
-//#include "items/ItemInterface.h"
-//#include "items/Home.h"
-//#include "items/SilentHill3Game.h"
-//#include "DescriptorSet.h"
-
 class SwapChain;
 
 	class Devices;
@@ -27,6 +17,7 @@ class SwapChain;
 	class Home;
 	class SilentHill3Game;
 	class DescriptorSet;
+	class UniformBuffer;
 
 
 class CommandBuffer
@@ -42,7 +33,7 @@ public:
 	void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex, VkRenderPass& renderPass,
 		GraphicsPipeline& graphicsPipeline, std::vector<ItemInterface*>& items, DescriptorSet& descriptorSet, 
 		const uint32_t& currentFrame,
-		VkImage& storageImage, ItemInterface& triangleClass);
+		VkImage& storageImage, ItemInterface& triangleClass, UniformBuffer& uniformBuffer);
 
 	std::vector<VkCommandBuffer> commandBuffers;
 

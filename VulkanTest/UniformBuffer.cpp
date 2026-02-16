@@ -6,7 +6,16 @@
 
 
 UniformBuffer::UniformBuffer(Devices& devices, Camera& camera, SwapChain& swapChain, const bool& rotationEnabled) : 
-	m_Devices(devices), m_Camera(camera), m_SwapChain(swapChain), m_rotationEnabled(rotationEnabled){}
+	m_Devices(devices), m_Camera(camera), m_SwapChain(swapChain), m_rotationEnabled(rotationEnabled)
+{
+	// | align dynamic ubo
+	VkPhysicalDeviceProperties props;
+	vkGetPhysicalDeviceProperties(devices.physicalDevice, &props);
+
+	alignedModelUBOSize =
+		(sizeof(ModelUBO) + props.limits.minUniformBufferOffsetAlignment - 1) &
+		~(props.limits.minUniformBufferOffsetAlignment - 1);
+}
 
 // - make this generic. don't hardcode our models in here
 void UniformBuffer::createUniformBuffers() {
@@ -27,7 +36,7 @@ void UniformBuffer::createUniformBuffers() {
 	mandelbulbUniformBuffersMemory.resize(Constants::MAX_FRAMES_IN_FLIGHT);
 	mandelbulbUniformBuffersMapped.resize(Constants::MAX_FRAMES_IN_FLIGHT);
 
-	// | Triangle (i think)
+	// | triangle path
 	for (size_t i = 0; i < Constants::MAX_FRAMES_IN_FLIGHT; i++) {
 
 		VkBufferCreateInfo bufferInfo{};
@@ -56,7 +65,7 @@ void UniformBuffer::createUniformBuffers() {
 		vkMapMemory(m_Devices.device, uniformBuffersMemory[i], 0, bufferSize, 0, &uniformBuffersMapped[i]);
 	}
 
-	// | safe-room model
+	// | models path
 	for (size_t i = 0; i < Constants::MAX_FRAMES_IN_FLIGHT; i++) {
 
 		VkBufferCreateInfo modelBufferInfo{};
@@ -85,7 +94,7 @@ void UniformBuffer::createUniformBuffers() {
 		vkMapMemory(m_Devices.device, modelUniformBuffersMemory[i], 0, modelBufferSize, 0, &modelUniformBuffersMapped[i]);
 	}
 
-	// | Mandelbulb
+	// | Mandelbulb path
 	for (size_t i = 0; i < Constants::MAX_FRAMES_IN_FLIGHT; i++) {
 
 		VkBufferCreateInfo mandelbulbBufferInfo{};

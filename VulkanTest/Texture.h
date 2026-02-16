@@ -31,10 +31,8 @@ public:
 	// | organised, unique gltf-index to gpu-texture-index cache 
 	std::unordered_map<int, int> m_gltfToGpuTexture;
 
-
-
 	// - i think this should be non-copyable as well
-	struct GPUMaterial {
+	struct GLTFMaterial {
 		int baseColorTex;
 		int normalTex;
 		glm::vec4 baseColorFactor;

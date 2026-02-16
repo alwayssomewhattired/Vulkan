@@ -21,9 +21,9 @@ public:
 	void createMeshDescriptorSets(ItemInterface& classReference);
 	void createMandelbulbComputeDescriptorSets();
 	void createMandelbulbGraphicsDescriptorSets();
-	void createDescriptorPool();
+	//void createDescriptorPool(uint32_t materialCount);
 
-	VkDescriptorPool descriptorPool;
+	/*VkDescriptorPool descriptorPool;*/
 
 	std::vector<VkDescriptorSet> mandelbulbComputeDescriptorSets;
 	std::vector<VkDescriptorSet> mandelbulbGraphicsDescriptorSets;

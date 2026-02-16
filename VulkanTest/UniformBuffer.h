@@ -4,8 +4,6 @@
 #include <vulkan/vulkan_core.h>
 #include <stdexcept>
 #include <chrono>
-//#include <glm/fwd.hpp>
-//#include <glm/glm.hpp>
 #include "glm_config.h"
 
 #include "Camera.h"
@@ -28,9 +26,12 @@ public:
 
 	void updateModelBuffer(uint32_t currentImage);
 
+	// | dynamic ubo
 	struct ModelUBO {
 		alignas(16) glm::mat4 model;
 	};
+
+	uint32_t alignedModelUBOSize;
 
 	struct MandelbulbUBO {
 
@@ -44,6 +45,7 @@ public:
 		glm::vec3 pad;               // explicit padding
 	};
 
+	// | I think this is the uniform buffers for the triangle
 	std::vector<VkBuffer> uniformBuffers;
 	std::vector<VkDeviceMemory> uniformBuffersMemory;
 	std::vector<void*> uniformBuffersMapped;
@@ -61,5 +63,6 @@ private:
 	Camera& m_Camera;
 	SwapChain& m_SwapChain;
 	const bool& m_rotationEnabled;
+
 };
 

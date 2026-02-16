@@ -38,7 +38,7 @@ public:
 	std::vector<Vertex> m_vertices;
 	std::vector<uint32_t> m_indices;
 
-	std::vector<Texture::GPUMaterial> m_gpuMaterials;
+	std::vector<Texture::GLTFMaterial> m_gltfMaterials;
 
 	std::string m_optionalTexturePath = "";
 
@@ -87,8 +87,8 @@ public:
 		return m_indices;
 	}
 
-	std::vector<Texture::GPUMaterial>& gpuMaterials() override {
-		return m_gpuMaterials;
+	std::vector<Texture::GLTFMaterial>& gltfMaterials() override {
+		return m_gltfMaterials;
 	}
 
 	std::string& optionalTexturePath() override {

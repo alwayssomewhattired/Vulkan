@@ -13,48 +13,12 @@ DescriptorSet::DescriptorSet(DescriptorSetLayout& descriptorSetLayout, Devices& 
 	m_DescriptorSetLayout(descriptorSetLayout), m_Devices(devices), m_UniformBuffer(uniformBuffer),
 	m_StorageImageManager(storageImageManager), m_Texture(texture) {}
 
-void DescriptorSet::createDescriptorPool() {
-
-	constexpr uint32_t meshSets = 4;
-	constexpr uint32_t computeSets = 4;
-	constexpr uint32_t graphicsSets = 4;
-
-	constexpr uint32_t totalSets = meshSets + computeSets + graphicsSets;
-
-	// | per-set usage
-	constexpr uint32_t uboPerSet = 3;
-	constexpr uint32_t samplerPerMesh = 2;
-	constexpr uint32_t storagePerComp = 1;
-
-
-	std::array<VkDescriptorPoolSize, 3> poolSizes{};
-
-	// | UBOs
-	poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-	poolSizes[0].descriptorCount = totalSets * uboPerSet;
-
-	// Samplers (mesh only)
-	poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-	poolSizes[1].descriptorCount = meshSets * samplerPerMesh;
-
-	// | Storage images (compute only)
-	poolSizes[2].type = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-	poolSizes[2].descriptorCount = computeSets * storagePerComp;
-
-	VkDescriptorPoolCreateInfo poolInfo{};
-	poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-	poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
-	poolInfo.pPoolSizes = poolSizes.data();
-	poolInfo.maxSets = totalSets;
-
-	if (vkCreateDescriptorPool(m_Devices.device, &poolInfo, nullptr, &descriptorPool) != VK_SUCCESS)
-		throw std::runtime_error("failed to create descriptor pool!");
-}
 
 // | generic descriptor set creator
+// - implement dynamic-uniform-buffer instead
 void DescriptorSet::createMeshDescriptorSets(ItemInterface& classReference) {
 	
-	const auto& materials = classReference.gpuMaterials();
+	const auto& materials = classReference.gltfMaterials();
 
 	const auto& textures = m_Texture.m_gpuTextures;
 
@@ -66,7 +30,7 @@ void DescriptorSet::createMeshDescriptorSets(ItemInterface& classReference) {
 	std::vector<VkDescriptorSetLayout> layouts(descriptorSets.size(), m_DescriptorSetLayout.descriptorSetLayout);
 	VkDescriptorSetAllocateInfo allocInfo{};
 	allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-	allocInfo.descriptorPool = descriptorPool;
+	allocInfo.descriptorPool = m_DescriptorSetLayout.descriptorPool;
 	allocInfo.descriptorSetCount = static_cast<uint32_t>(descriptorSets.size());
 	allocInfo.pSetLayouts = layouts.data();
 
@@ -114,7 +78,7 @@ void DescriptorSet::createMeshDescriptorSets(ItemInterface& classReference) {
 			descriptorWrites[1].dstSet = dstSet;
 			descriptorWrites[1].dstBinding = 1;
 			descriptorWrites[1].dstArrayElement = 0;
-			descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+			descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
 			descriptorWrites[1].descriptorCount = 1;
 			descriptorWrites[1].pBufferInfo = &modelBufferInfo;
 
@@ -148,7 +112,7 @@ void DescriptorSet::createMandelbulbComputeDescriptorSets() {
 
 	VkDescriptorSetAllocateInfo allocInfo{};
 	allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-	allocInfo.descriptorPool = descriptorPool;            // must support STORAGE_IMAGE + UBO
+	allocInfo.descriptorPool = m_DescriptorSetLayout.computeDescriptorPool;            // must support STORAGE_IMAGE + UBO
 	allocInfo.descriptorSetCount = Constants::MAX_FRAMES_IN_FLIGHT;
 	allocInfo.pSetLayouts = layouts.data();
 
@@ -192,12 +156,13 @@ void DescriptorSet::createMandelbulbComputeDescriptorSets() {
 }
 
 void DescriptorSet::createMandelbulbGraphicsDescriptorSets() {
+
 	mandelbulbGraphicsDescriptorSets.resize(Constants::MAX_FRAMES_IN_FLIGHT);
 	std::vector<VkDescriptorSetLayout> layouts(Constants::MAX_FRAMES_IN_FLIGHT, 
 		m_DescriptorSetLayout.mandelbulbGraphicsDescriptorSetLayout);
 	VkDescriptorSetAllocateInfo allocInfo{};
 	allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-	allocInfo.descriptorPool = descriptorPool;
+	allocInfo.descriptorPool = m_DescriptorSetLayout.computeDescriptorPool;
 	allocInfo.descriptorSetCount = static_cast<uint32_t>(Constants::MAX_FRAMES_IN_FLIGHT);
 	allocInfo.pSetLayouts = layouts.data();
 

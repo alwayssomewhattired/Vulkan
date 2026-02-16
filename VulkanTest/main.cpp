@@ -184,7 +184,7 @@ private:
 
 		m_SwapChain = std::make_unique<SwapChain>(*m_devices, surface);
 
-		m_DescriptorSetLayout = std::make_unique<DescriptorSetLayout>(m_devices->device);
+		m_DescriptorSetLayout = std::make_unique<DescriptorSetLayout>(*m_devices);
 
 		m_Shaders = std::make_unique<Shaders>(*m_device);
 
@@ -250,9 +250,6 @@ private:
 			*m_StorageImageManager, *m_Texture);
 
 		createDescriptorSets();
-
-		m_DescriptorSet->createMandelbulbComputeDescriptorSets();
-		m_DescriptorSet->createMandelbulbGraphicsDescriptorSets();
 
 		m_CommandBuffer->createCommandBuffers(*m_CommandPool);
 		m_SwapChain->createSyncObjects();
@@ -388,11 +385,19 @@ private:
 
 	// creates descriptor sets for models
 	void createDescriptorSets() {
-		m_DescriptorSet->createDescriptorPool();
+
+		m_DescriptorSetLayout->createDescriptorPool(m_Home->gltfMaterials().size());
 		m_DescriptorSet->createMeshDescriptorSets(*m_Home);
 
-		m_DescriptorSet->createDescriptorPool();
+
+		m_DescriptorSetLayout->createDescriptorPool(m_SilentHill3Game->gltfMaterials().size());
 		m_DescriptorSet->createMeshDescriptorSets(*m_SilentHill3Game);
+
+		m_DescriptorSetLayout->createComputeDescriptorPool(2);
+		m_DescriptorSet->createMandelbulbComputeDescriptorSets();
+
+		m_DescriptorSetLayout->createComputeDescriptorPool(2);
+		m_DescriptorSet->createMandelbulbGraphicsDescriptorSets();
 
 	}
 
@@ -436,7 +441,7 @@ private:
 
 		m_CommandBuffer->recordCommandBuffer(m_CommandBuffer->commandBuffers[imageIndex], imageIndex, m_RenderPass->renderPass,
 			*m_GraphicsPipeline, items, *m_DescriptorSet, currentFrame, m_StorageImageManager->m_GPUStorageImage.image(), 
-			*m_Triangle);
+			*m_Triangle, *m_UniformBuffer);
 
 		VkSubmitInfo submitInfo{};
 		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -526,9 +531,12 @@ private:
 			vkFreeMemory(*m_device, m_UniformBuffer->uniformBuffersMemory[i], nullptr);
 		}
 
-		vkDestroyDescriptorPool(*m_device, m_DescriptorSet->descriptorPool, nullptr);
+		vkDestroyDescriptorPool(*m_device, m_DescriptorSetLayout->descriptorPool, nullptr);
+		vkDestroyDescriptorPool(*m_device, m_DescriptorSetLayout->computeDescriptorPool, nullptr);
 
 		vkDestroyDescriptorSetLayout(*m_device, m_DescriptorSetLayout->descriptorSetLayout, nullptr);
+		vkDestroyDescriptorSetLayout(*m_device, m_DescriptorSetLayout->mandelbulbComputeDescriptorSetLayout, nullptr);
+		vkDestroyDescriptorSetLayout(*m_device, m_DescriptorSetLayout->mandelbulbGraphicsDescriptorSetLayout, nullptr);
 
 		vkDestroyBuffer(*m_device, indexBuffer, nullptr);
 		vkFreeMemory(*m_device, indexBufferMemory, nullptr);
