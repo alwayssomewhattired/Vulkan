@@ -130,9 +130,9 @@ void CommandBuffer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t 
 
 			vkCmdBindIndexBuffer(commandBuffer, item->indexBuffer(), 0, item->indexType());
 
-			uint32_t dynamicOffset = (currentFrame * items.size() + modelIndex) * uniformBuffer.alignedModelUBOSize;
+			uint32_t dynamicOffset = 0;
 			vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.pipelineLayout, 0, 1,
-				&descriptorSets[currentFrame], 1, &dynamicOffset);
+				&descriptorSets[currentFrame], 0, &dynamicOffset);
 
 			vkCmdDrawIndexed(commandBuffer, item->indexCount(), 1, 0, 0, 0);
 

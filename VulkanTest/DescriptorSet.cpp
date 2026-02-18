@@ -24,7 +24,6 @@ void DescriptorSet::createMeshDescriptorSets(ItemInterface& classReference) {
 
 	auto& descriptorSets = classReference.descriptorSets();
 
-	// | indexing is: descriptorSets[frame * materials.size() + materialIndex]
 	descriptorSets.resize(Constants::MAX_FRAMES_IN_FLIGHT * materials.size());
 
 	std::vector<VkDescriptorSetLayout> layouts(descriptorSets.size(), m_DescriptorSetLayout.descriptorSetLayout);
@@ -39,10 +38,14 @@ void DescriptorSet::createMeshDescriptorSets(ItemInterface& classReference) {
 
 	for (size_t frame = 0; frame < Constants::MAX_FRAMES_IN_FLIGHT; frame++) {
 		for (size_t matIdx = 0; matIdx < materials.size(); ++matIdx) {
-			size_t dsIndex = frame * materials.size() + matIdx;
+
+			size_t dsIndex = frame * 1 + matIdx;
+
 			VkDescriptorSet dstSet = descriptorSets[dsIndex];
 
 			const auto& material = materials[matIdx];
+			const GPUTexture& GPUBaseColorTex = textures[material.baseColorTex];
+
 			VkDescriptorBufferInfo bufferInfo{};
 			bufferInfo.buffer = m_UniformBuffer.uniformBuffers[frame];
 			bufferInfo.offset = 0;
@@ -51,19 +54,19 @@ void DescriptorSet::createMeshDescriptorSets(ItemInterface& classReference) {
 			VkDescriptorBufferInfo modelBufferInfo{};
 			modelBufferInfo.buffer = m_UniformBuffer.modelUniformBuffers[frame];
 			modelBufferInfo.offset = 0;
-			modelBufferInfo.range = sizeof(UniformBuffer::ModelUBO);
+			modelBufferInfo.range = m_UniformBuffer.modelUBOSize;
 			
 			assert(material.baseColorTex < textures.size());
 			VkDescriptorImageInfo baseColorInfo{};
 			baseColorInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-			baseColorInfo.imageView = textures[material.baseColorTex].view;
-			baseColorInfo.sampler = textures[material.baseColorTex].sampler;
+
+			baseColorInfo.imageView = GPUBaseColorTex.view;
+			baseColorInfo.sampler = GPUBaseColorTex.sampler;
 
 			VkDescriptorImageInfo normalInfo{};
 			normalInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 			normalInfo.imageView = textures[material.normalTex].view;
 			normalInfo.sampler = textures[material.normalTex].sampler;
-
 
 			std::array<VkWriteDescriptorSet, 4> descriptorWrites{};
 			descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -78,7 +81,7 @@ void DescriptorSet::createMeshDescriptorSets(ItemInterface& classReference) {
 			descriptorWrites[1].dstSet = dstSet;
 			descriptorWrites[1].dstBinding = 1;
 			descriptorWrites[1].dstArrayElement = 0;
-			descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
+			descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 			descriptorWrites[1].descriptorCount = 1;
 			descriptorWrites[1].pBufferInfo = &modelBufferInfo;
 
@@ -105,6 +108,7 @@ void DescriptorSet::createMeshDescriptorSets(ItemInterface& classReference) {
 }
 
 void DescriptorSet::createMandelbulbComputeDescriptorSets() {
+
 	mandelbulbComputeDescriptorSets.resize(Constants::MAX_FRAMES_IN_FLIGHT);
 
 	std::vector<VkDescriptorSetLayout> layouts(Constants::MAX_FRAMES_IN_FLIGHT, 
@@ -162,7 +166,7 @@ void DescriptorSet::createMandelbulbGraphicsDescriptorSets() {
 		m_DescriptorSetLayout.mandelbulbGraphicsDescriptorSetLayout);
 	VkDescriptorSetAllocateInfo allocInfo{};
 	allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-	allocInfo.descriptorPool = m_DescriptorSetLayout.computeDescriptorPool;
+	allocInfo.descriptorPool = m_DescriptorSetLayout.graphicsDescriptorPool;
 	allocInfo.descriptorSetCount = static_cast<uint32_t>(Constants::MAX_FRAMES_IN_FLIGHT);
 	allocInfo.pSetLayouts = layouts.data();
 

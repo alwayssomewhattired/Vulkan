@@ -147,7 +147,6 @@ void Texture::createTextureImage(const bool isDefault, const std::string& textur
 		outTexture.memory
 	);
 
-	 //this next line fails
 	m_Image.transitionImageLayout(outTexture.image, format, VK_IMAGE_LAYOUT_UNDEFINED,
 		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 		mipLevels);

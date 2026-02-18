@@ -32,6 +32,7 @@ public:
 	};
 
 	uint32_t alignedModelUBOSize;
+	uint32_t modelUBOSize;
 
 	struct MandelbulbUBO {
 

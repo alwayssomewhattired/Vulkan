@@ -396,7 +396,7 @@ private:
 		m_DescriptorSetLayout->createComputeDescriptorPool(2);
 		m_DescriptorSet->createMandelbulbComputeDescriptorSets();
 
-		m_DescriptorSetLayout->createComputeDescriptorPool(2);
+		m_DescriptorSetLayout->createGraphicsDescriptorPool(2);
 		m_DescriptorSet->createMandelbulbGraphicsDescriptorSets();
 
 	}

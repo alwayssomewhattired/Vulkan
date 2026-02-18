@@ -176,83 +176,86 @@ void ModelLoad::loadModel(const std::string& path, ItemInterface& classReference
 	// - we need to iterate over all the primitives
 
 	const auto& primitive = mesh.primitives[0];
-	modelFileParse(model, primitive, vertexCount, vertices, indexType, indices, classReference);
-
-	// | Vertex 
-
-	VkDeviceSize vertexSize = sizeof(Vertex) * vertices.size();
-
-	VkBuffer stagingVb;
-	VkDeviceMemory stagingVm;
-
-	// staging buffer
-	m_Buffer.createBuffer(
-		vertexSize,
-		VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-		stagingVb,
-		stagingVm
-	);
-
-	void* mapped;
-	vkMapMemory(device, stagingVm, 0, vertexSize, 0, &mapped);
-	memcpy(mapped, vertices.data(), static_cast<size_t>(vertexSize));
-	unsigned char* data = reinterpret_cast<unsigned char*>(mapped);
-	vkUnmapMemory(device, stagingVm);
-
-	m_Buffer.createBuffer(
-		vertexSize,
-		VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
-		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-		vertexBuffer,
-		vertexMemory
-	);
-
-	// copy to gpu
-	m_CommandBuffer.copyBuffer(stagingVb, vertexBuffer, vertexSize);
-
-	// destroy staging buffer
-	vkDestroyBuffer(device, stagingVb, nullptr);
-	vkFreeMemory(device, stagingVm, nullptr);
+	//for (const auto& primitive : mesh.primitives) {
+		modelFileParse(model, primitive, vertexCount, vertices, indexType, indices, classReference);
 
 
-	// indices
+		// | Vertex 
 
-	indexType = VK_INDEX_TYPE_UINT32;
-	indexCount = static_cast<uint32_t>(indices.size());
+		VkDeviceSize vertexSize = sizeof(Vertex) * vertices.size();
 
-	VkDeviceSize indexSize = sizeof(uint32_t) * indices.size();
+		VkBuffer stagingVb;
+		VkDeviceMemory stagingVm;
 
-	VkBuffer stagingIb;
-	VkDeviceMemory stagingIm;
+		// staging buffer
+		m_Buffer.createBuffer(
+			vertexSize,
+			VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+			stagingVb,
+			stagingVm
+		);
 
-	m_Buffer.createBuffer(
-		indexSize,
-		VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-		stagingIb,
-		stagingIm
-	);
+		void* mapped;
+		vkMapMemory(device, stagingVm, 0, vertexSize, 0, &mapped);
+		memcpy(mapped, vertices.data(), static_cast<size_t>(vertexSize));
+		unsigned char* data = reinterpret_cast<unsigned char*>(mapped);
+		vkUnmapMemory(device, stagingVm);
 
-	vkMapMemory(device, stagingIm, 0, indexSize, 0, &mapped);
-	memcpy(mapped, indices.data(), indexSize);
-	vkUnmapMemory(device, stagingIm);
+		m_Buffer.createBuffer(
+			vertexSize,
+			VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+			vertexBuffer,
+			vertexMemory
+		);
 
-	m_Buffer.createBuffer(
-		indexSize,
-		VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
-		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-		indexBuffer,
-		indexMemory
-	);
+		// copy to gpu
+		m_CommandBuffer.copyBuffer(stagingVb, vertexBuffer, vertexSize);
 
-	m_CommandBuffer.copyBuffer(stagingIb, indexBuffer, indexSize);
+		// destroy staging buffer
+		vkDestroyBuffer(device, stagingVb, nullptr);
+		vkFreeMemory(device, stagingVm, nullptr);
 
-	vkDestroyBuffer(device, stagingIb, nullptr);
-	vkFreeMemory(device, stagingIm, nullptr);
 
-	assert(indexType == VK_INDEX_TYPE_UINT32);
-	assert(indexSize == sizeof(uint32_t) * indexCount);
+		// indices
+
+		indexType = VK_INDEX_TYPE_UINT32;
+		indexCount = static_cast<uint32_t>(indices.size());
+
+		VkDeviceSize indexSize = sizeof(uint32_t) * indices.size();
+
+		VkBuffer stagingIb;
+		VkDeviceMemory stagingIm;
+
+		m_Buffer.createBuffer(
+			indexSize,
+			VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+			stagingIb,
+			stagingIm
+		);
+
+		vkMapMemory(device, stagingIm, 0, indexSize, 0, &mapped);
+		memcpy(mapped, indices.data(), indexSize);
+		vkUnmapMemory(device, stagingIm);
+
+		m_Buffer.createBuffer(
+			indexSize,
+			VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+			indexBuffer,
+			indexMemory
+		);
+
+		m_CommandBuffer.copyBuffer(stagingIb, indexBuffer, indexSize);
+
+		vkDestroyBuffer(device, stagingIb, nullptr);
+		vkFreeMemory(device, stagingIm, nullptr);
+
+		assert(indexType == VK_INDEX_TYPE_UINT32);
+		assert(indexSize == sizeof(uint32_t) * indexCount);
+	//}
 
 }
 

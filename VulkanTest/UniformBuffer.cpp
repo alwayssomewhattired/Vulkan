@@ -15,13 +15,19 @@ UniformBuffer::UniformBuffer(Devices& devices, Camera& camera, SwapChain& swapCh
 	alignedModelUBOSize =
 		(sizeof(ModelUBO) + props.limits.minUniformBufferOffsetAlignment - 1) &
 		~(props.limits.minUniformBufferOffsetAlignment - 1);
+
+	modelUBOSize = sizeof(ModelUBO);
 }
 
 // - make this generic. don't hardcode our models in here
 void UniformBuffer::createUniformBuffers() {
 
 	VkDeviceSize bufferSize = sizeof(Camera::CameraUBO);
-	VkDeviceSize modelBufferSize = sizeof(ModelUBO);
+	VkDeviceSize modelBufferSize =
+		modelUBOSize *
+		Constants::MAX_FRAMES_IN_FLIGHT *
+		2; // or items.size()
+	//VkDeviceSize modelBufferSize = sizeof(ModelUBO);
 	VkDeviceSize mandelbulbBufferSize = sizeof(MandelbulbUBO);
 
 	uniformBuffers.resize(Constants::MAX_FRAMES_IN_FLIGHT);
@@ -134,7 +140,11 @@ void UniformBuffer::createUniformBuffer(const size_t& UBOSize)
 	std::vector<VkDeviceMemory> modelUniformBuffersMemory;
 	std::vector<void*> modelUniformBuffersMapped;
 
-	VkDeviceSize modelBufferSize = UBOSize;
+	//VkDeviceSize modelBufferSize = UBOSize;
+	VkDeviceSize modelBufferSize =
+		alignedModelUBOSize *
+		Constants::MAX_FRAMES_IN_FLIGHT *
+		2;
 	modelUniformBuffers.resize(Constants::MAX_FRAMES_IN_FLIGHT);
 	modelUniformBuffersMemory.resize(Constants::MAX_FRAMES_IN_FLIGHT);
 	modelUniformBuffersMapped.resize(Constants::MAX_FRAMES_IN_FLIGHT);

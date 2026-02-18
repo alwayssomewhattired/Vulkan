@@ -19,6 +19,7 @@ public:
 
 	VkDescriptorPool descriptorPool;
 	VkDescriptorPool computeDescriptorPool;
+	VkDescriptorPool graphicsDescriptorPool;
 
 	void createMandelbulbComputeDescriptorSetLayout();
 	VkDescriptorSetLayout mandelbulbComputeDescriptorSetLayout;
@@ -26,6 +27,7 @@ public:
 
 	void createMandelbulbGraphicsDescriptorSetLayout();
 	VkDescriptorSetLayout mandelbulbGraphicsDescriptorSetLayout;
+	void createGraphicsDescriptorPool(uint32_t graphicsSetCount);
 
 private:
 	Devices& m_Devices;;

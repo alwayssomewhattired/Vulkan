@@ -16,7 +16,7 @@ void DescriptorSetLayout::createMeshDescriptorSetLayout() {
 
 	VkDescriptorSetLayoutBinding modelBinding{};
 	modelBinding.binding = 1;
-	modelBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
+	modelBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 	modelBinding.descriptorCount = 1;
 	modelBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 	modelBinding.pImmutableSamplers = nullptr;
@@ -58,16 +58,12 @@ void DescriptorSetLayout::createDescriptorPool(uint32_t materialCount) {
 	poolSizes[0].descriptorCount = meshSetCount;
 
 	// Model UBO (binding 1, dynamic)
-	poolSizes[1].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
+	poolSizes[1].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 	poolSizes[1].descriptorCount = meshSetCount;
 
 	// BaseColor + Normal samplers (bindings 2 & 3)
 	poolSizes[2].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 	poolSizes[2].descriptorCount = meshSetCount * 2;
-
-	//// compute / storage descriptors
-	//poolSizes[3].type = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-	//poolSizes[3].descriptorCount = 1;
 
 	VkDescriptorPoolCreateInfo poolInfo{};
 	poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
@@ -166,4 +162,30 @@ void DescriptorSetLayout::createMandelbulbGraphicsDescriptorSetLayout() {
 
 	if (vkCreateDescriptorSetLayout(m_Devices.device, &layoutInfo, nullptr, &mandelbulbGraphicsDescriptorSetLayout) != VK_SUCCESS)
 		throw std::runtime_error("failed to create mandelbulb descriptor set layout\n");
+}
+
+void DescriptorSetLayout::createGraphicsDescriptorPool(uint32_t graphicsSetCount) {
+
+	std::array<VkDescriptorPoolSize, 2> poolSizes{};
+
+	poolSizes[0].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	poolSizes[0].descriptorCount = graphicsSetCount;
+
+	poolSizes[1].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	poolSizes[1].descriptorCount = graphicsSetCount;
+
+	VkDescriptorPoolCreateInfo poolInfo{};
+	poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+	poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
+	poolInfo.pPoolSizes = poolSizes.data();
+	poolInfo.maxSets = graphicsSetCount;
+
+	if (vkCreateDescriptorPool(
+		m_Devices.device,
+		&poolInfo,
+		nullptr,
+		&graphicsDescriptorPool) != VK_SUCCESS)
+	{
+		throw std::runtime_error("failed to create descriptor pool!");
+	}
 }
