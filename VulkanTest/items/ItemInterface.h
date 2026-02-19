@@ -19,26 +19,29 @@
 // | blueprint for all items
 struct ItemInterface {
 
-	virtual VkBuffer& vertexBuffer() = 0;
-	virtual VkDeviceMemory& vertexMemory() = 0;
+	virtual std::vector<VkBuffer>& vertexBuffer() = 0;
+	virtual std::vector<VkDeviceMemory>& vertexMemory() = 0;
 
-	virtual VkBuffer& indexBuffer() = 0;
-	virtual VkDeviceMemory& indexMemory() = 0;
+	virtual std::vector<VkBuffer>& indexBuffer() = 0;
+	virtual std::vector<VkDeviceMemory>& indexMemory() = 0;
 
-	virtual size_t& vertexCount() = 0;
-	virtual uint32_t& indexCount() = 0;
+	virtual std::vector<size_t>& vertexCount() = 0;
+	virtual std::vector<uint32_t>& indexCount() = 0;
 
 	virtual VkIndexType& indexType() = 0;
 
-	virtual std::vector<Vertex>& vertices() = 0;
-	virtual std::vector<uint32_t>& indices() = 0;
+	virtual std::vector<std::vector<Vertex>>& vertices() = 0;
+	virtual std::vector<std::vector<uint32_t>>& indices() = 0;
 
 	// | gltf material indices
 	virtual std::vector<Texture::GLTFMaterial>& gltfMaterials() = 0;
 
 	virtual std::string& optionalTexturePath() = 0;
 
-	virtual std::vector<VkDescriptorSet>& descriptorSets() = 0;
+	// | returns a descriptorSet manager.
+	// | inside is a vector of per-primitive elements,
+	// | elements being a vector of sets-per-frame/sets-per-material
+	virtual std::vector<std::vector<VkDescriptorSet>>& descriptorSets() = 0;
 
 	virtual ~ItemInterface() = default;
 };

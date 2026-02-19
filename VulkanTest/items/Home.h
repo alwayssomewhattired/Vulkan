@@ -17,48 +17,48 @@ class Home : public ItemInterface
 public:
 	glm::mat4 modelMatrix = glm::translate(glm::mat4(1.0f), glm::vec3(0, 0, -3));
 	
-	VkBuffer m_vertexBuffer;
-	VkDeviceMemory m_vertexMemory;
+	std::vector<VkBuffer> m_vertexBuffer;
+	std::vector<VkDeviceMemory> m_vertexMemory;
 	
-	VkBuffer m_indexBuffer;
-	VkDeviceMemory m_indexMemory;
+	std::vector<VkBuffer> m_indexBuffer;
+	std::vector<VkDeviceMemory> m_indexMemory;
 	
-	size_t m_vertexCount;
-	uint32_t m_indexCount;
+	std::vector<size_t> m_vertexCount;
+	std::vector<uint32_t> m_indexCount;
 
 	VkIndexType m_indexType;
 
-	std::vector<Vertex> m_vertices;
-	std::vector<uint32_t> m_indices;
+	std::vector<std::vector<Vertex>> m_vertices;
+	std::vector<std::vector<uint32_t>> m_indices;
 
 	std::vector<Texture::GLTFMaterial> m_gltfMaterials;
 
 	std::string m_optionalTexturePath = "textures/Metal055C_8K-PNG_Color.png";
 
-	std::vector<VkDescriptorSet> m_descriptorSets;
+	std::vector<std::vector<VkDescriptorSet>> m_descriptorSets;
 
 	// | begin item interface block
-	VkBuffer& vertexBuffer() override {
+	std::vector<VkBuffer>& vertexBuffer() override {
 		return m_vertexBuffer;
 	};
 
-	VkDeviceMemory& vertexMemory() override {
+	std::vector<VkDeviceMemory>& vertexMemory() override {
 		return m_vertexMemory;
 	}
 
-	VkBuffer& indexBuffer() override {
+	std::vector<VkBuffer>& indexBuffer() override {
 		return m_indexBuffer;
 	};
 
-	VkDeviceMemory& indexMemory() override {
+	std::vector<VkDeviceMemory>& indexMemory() override {
 		return m_indexMemory;
 	};
 	
-	size_t& vertexCount() override {
+	std::vector<size_t>& vertexCount() override {
 		return m_vertexCount;
 	}
 
-	uint32_t& indexCount() override {
+	std::vector<uint32_t>& indexCount() override {
 		return m_indexCount;
 	}
 		
@@ -66,11 +66,11 @@ public:
 		return m_indexType;
 	}
 
-	std::vector<Vertex>& vertices() override {
+	std::vector<std::vector<Vertex>>& vertices() override {
 		return m_vertices;
 	}
 
-	std::vector<uint32_t>& indices() override {
+	std::vector<std::vector<uint32_t>>& indices() override {
 		return m_indices;
 	}
 
@@ -82,7 +82,7 @@ public:
 		return m_optionalTexturePath;
 	}
 
-	std::vector<VkDescriptorSet>& descriptorSets() override {
+	std::vector<std::vector<VkDescriptorSet>>& descriptorSets() override {
 		return m_descriptorSets;
 	}
 };

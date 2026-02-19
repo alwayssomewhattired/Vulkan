@@ -35,8 +35,12 @@ ModelLoad::ModelLoad(
 {
 }
 
+
+// | Mutates 'vertices' and 'indices' and 'vertexCount' params
 void ModelLoad::modelFileParse(tinygltf::Model& model, const tinygltf::Primitive& primitive, size_t& vertexCount, 
-	std::vector<Vertex>& vertices, VkIndexType& indexType, std::vector<unsigned int>& indices, ItemInterface& classReference) {
+	std::vector<Vertex>& vertices, VkIndexType& indexType, std::vector<uint32_t>& indices,
+	ItemInterface& classReference) {
+
 	// POSITION
 
 	const auto& posAccessor = model.accessors[primitive.attributes.at("POSITION")];
@@ -123,19 +127,21 @@ void ModelLoad::modelFileParse(tinygltf::Model& model, const tinygltf::Primitive
 		m_Texture.buildGPUMaterial(model, i, classReference);
 
 	}
+
+
 }
 
 void ModelLoad::loadModel(const std::string& path, ItemInterface& classReference) {
 
-	auto& vertexBuffer = classReference.vertexBuffer();
-	auto& vertexMemory = classReference.vertexMemory();
-	auto& indexBuffer = classReference.indexBuffer();
-	auto& indexMemory = classReference.indexMemory();
-	auto& vertexCount = classReference.vertexCount();
-	auto& indexCount = classReference.indexCount();
+	auto& vertexBufferManager = classReference.vertexBuffer();
+	auto& vertexMemoryManager = classReference.vertexMemory();
+	auto& indexBufferManager = classReference.indexBuffer();
+	auto& indexMemoryManager = classReference.indexMemory();
+	auto& vertexCountManager = classReference.vertexCount();
+	auto& indexCountManager = classReference.indexCount();
 	auto& indexType = classReference.indexType();
-	auto& vertices = classReference.vertices();
-	auto& indices = classReference.indices();
+	auto& verticesManager = classReference.vertices();
+	auto& indicesManager = classReference.indices();
 
 	tinygltf::TinyGLTF loader;
 	tinygltf::Model model;
@@ -172,11 +178,18 @@ void ModelLoad::loadModel(const std::string& path, ItemInterface& classReference
 
 	const tinygltf::Mesh& mesh = *meshPtr;
 
-	// - this literally gets the first primitive from the mesh and that's it
-	// - we need to iterate over all the primitives
+	for (const auto& primitive : mesh.primitives) {
 
-	const auto& primitive = mesh.primitives[0];
-	//for (const auto& primitive : mesh.primitives) {
+		VkBuffer vertexBuffer;
+		VkDeviceMemory vertexMemory;
+		VkBuffer indexBuffer;
+		VkDeviceMemory indexMemory;
+
+		std::vector<Vertex> vertices;
+		std::vector<uint32_t> indices;
+		size_t vertexCount;
+		uint32_t indexCount;
+
 		modelFileParse(model, primitive, vertexCount, vertices, indexType, indices, classReference);
 
 
@@ -255,7 +268,18 @@ void ModelLoad::loadModel(const std::string& path, ItemInterface& classReference
 
 		assert(indexType == VK_INDEX_TYPE_UINT32);
 		assert(indexSize == sizeof(uint32_t) * indexCount);
-	//}
+
+
+		verticesManager.push_back(std::move(vertices));
+		indicesManager.push_back(std::move(indices));
+		vertexBufferManager.push_back(std::move(vertexBuffer));
+		vertexMemoryManager.push_back(std::move(vertexMemory));
+		indexBufferManager.push_back(std::move(indexBuffer));
+		indexMemoryManager.push_back(std::move(indexMemory));
+		vertexCountManager.push_back(std::move(vertexCount));
+		indexCountManager.push_back(std::move(indexCount));
+		
+	}
 
 }
 

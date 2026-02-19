@@ -6,6 +6,8 @@
 
 Buffer::Buffer(Devices& devices, CommandBuffer& commandBuffer) : m_Devices(devices), m_CommandBuffer(commandBuffer){}
 
+
+// | outdated and we don't use it
 void Buffer::createIndexBuffer(const std::vector<Vertex>& triangleVertices, VkBuffer& indexBuffer, 
 	VkDeviceMemory& indexBufferMemory) {
 
@@ -58,8 +60,14 @@ void Buffer::createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryP
 }
 
 
-void Buffer::createVertexBuffer(const std::vector<Vertex>& triangleVertices, VkBuffer& triangleVertexBuffer,
-	VkDeviceMemory& triangleVertexBufferMemory) {
+void Buffer::createVertexBuffer(const std::vector<Vertex>& triangleVertices, 
+	std::vector<VkBuffer>& triangleVertexBufferManager,
+	std::vector<VkDeviceMemory>& triangleVertexBufferMemoryManager) {
+
+	int i = 0;
+
+	VkBuffer triangleVertexBuffer;
+	VkDeviceMemory triangleVertexBufferMemory;
 
 	// TRIANGLE
 	//
@@ -69,7 +77,8 @@ void Buffer::createVertexBuffer(const std::vector<Vertex>& triangleVertices, VkB
 	VkDeviceSize triangleBufferSize = sizeof(triangleVertices[0]) * triangleVertices.size();
 	void* data;
 
-	createBuffer(triangleBufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+	createBuffer(triangleBufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, 
+		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
 		stagingBuffer, stagingBufferMemory);
 	// execution stops error
 
@@ -77,11 +86,16 @@ void Buffer::createVertexBuffer(const std::vector<Vertex>& triangleVertices, VkB
 	memcpy(data, triangleVertices.data(), (size_t)triangleBufferSize);
 	vkUnmapMemory(m_Devices.device, stagingBufferMemory);
 
-	createBuffer(triangleBufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+	createBuffer(triangleBufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, 
+		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
 		triangleVertexBuffer, triangleVertexBufferMemory);
 
 	m_CommandBuffer.copyBuffer(stagingBuffer, triangleVertexBuffer, triangleBufferSize);
 
 	vkDestroyBuffer(m_Devices.device, stagingBuffer, nullptr);
 	vkFreeMemory(m_Devices.device, stagingBufferMemory, nullptr);
+
+	triangleVertexBufferManager.push_back(std::move(triangleVertexBuffer));
+	triangleVertexBufferMemoryManager.push_back(std::move(triangleVertexBufferMemory));
+
 }

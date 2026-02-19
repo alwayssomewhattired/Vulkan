@@ -251,6 +251,7 @@ private:
 
 		createDescriptorSets();
 
+		std::cout << "time\n";
 		m_CommandBuffer->createCommandBuffers(*m_CommandPool);
 		m_SwapChain->createSyncObjects();
 
@@ -381,24 +382,22 @@ private:
 		m_ModelLoad->loadModel("models/thedeathofallionceloved.glb", *m_Home);
 
 		m_ModelLoad->loadModel("models/silent-hill-3-ps2-game-cover/source/SilentHill3ps2Game.glb", *m_SilentHill3Game);
+
 	}
 
 	// creates descriptor sets for models
 	void createDescriptorSets() {
-
-		m_DescriptorSetLayout->createDescriptorPool(m_Home->gltfMaterials().size());
-		m_DescriptorSet->createMeshDescriptorSets(*m_Home);
-
-
-		m_DescriptorSetLayout->createDescriptorPool(m_SilentHill3Game->gltfMaterials().size());
-		m_DescriptorSet->createMeshDescriptorSets(*m_SilentHill3Game);
+		
+		for (auto* item : items) {
+			m_DescriptorSetLayout->createDescriptorPool(item->gltfMaterials().size() * item->vertexBuffer().size());
+			m_DescriptorSet->createMeshDescriptorSets(*item);
+		}
 
 		m_DescriptorSetLayout->createComputeDescriptorPool(2);
 		m_DescriptorSet->createMandelbulbComputeDescriptorSets();
 
 		m_DescriptorSetLayout->createGraphicsDescriptorPool(2);
 		m_DescriptorSet->createMandelbulbGraphicsDescriptorSets();
-
 	}
 
 
@@ -541,8 +540,8 @@ private:
 		vkDestroyBuffer(*m_device, indexBuffer, nullptr);
 		vkFreeMemory(*m_device, indexBufferMemory, nullptr);
 
-		vkDestroyBuffer(*m_device, m_Triangle->vertexBuffer(), nullptr);
-		vkFreeMemory(*m_device, m_Triangle->vertexMemory(), nullptr);
+		vkDestroyBuffer(*m_device, m_Triangle->vertexBuffer()[0], nullptr);
+		vkFreeMemory(*m_device, m_Triangle->vertexMemory()[0], nullptr);
 
 		vkDestroyPipeline(*m_device, m_GraphicsPipeline->graphicsPipeline, nullptr);
 		vkDestroyPipelineLayout(*m_device, m_GraphicsPipeline->pipelineLayout, nullptr);

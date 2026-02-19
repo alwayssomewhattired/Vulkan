@@ -43,6 +43,6 @@ private:
 
 	void modelFileParse(tinygltf::Model& model, const tinygltf::Primitive& primitive, size_t& vertexCount, 
 		std::vector<Vertex>& vertices,
-		VkIndexType& indexType, std::vector<unsigned int>& indices, ItemInterface& classReference);
+		VkIndexType& indexType, std::vector<uint32_t>& indices, ItemInterface& classReference);
 	void fileDebug(const tinygltf::Model& model);
 };

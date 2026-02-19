@@ -23,8 +23,9 @@ public:
 		VkDeviceMemory& indexBufferMemory);
 	void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer,
 		VkDeviceMemory& bufferMemory);
-	void createVertexBuffer(const std::vector<Vertex>& triangleVertices, VkBuffer& triangleVertexBuffer,
-		VkDeviceMemory& triangleVertexBufferMemory);
+	void createVertexBuffer(const std::vector<Vertex>& triangleVertices,
+		std::vector<VkBuffer>& triangleVertexBufferManager,
+		std::vector<VkDeviceMemory>& triangleVertexBufferMemoryManager);
 
 private:
 	Devices& m_Devices;
