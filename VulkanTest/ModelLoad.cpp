@@ -39,7 +39,7 @@ ModelLoad::ModelLoad(
 // | Mutates 'vertices' and 'indices' and 'vertexCount' params
 void ModelLoad::modelFileParse(tinygltf::Model& model, const tinygltf::Primitive& primitive, size_t& vertexCount, 
 	std::vector<Vertex>& vertices, VkIndexType& indexType, std::vector<uint32_t>& indices,
-	ItemInterface& classReference) {
+	ItemInterface& classReference, const uint32_t primitiveIdx, const uint32_t primitivesSize) {
 
 	// POSITION
 
@@ -122,12 +122,14 @@ void ModelLoad::modelFileParse(tinygltf::Model& model, const tinygltf::Primitive
 		throw std::runtime_error("Unsupported index component type");
 
 	// | materials and textures
-	classReference.gltfMaterials().resize(model.materials.size());
-	for (int i = 0; i < model.materials.size(); ++i) {
-		m_Texture.buildGPUMaterial(model, i, classReference);
+	const uint32_t materialsSize = model.materials.size();
+	classReference.gltfMaterials().resize(materialsSize);
+	//classReference.gltfMaterials().resize(model.materials.size() * primitivesSize);
+	//classReference.gltfMaterials().resize(model.materials.size());
+	for (int i = 0; i < materialsSize; ++i) {
+		m_Texture.buildGPUMaterial(model, i, classReference, primitiveIdx);
 
 	}
-
 
 }
 
@@ -142,6 +144,7 @@ void ModelLoad::loadModel(const std::string& path, ItemInterface& classReference
 	auto& indexType = classReference.indexType();
 	auto& verticesManager = classReference.vertices();
 	auto& indicesManager = classReference.indices();
+
 
 	tinygltf::TinyGLTF loader;
 	tinygltf::Model model;
@@ -178,7 +181,14 @@ void ModelLoad::loadModel(const std::string& path, ItemInterface& classReference
 
 	const tinygltf::Mesh& mesh = *meshPtr;
 
-	for (const auto& primitive : mesh.primitives) {
+	uint32_t primitivesSize = mesh.primitives.size();
+
+	classReference.gltfMaterials().resize(primitivesSize);
+
+	for (uint32_t primitiveIdx = 0; primitiveIdx < primitivesSize; primitiveIdx++) {
+		//for (const auto& primitive : mesh.primitives) {
+
+		const auto& primitive = mesh.primitives[primitiveIdx];
 
 		VkBuffer vertexBuffer;
 		VkDeviceMemory vertexMemory;
@@ -190,7 +200,7 @@ void ModelLoad::loadModel(const std::string& path, ItemInterface& classReference
 		size_t vertexCount;
 		uint32_t indexCount;
 
-		modelFileParse(model, primitive, vertexCount, vertices, indexType, indices, classReference);
+		modelFileParse(model, primitive, vertexCount, vertices, indexType, indices, classReference, primitiveIdx, primitivesSize);
 
 
 		// | Vertex 

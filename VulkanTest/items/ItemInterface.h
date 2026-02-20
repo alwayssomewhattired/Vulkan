@@ -1,9 +1,5 @@
 #pragma once
 #include <glm/fwd.hpp>
-//#define GLM_FORCE_RADIANS
-//#define GLM_FORCE_DEPTH_ZERO_TO_ONE
-//#include <glm/glm.hpp>
-//#include <glm/gtc/matrix_transform.hpp>
 
 #include "../glm_config.h"
 
@@ -38,10 +34,7 @@ struct ItemInterface {
 
 	virtual std::string& optionalTexturePath() = 0;
 
-	// | returns a descriptorSet manager.
-	// | inside is a vector of per-primitive elements,
-	// | elements being a vector of sets-per-frame/sets-per-material
-	virtual std::vector<std::vector<VkDescriptorSet>>& descriptorSets() = 0;
+	virtual std::vector<VkDescriptorSet>& descriptorSets() = 0;
 
 	virtual ~ItemInterface() = default;
 };

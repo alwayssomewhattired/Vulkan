@@ -129,9 +129,8 @@ void CommandBuffer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t 
 				vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
 
 				vkCmdBindIndexBuffer(commandBuffer, item->indexBuffer()[i], 0, item->indexType());
-
 				vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.pipelineLayout, 0, 1,
-					&descriptorSets[i][currentFrame], 0, nullptr);
+					&descriptorSets[currentFrame], 0, nullptr);
 
 				vkCmdDrawIndexed(commandBuffer, item->indexCount()[i], 1, 0, 0, 0);
 
@@ -227,7 +226,7 @@ void CommandBuffer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t 
 		vkCmdBindVertexBuffers(commandBuffer, 0, 1, triangleVertexBuffers, triangleOffsets);
 
 		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.pipelineLayout, 0, 1,
-			&triangleClass.descriptorSets()[0][currentFrame], 0, nullptr);
+			&triangleClass.descriptorSets()[currentFrame], 0, nullptr);
 
 		vkCmdDraw(commandBuffer, 3, 1, 0, 0);
 	}

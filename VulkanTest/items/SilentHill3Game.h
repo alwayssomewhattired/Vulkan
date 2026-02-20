@@ -37,7 +37,7 @@ public:
 
 	std::string m_optionalTexturePath = "";
 
-	std::vector<std::vector<VkDescriptorSet>> m_descriptorSets;
+	std::vector<VkDescriptorSet> m_descriptorSets;
 
 	// | begin item interface block
 	std::vector<VkBuffer>& vertexBuffer() override {
@@ -84,7 +84,7 @@ public:
 		return m_optionalTexturePath;
 	}
 
-	std::vector<std::vector<VkDescriptorSet>>& descriptorSets() override {
+	std::vector<VkDescriptorSet>& descriptorSets() override {
 		return m_descriptorSets;
 	}
 

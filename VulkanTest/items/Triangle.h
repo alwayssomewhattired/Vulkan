@@ -42,7 +42,7 @@ public:
 
 	std::string m_optionalTexturePath = "";
 
-	std::vector<std::vector<VkDescriptorSet>> m_descriptorSets;
+	std::vector<VkDescriptorSet> m_descriptorSets;
 
 	// | vertices of simple triangle
 	const std::vector<Vertex> triangleVertices = {
@@ -95,7 +95,7 @@ public:
 		return m_optionalTexturePath;
 	}
 
-	std::vector<std::vector<VkDescriptorSet>>& descriptorSets() override {
+	std::vector<VkDescriptorSet>& descriptorSets() override {
 		return m_descriptorSets;
 	}
 

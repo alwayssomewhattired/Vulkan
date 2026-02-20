@@ -51,7 +51,7 @@ public:
 
 	uint32_t mipLevels;
 
-	void buildGPUMaterial(tinygltf::Model& model, int& materialIndex, ItemInterface& classReference);
+	void buildGPUMaterial(tinygltf::Model& model, int& materialIndex, ItemInterface& classReference, const uint32_t primitiveIdx);
 
 private:
 	Buffer& m_Buffer;

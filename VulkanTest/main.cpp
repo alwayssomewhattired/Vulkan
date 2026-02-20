@@ -251,7 +251,6 @@ private:
 
 		createDescriptorSets();
 
-		std::cout << "time\n";
 		m_CommandBuffer->createCommandBuffers(*m_CommandPool);
 		m_SwapChain->createSyncObjects();
 
@@ -389,8 +388,12 @@ private:
 	void createDescriptorSets() {
 		
 		for (auto* item : items) {
-			m_DescriptorSetLayout->createDescriptorPool(item->gltfMaterials().size() * item->vertexBuffer().size());
+			m_DescriptorSetLayout->createDescriptorPool(item->gltfMaterials().size());
+			//m_DescriptorSetLayout->createDescriptorPool(item->gltfMaterials().size() * item->vertexBuffer().size());
+
 			m_DescriptorSet->createMeshDescriptorSets(*item);
+			std::cout << "this hammer\n";
+
 		}
 
 		m_DescriptorSetLayout->createComputeDescriptorPool(2);

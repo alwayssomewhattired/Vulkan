@@ -15,46 +15,24 @@ DescriptorSet::DescriptorSet(DescriptorSetLayout& descriptorSetLayout, Devices& 
 
 
 // | generic descriptor set creator
-// - implement dynamic-uniform-buffer instead
 void DescriptorSet::createMeshDescriptorSets(ItemInterface& classReference) {
 
 	const auto& materials = classReference.gltfMaterials();
 
 	const auto& textures = m_Texture.m_gpuTextures;
 
-	auto& descriptorSetsManager = classReference.descriptorSets();
+	auto& descriptorSets = classReference.descriptorSets();
 
-	const auto& primitivesSize = classReference.vertexBuffer().size();
+	//const auto& primitivesSize = classReference.vertexBuffer().size();
+	// 
+	//for (auto& descriptorSets : descriptorSetsManager)
+	//{
+	//	descriptorSets.resize(Constants::MAX_FRAMES_IN_FLIGHT * materials.size());
+	//}
 
-	//m_DescriptorSetLayout.createDescriptorPool(materials.size())
-
-
-
-
-
-	//descriptorSets.resize(Constants::MAX_FRAMES_IN_FLIGHT * materials.size());
-
-	//std::vector<VkDescriptorSetLayout> layouts(descriptorSets.size(), m_DescriptorSetLayout.descriptorSetLayout);
-	//VkDescriptorSetAllocateInfo allocInfo{};
-	//allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-	//allocInfo.descriptorPool = m_DescriptorSetLayout.descriptorPool;
-	//allocInfo.descriptorSetCount = static_cast<uint32_t>(descriptorSets.size());
-	//allocInfo.pSetLayouts = layouts.data();
-
-	//if (vkAllocateDescriptorSets(m_Devices.device, &allocInfo, descriptorSets.data()) != VK_SUCCESS)
-	//	throw std::runtime_error("failed to allocate descriptor sets!");
-
-	descriptorSetsManager.resize(primitivesSize);
-
-	for (auto& descriptorSets : descriptorSetsManager)
+	for (size_t dstIdx = 0; dstIdx < descriptorSets.size(); ++dstIdx)
 	{
-		std::cout << "hi\n";
-		descriptorSets.resize(Constants::MAX_FRAMES_IN_FLIGHT * materials.size());
-	}
-
-	for (size_t dstIdx = 0; dstIdx < descriptorSetsManager.size(); ++dstIdx)
-	{
-		auto& descriptorSets = descriptorSetsManager[dstIdx];
+		auto& descriptorSet = descriptorSets[dstIdx];
 
 		std::vector<VkDescriptorSetLayout> layouts(
 			descriptorSets.size(),
@@ -64,9 +42,9 @@ void DescriptorSet::createMeshDescriptorSets(ItemInterface& classReference) {
 		VkDescriptorSetAllocateInfo allocInfo{};
 		allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
 		allocInfo.descriptorPool = m_DescriptorSetLayout.descriptorPool;
+		std::cout << descriptorSets.size() << "\n";
 		allocInfo.descriptorSetCount = static_cast<uint32_t>(descriptorSets.size());
 		allocInfo.pSetLayouts = layouts.data();
-		std::cout << descriptorSets.size() << "bish\n";
 		if (vkAllocateDescriptorSets(
 			m_Devices.device,
 			&allocInfo,
@@ -76,18 +54,16 @@ void DescriptorSet::createMeshDescriptorSets(ItemInterface& classReference) {
 		}
 	}
 
-	std::cout << "yabba\n";
-	for (size_t primitiveIdx = 0; primitiveIdx < primitivesSize; primitiveIdx++) {
+	//for (size_t primitiveIdx = 0; primitiveIdx < primitivesSize; primitiveIdx++) {
 		for (size_t frame = 0; frame < Constants::MAX_FRAMES_IN_FLIGHT; frame++) {
 			for (size_t matIdx = 0; matIdx < materials.size(); ++matIdx) {
 
 				size_t dsIndex = frame * 1 + matIdx;
 
-			
+				//VkDescriptorSet& dstSet = descriptorSetsManager[primitiveIdx][dsIndex];
+				VkDescriptorSet dstSet = descriptorSets[dsIndex];
 
-				VkDescriptorSet& dstSet = descriptorSetsManager[primitiveIdx][dsIndex];
-				//VkDescriptorSet dstSet;
-				std::cout << "dabba\n";
+
 				const auto& material = materials[matIdx];
 				const GPUTexture& GPUBaseColorTex = textures[material.baseColorTex];
 
@@ -147,7 +123,6 @@ void DescriptorSet::createMeshDescriptorSets(ItemInterface& classReference) {
 				vkUpdateDescriptorSets(m_Devices.device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(),
 					0, nullptr);
 
-			}
 		}
 	}
 }
