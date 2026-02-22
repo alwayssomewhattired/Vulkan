@@ -381,7 +381,6 @@ private:
 		m_ModelLoad->loadModel("models/thedeathofallionceloved.glb", *m_Home);
 
 		m_ModelLoad->loadModel("models/silent-hill-3-ps2-game-cover/source/SilentHill3ps2Game.glb", *m_SilentHill3Game);
-
 	}
 
 	// creates descriptor sets for models

@@ -33,6 +33,8 @@ public:
 
 	std::vector<Texture::GLTFMaterial> m_gltfMaterials;
 
+	std::vector<int> m_gltfPrimitiveMaterialIndices;
+
 	std::string m_optionalTexturePath = "textures/Metal055C_8K-PNG_Color.png";
 
 	std::vector<VkDescriptorSet> m_descriptorSets;
@@ -77,6 +79,11 @@ public:
 	std::vector<Texture::GLTFMaterial>& gltfMaterials() override {
 		return m_gltfMaterials;
 	}
+
+	std::vector<int>& gltfPrimitiveMaterialIndices() override {
+		return m_gltfPrimitiveMaterialIndices;
+	}
+
 
 	std::string& optionalTexturePath() override {
 		return m_optionalTexturePath;

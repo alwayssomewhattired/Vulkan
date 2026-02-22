@@ -40,6 +40,8 @@ public:
 
 	std::vector<Texture::GLTFMaterial> m_gltfMaterials;
 
+	std::vector<int> m_gltfPrimitiveMaterialIndices;
+
 	std::string m_optionalTexturePath = "";
 
 	std::vector<VkDescriptorSet> m_descriptorSets;
@@ -89,6 +91,10 @@ public:
 
 	std::vector<Texture::GLTFMaterial>& gltfMaterials() override {
 		return m_gltfMaterials;
+	}
+
+	std::vector<int>& gltfPrimitiveMaterialIndices() override {
+		return m_gltfPrimitiveMaterialIndices;
 	}
 
 	std::string& optionalTexturePath() override {

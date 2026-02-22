@@ -41,6 +41,16 @@ void ModelLoad::modelFileParse(tinygltf::Model& model, const tinygltf::Primitive
 	std::vector<Vertex>& vertices, VkIndexType& indexType, std::vector<uint32_t>& indices,
 	ItemInterface& classReference, const uint32_t primitiveIdx, const uint32_t primitivesSize) {
 
+
+	int primitiveMaterialIndex = primitive.material;
+
+	if (primitiveMaterialIndex < 0) {
+		std::cout << "do this here do this now\n";
+		// assign default material index
+	}
+
+	classReference.gltfPrimitiveMaterialIndices().push_back(primitiveMaterialIndex);
+
 	// POSITION
 
 	const auto& posAccessor = model.accessors[primitive.attributes.at("POSITION")];
@@ -124,13 +134,11 @@ void ModelLoad::modelFileParse(tinygltf::Model& model, const tinygltf::Primitive
 	// | materials and textures
 	const uint32_t materialsSize = model.materials.size();
 	classReference.gltfMaterials().resize(materialsSize);
-	//classReference.gltfMaterials().resize(model.materials.size() * primitivesSize);
-	//classReference.gltfMaterials().resize(model.materials.size());
+
 	for (int i = 0; i < materialsSize; ++i) {
 		m_Texture.buildGPUMaterial(model, i, classReference, primitiveIdx);
 
 	}
-
 }
 
 void ModelLoad::loadModel(const std::string& path, ItemInterface& classReference) {
@@ -183,10 +191,7 @@ void ModelLoad::loadModel(const std::string& path, ItemInterface& classReference
 
 	uint32_t primitivesSize = mesh.primitives.size();
 
-	classReference.gltfMaterials().resize(primitivesSize);
-
 	for (uint32_t primitiveIdx = 0; primitiveIdx < primitivesSize; primitiveIdx++) {
-		//for (const auto& primitive : mesh.primitives) {
 
 		const auto& primitive = mesh.primitives[primitiveIdx];
 

@@ -32,6 +32,9 @@ struct ItemInterface {
 	// | gltf material indices
 	virtual std::vector<Texture::GLTFMaterial>& gltfMaterials() = 0;
 
+	// | primitive-material indices
+	virtual std::vector<int>& gltfPrimitiveMaterialIndices() = 0;
+
 	virtual std::string& optionalTexturePath() = 0;
 
 	virtual std::vector<VkDescriptorSet>& descriptorSets() = 0;
