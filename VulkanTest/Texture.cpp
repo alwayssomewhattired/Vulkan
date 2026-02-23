@@ -160,7 +160,7 @@ int Texture::getOrCreateGpuTexture(
 	VkFormat format)
 {
 	if (gltfTexIndex < 0 && classReference.optionalTexturePath().empty())
-		return Constants::DEFAULT_WHITE_TEXTURE_INDEX;
+		return Constants::DEFAULT_BLACK_TEXTURE_INDEX;
 
 	auto it = m_gltfToGpuTexture.find(gltfTexIndex);
 	if (it != m_gltfToGpuTexture.end())
@@ -170,6 +170,7 @@ int Texture::getOrCreateGpuTexture(
 		model, gltfTexIndex, classReference, format);
 
 	m_gltfToGpuTexture[gltfTexIndex] = gpuIndex;
+
 	return gpuIndex;
 }
 
@@ -205,11 +206,18 @@ void Texture::buildGPUMaterial(
 
 void Texture::createDefaultTextures() {
 
+
 	// default base-color (default white)
 	GPUTexture whiteTex(m_Devices.device);
 	createTextureImage(true, "", Constants::WHITE_PIXEL, whiteTex, VK_FORMAT_R8G8B8A8_SRGB, 1, 1);
 	Constants::DEFAULT_WHITE_TEXTURE_INDEX = m_gpuTextures.size();
 	m_gpuTextures.push_back(std::move(whiteTex));
+
+	// default (black)
+	GPUTexture blackTex(m_Devices.device);
+	createTextureImage(true, "", Constants::BLACK_PIXEL, blackTex, VK_FORMAT_R8G8B8A8_SRGB, 1, 1);
+	Constants::DEFAULT_BLACK_TEXTURE_INDEX = m_gpuTextures.size();
+	m_gpuTextures.push_back(std::move(blackTex));
 
 	// | default normals (default flat)
 	GPUTexture normalTex(m_Devices.device);
