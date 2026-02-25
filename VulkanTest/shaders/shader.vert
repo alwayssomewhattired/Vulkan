@@ -14,9 +14,9 @@ layout(set = 0, binding = 1) uniform ModelUBO {
 
 // - set this up first
 // - this not set up causes texture flickering
-layout(push_constant) uniform SilentHill3GamePC {
-    mat4 model;
-} silentHill3GamePC;
+//layout(push_constant) uniform SilentHill3GamePC {
+//    mat4 model;
+//} silentHill3GamePC;
  
 layout(location = 0) in vec3 inPosition;
 layout(location = 1) in vec3 inColor;

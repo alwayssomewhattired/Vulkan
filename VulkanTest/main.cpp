@@ -378,9 +378,12 @@ private:
 	// | loads .glb file(s)
 	void createModel() {
 
-		m_ModelLoad->loadModel("models/thedeathofallionceloved.glb", *m_Home);
+		m_ModelLoad->loadModel("models/houseofmusic.glb", *m_Home);
 
+		// | shit house
+		//m_ModelLoad->loadModel("models/thedeathofallionceloved.glb", *m_Home);
 		m_ModelLoad->loadModel("models/silent-hill-3-ps2-game-cover/source/SilentHill3ps2Game.glb", *m_SilentHill3Game);
+
 	}
 
 	// creates descriptor sets for models
@@ -391,7 +394,6 @@ private:
 			//m_DescriptorSetLayout->createDescriptorPool(item->gltfMaterials().size() * item->vertexBuffer().size());
 
 			m_DescriptorSet->createMeshDescriptorSets(*item);
-			std::cout << "this hammer\n";
 
 		}
 

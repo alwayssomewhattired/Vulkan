@@ -161,6 +161,7 @@
     <ClCompile Include="ValidationLayers.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="shaders\blinn-phong.frag" />
     <None Include="shaders\compile.bat" />
     <None Include="shaders\shader.frag" />
     <None Include="shaders\shader.vert" />

@@ -153,7 +153,6 @@ void ModelLoad::loadModel(const std::string& path, ItemInterface& classReference
 	auto& verticesManager = classReference.vertices();
 	auto& indicesManager = classReference.indices();
 
-
 	tinygltf::TinyGLTF loader;
 	tinygltf::Model model;
 	std::string err, warn;
@@ -188,9 +187,8 @@ void ModelLoad::loadModel(const std::string& path, ItemInterface& classReference
 		throw std::runtime_error("No mesh found in GLB");
 
 	const tinygltf::Mesh& mesh = *meshPtr;
-
 	uint32_t primitivesSize = mesh.primitives.size();
-
+	//std::cout << primitivesSize << "\n";
 	for (uint32_t primitiveIdx = 0; primitiveIdx < primitivesSize; primitiveIdx++) {
 
 		const auto& primitive = mesh.primitives[primitiveIdx];

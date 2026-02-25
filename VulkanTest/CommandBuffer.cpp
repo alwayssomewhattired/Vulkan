@@ -121,6 +121,7 @@ void CommandBuffer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t 
 
 		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.graphicsPipeline);
 		for (auto& item : items) {
+			std::cout << "desc sets: " << item->descriptorSets().size() << "\n";
 			for (int i = 0; i < item->vertices().size(); i++) { // primitive iteration
 				//uint32_t dsIndex = currentFrame * item->gltfMaterials().size() + item->gltfPrimitiveMaterialIndices()[i];
 				auto& descriptorSets = item->descriptorSets();

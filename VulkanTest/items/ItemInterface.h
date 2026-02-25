@@ -26,10 +26,12 @@ struct ItemInterface {
 
 	virtual VkIndexType& indexType() = 0;
 
+	// | vertices of primitives
 	virtual std::vector<std::vector<Vertex>>& vertices() = 0;
+
 	virtual std::vector<std::vector<uint32_t>>& indices() = 0;
 
-	// | gltf material indices
+	// | gltf material indices to gltf textures
 	virtual std::vector<Texture::GLTFMaterial>& gltfMaterials() = 0;
 
 	// | primitive-material indices

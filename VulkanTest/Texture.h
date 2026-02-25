@@ -29,7 +29,8 @@ public:
 	std::vector<GPUTexture> m_gpuTextures;
 
 	// | organised, unique gltf-index to gpu-texture-index cache 
-	std::unordered_map<int, int> m_gltfToGpuTexture;
+	// | we use multiple model's resources now so this is broken
+	//std::unordered_map<int, int> m_gltfToGpuTexture;
 
 	// - i think this should be non-copyable as well
 	struct GLTFMaterial {

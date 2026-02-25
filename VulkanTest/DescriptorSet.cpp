@@ -22,7 +22,7 @@ void DescriptorSet::createMeshDescriptorSets(ItemInterface& classReference) {
 	const auto& textures = m_Texture.m_gpuTextures;
 
 	auto& descriptorSets = classReference.descriptorSets();
-	std::cout << "materials size: " << materials.size() << "\n";
+
 	descriptorSets.resize(materials.size());
 	//descriptorSets.resize(Constants::MAX_FRAMES_IN_FLIGHT * materials.size());
 
@@ -53,12 +53,13 @@ void DescriptorSet::createMeshDescriptorSets(ItemInterface& classReference) {
 
 			const auto& material = materials[matIdx];
 			const GPUTexture& GPUBaseColorTex = textures[material.baseColorTex];
-
+			//std::cout << "textures size: " << textures.size() << "\n";
+			std::cout << "basecolor index: " << material.baseColorTex << "\n";
 			VkDescriptorBufferInfo bufferInfo{};
 			bufferInfo.buffer = m_UniformBuffer.uniformBuffers[frame];
 			bufferInfo.offset = 0;
 			bufferInfo.range = sizeof(Camera::CameraUBO);
-
+			
 			VkDescriptorBufferInfo modelBufferInfo{};
 			modelBufferInfo.buffer = m_UniformBuffer.modelUniformBuffers[frame];
 			modelBufferInfo.offset = 0;

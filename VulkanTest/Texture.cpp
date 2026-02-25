@@ -122,9 +122,11 @@ int Texture::uploadGltfTextureToVulkan(tinygltf::Model& model, int& textureIndex
 
 	// | Checks if texture already stored and if so,
 	// | returns index of said texture
-	auto it = m_gltfToGpuTexture.find(textureIndex);
-	if (it != m_gltfToGpuTexture.end())
-		return it->second;
+
+	// | we store multiple model's resources now
+	//auto it = m_gltfToGpuTexture.find(textureIndex);
+	//if (it != m_gltfToGpuTexture.end())
+	//	return it->second;
 
 	GPUTexture gpuTex(m_Devices.device);
 
@@ -146,7 +148,7 @@ int Texture::uploadGltfTextureToVulkan(tinygltf::Model& model, int& textureIndex
 
 	m_gpuTextures.push_back(std::move(gpuTex));
 	int gpuIndex = static_cast<int>(m_gpuTextures.size() - 1);
-	m_gltfToGpuTexture[textureIndex] = gpuIndex;
+	//m_gltfToGpuTexture[textureIndex] = gpuIndex;
 
 	return gpuIndex;
 
@@ -162,15 +164,18 @@ int Texture::getOrCreateGpuTexture(
 	if (gltfTexIndex < 0 && classReference.optionalTexturePath().empty())
 		return Constants::DEFAULT_BLACK_TEXTURE_INDEX;
 
-	auto it = m_gltfToGpuTexture.find(gltfTexIndex);
-	if (it != m_gltfToGpuTexture.end())
-		return it->second;
+	// | don't do this because we now store multiple models resources
+	//auto it = m_gltfToGpuTexture.find(gltfTexIndex);
+	//if (it != m_gltfToGpuTexture.end())
+	//	return it->second;
 
 	int gpuIndex = uploadGltfTextureToVulkan(
-		model, gltfTexIndex, classReference, format);
+		model, gltfTexIndex, classReference, format
+	);
 
-	m_gltfToGpuTexture[gltfTexIndex] = gpuIndex;
+	//m_gltfToGpuTexture[gltfTexIndex] = gpuIndex;
 
+	//std::cout << "gpu index: " << gpuIndex << "\n";
 	return gpuIndex;
 }
 

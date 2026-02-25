@@ -35,7 +35,8 @@ public:
 
 	std::vector<int> m_gltfPrimitiveMaterialIndices;
 
-	std::string m_optionalTexturePath = "textures/Metal055C_8K-PNG_Color.png";
+	std::string m_optionalTexturePath = "";
+	//std::string m_optionalTexturePath = "textures/Metal055C_8K-PNG_Color.png";
 
 	std::vector<VkDescriptorSet> m_descriptorSets;
 

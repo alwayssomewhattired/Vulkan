@@ -106,6 +106,7 @@
     <None Include="shaders\compile.bat">
       <Filter>Source Files</Filter>
     </None>
+    <None Include="shaders\blinn-phong.frag" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ModelLoad.h">
