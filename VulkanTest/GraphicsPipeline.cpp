@@ -10,7 +10,7 @@ GraphicsPipeline::GraphicsPipeline(Shaders& shaders, VkDevice device, SwapChain&
 	m_Shaders(shaders), m_device(device), m_SwapChain(swapChain), m_msaaSamples(msaaSamples), 
 	m_DescriptorSetLayout(descriptorSetLayout), m_renderPass(renderPass){}
 
-void GraphicsPipeline::createGraphicsPipeline() {
+void GraphicsPipeline::createGraphicsPipeline(UniformBuffer& uniformBuffer) {
 
 	createMandelbulbComputePipeline();
 	createMandelbulbGraphicsPipeline();
@@ -84,7 +84,6 @@ void GraphicsPipeline::createGraphicsPipeline() {
 	rasterizer.rasterizerDiscardEnable = VK_FALSE;
 	rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
 	rasterizer.lineWidth = 1.0f;
-	//rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
 	rasterizer.cullMode = VK_CULL_MODE_NONE;
 	rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
 	rasterizer.depthBiasEnable = VK_FALSE;
@@ -257,7 +256,6 @@ void GraphicsPipeline::createMandelbulbGraphicsPipeline() {
 	rasterizer.rasterizerDiscardEnable = VK_FALSE;
 	rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
 	rasterizer.lineWidth = 1.0f;
-	//rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
 	rasterizer.cullMode = VK_CULL_MODE_NONE;
 	rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
 	rasterizer.depthBiasEnable = VK_FALSE;

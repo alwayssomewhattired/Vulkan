@@ -24,7 +24,6 @@ void DescriptorSet::createMeshDescriptorSets(ItemInterface& classReference) {
 	auto& descriptorSets = classReference.descriptorSets();
 
 	descriptorSets.resize(materials.size());
-	//descriptorSets.resize(Constants::MAX_FRAMES_IN_FLIGHT * materials.size());
 
 	std::vector<VkDescriptorSetLayout> layouts(
 		descriptorSets.size(),
@@ -53,17 +52,10 @@ void DescriptorSet::createMeshDescriptorSets(ItemInterface& classReference) {
 
 			const auto& material = materials[matIdx];
 			const GPUTexture& GPUBaseColorTex = textures[material.baseColorTex];
-			//std::cout << "textures size: " << textures.size() << "\n";
-			std::cout << "basecolor index: " << material.baseColorTex << "\n";
 			VkDescriptorBufferInfo bufferInfo{};
 			bufferInfo.buffer = m_UniformBuffer.uniformBuffers[frame];
 			bufferInfo.offset = 0;
 			bufferInfo.range = sizeof(Camera::CameraUBO);
-			
-			VkDescriptorBufferInfo modelBufferInfo{};
-			modelBufferInfo.buffer = m_UniformBuffer.modelUniformBuffers[frame];
-			modelBufferInfo.offset = 0;
-			modelBufferInfo.range = m_UniformBuffer.modelUBOSize;
 
 			assert(material.baseColorTex < textures.size());
 			VkDescriptorImageInfo baseColorInfo{};
@@ -76,7 +68,7 @@ void DescriptorSet::createMeshDescriptorSets(ItemInterface& classReference) {
 			normalInfo.imageView = textures[material.normalTex].view;
 			normalInfo.sampler = textures[material.normalTex].sampler;
 
-			std::array<VkWriteDescriptorSet, 4> descriptorWrites{};
+			std::array<VkWriteDescriptorSet, 3> descriptorWrites{};
 			descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 			descriptorWrites[0].dstSet = dstSet;
 			descriptorWrites[0].dstBinding = 0;
@@ -89,9 +81,9 @@ void DescriptorSet::createMeshDescriptorSets(ItemInterface& classReference) {
 			descriptorWrites[1].dstSet = dstSet;
 			descriptorWrites[1].dstBinding = 1;
 			descriptorWrites[1].dstArrayElement = 0;
-			descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+			descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 			descriptorWrites[1].descriptorCount = 1;
-			descriptorWrites[1].pBufferInfo = &modelBufferInfo;
+			descriptorWrites[1].pImageInfo = &baseColorInfo;
 
 			descriptorWrites[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 			descriptorWrites[2].dstSet = dstSet;
@@ -99,15 +91,7 @@ void DescriptorSet::createMeshDescriptorSets(ItemInterface& classReference) {
 			descriptorWrites[2].dstArrayElement = 0;
 			descriptorWrites[2].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 			descriptorWrites[2].descriptorCount = 1;
-			descriptorWrites[2].pImageInfo = &baseColorInfo;
-
-			descriptorWrites[3].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			descriptorWrites[3].dstSet = dstSet;
-			descriptorWrites[3].dstBinding = 3;
-			descriptorWrites[3].dstArrayElement = 0;
-			descriptorWrites[3].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-			descriptorWrites[3].descriptorCount = 1;
-			descriptorWrites[3].pImageInfo = &normalInfo;
+			descriptorWrites[2].pImageInfo = &normalInfo;
 			vkUpdateDescriptorSets(m_Devices.device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(),
 				0, nullptr);
 

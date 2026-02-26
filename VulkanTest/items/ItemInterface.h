@@ -10,7 +10,6 @@
 
 #include "../Vertex.h"
 #include "../Texture.h"
-#include "../GPUTexture.h"
 
 // | blueprint for all items
 struct ItemInterface {
@@ -40,6 +39,14 @@ struct ItemInterface {
 	virtual std::string& optionalTexturePath() = 0;
 
 	virtual std::vector<VkDescriptorSet>& descriptorSets() = 0;
+
+	struct ModelMatrix {
+		alignas(16) glm::mat4 model;
+	};
+	
+	virtual ModelMatrix& modelMatrix() = 0;
+
+	virtual void updatePC(glm::mat4& modelMatrix, const bool rotationEnabled) = 0;
 
 	virtual ~ItemInterface() = default;
 };

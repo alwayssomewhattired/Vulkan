@@ -1,7 +1,7 @@
 #include "UniformBuffer.h"
+
 #include <iostream>
 
-//#include <glm/ext/matrix_clip_space.inl>
 
 
 
@@ -11,6 +11,8 @@ UniformBuffer::UniformBuffer(Devices& devices, Camera& camera, SwapChain& swapCh
 	// | align dynamic ubo
 	VkPhysicalDeviceProperties props;
 	vkGetPhysicalDeviceProperties(devices.physicalDevice, &props);
+
+	maxPCSize = props.limits.maxPushConstantsSize;
 
 	alignedModelUBOSize =
 		(sizeof(ModelUBO) + props.limits.minUniformBufferOffsetAlignment - 1) &
@@ -27,7 +29,6 @@ void UniformBuffer::createUniformBuffers() {
 		modelUBOSize *
 		Constants::MAX_FRAMES_IN_FLIGHT *
 		2; // or items.size()
-	//VkDeviceSize modelBufferSize = sizeof(ModelUBO);
 	VkDeviceSize mandelbulbBufferSize = sizeof(MandelbulbUBO);
 
 	uniformBuffers.resize(Constants::MAX_FRAMES_IN_FLIGHT);
@@ -69,35 +70,6 @@ void UniformBuffer::createUniformBuffers() {
 		vkBindBufferMemory(m_Devices.device, uniformBuffers[i], uniformBuffersMemory[i], 0);
 
 		vkMapMemory(m_Devices.device, uniformBuffersMemory[i], 0, bufferSize, 0, &uniformBuffersMapped[i]);
-	}
-
-	// | models path
-	for (size_t i = 0; i < Constants::MAX_FRAMES_IN_FLIGHT; i++) {
-
-		VkBufferCreateInfo modelBufferInfo{};
-		modelBufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-		modelBufferInfo.size = modelBufferSize;
-		modelBufferInfo.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
-		modelBufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-		if (vkCreateBuffer(m_Devices.device, &modelBufferInfo, nullptr, &modelUniformBuffers[i]) != VK_SUCCESS)
-			throw std::runtime_error("failed to create uniform buffer!");
-
-		VkMemoryRequirements modelMemRequirements;
-		vkGetBufferMemoryRequirements(m_Devices.device, modelUniformBuffers[i], &modelMemRequirements);
-
-		VkMemoryAllocateInfo modelAllocInfo{};
-		modelAllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-		modelAllocInfo.allocationSize = modelMemRequirements.size;
-		modelAllocInfo.memoryTypeIndex = m_Devices.findMemoryType(modelMemRequirements.memoryTypeBits,
-			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, m_Devices.physicalDevice);
-
-		if (vkAllocateMemory(m_Devices.device, &modelAllocInfo, nullptr, &modelUniformBuffersMemory[i]) != VK_SUCCESS)
-			throw std::runtime_error("failed to allocate uniform buffer memory");
-
-		vkBindBufferMemory(m_Devices.device, modelUniformBuffers[i], modelUniformBuffersMemory[i], 0);
-
-		vkMapMemory(m_Devices.device, modelUniformBuffersMemory[i], 0, modelBufferSize, 0, &modelUniformBuffersMapped[i]);
 	}
 
 	// | Mandelbulb path
@@ -225,7 +197,7 @@ void UniformBuffer::updateModelBuffer(uint32_t currentImage) {
 
 	ModelUBO modelUbo{};
 
-	// item view (tilted, rotating)((bind to key 'p'))
+	// item view (tilted, rotating)
 	if (m_rotationEnabled) {
 		modelUbo.model = glm::rotate(glm::mat4(1.0f),
 			time * glm::radians(90.0f),
@@ -235,6 +207,9 @@ void UniformBuffer::updateModelBuffer(uint32_t currentImage) {
 		// normal view (straight, unchanging)
 		modelUbo.model = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 4.0f));
 	}
+
+	// | scaling
+	modelUbo.model = glm::scale(glm::mat4(1.0f), glm::vec3(4.0f, 4.0f, 4.0f));
 
 	memcpy(modelUniformBuffersMapped[currentImage], &modelUbo, sizeof(modelUbo));
 

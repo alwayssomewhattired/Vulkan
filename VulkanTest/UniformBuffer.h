@@ -5,11 +5,14 @@
 #include <stdexcept>
 #include <chrono>
 #include "glm_config.h"
+#include <cstdint>
+#include <vector>
 
 #include "Camera.h"
 #include "Constants.h"
 #include "Devices.h"
 #include "SwapChain.h"
+#include "items/ItemInterface.h"
 
 class UniformBuffer
 {
@@ -31,6 +34,7 @@ public:
 		alignas(16) glm::mat4 model;
 	};
 
+	uint32_t maxPCSize;
 	uint32_t alignedModelUBOSize;
 	uint32_t modelUBOSize;
 

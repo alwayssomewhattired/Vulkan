@@ -11,6 +11,7 @@
 #include <cstdint>
 #include <vector>
 #include <string>
+#include <chrono>
 
 #include "ItemInterface.h"
 #include "../Vertex.h"
@@ -22,7 +23,6 @@ class Triangle : public ItemInterface
 {
 
 public:
-	glm::mat4 modelMatrix = glm::translate(glm::mat4(1.0f), glm::vec3(0, 0, -3));
 
 	std::vector<VkBuffer> m_vertexBuffer;
 	std::vector<VkDeviceMemory> m_vertexMemory;
@@ -52,6 +52,10 @@ public:
 	{{ 0.5f,  0.5f, 0.0f }, {0.0f, 1.0f, 0.0f}},
 	{{-0.5f,  0.5f, 0.0f }, {0.0f, 0.0f, 1.0f}}
 	};
+
+	ModelMatrix m_modelMatrix;
+
+	void m_updatePC(glm::mat4& modelMatrix, const bool rotationEnabled);
 
 	std::vector<VkBuffer>& vertexBuffer() override {
 		return m_vertexBuffer;
@@ -103,6 +107,14 @@ public:
 
 	std::vector<VkDescriptorSet>& descriptorSets() override {
 		return m_descriptorSets;
+	}
+
+	ModelMatrix& modelMatrix() override {
+		return m_modelMatrix;
+	}
+
+	void updatePC(glm::mat4& modelMatrix, const bool rotationEnabled) override {
+		m_updatePC(modelMatrix, rotationEnabled);
 	}
 
 };

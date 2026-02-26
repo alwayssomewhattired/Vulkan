@@ -5,7 +5,7 @@ layout(location = 1) in vec2 fragTextCoord;
 
 layout(location = 0) out vec4 outColor;
 
-layout(binding = 2) uniform sampler2D texSampler;
+layout(binding = 1) uniform sampler2D texSampler;
 
 //vec3 fresnelSchlick(float cosTheta, vec3 F0) {
 //	return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);

@@ -6,7 +6,6 @@ DescriptorSetLayout::DescriptorSetLayout(Devices& devices) : m_Devices(devices){
 
 void DescriptorSetLayout::createMeshDescriptorSetLayout() {
 
-
 	VkDescriptorSetLayoutBinding cameraBinding{};
 	cameraBinding.binding = 0;
 	cameraBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -14,28 +13,21 @@ void DescriptorSetLayout::createMeshDescriptorSetLayout() {
 	cameraBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 	cameraBinding.pImmutableSamplers = nullptr;
 
-	VkDescriptorSetLayoutBinding modelBinding{};
-	modelBinding.binding = 1;
-	modelBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-	modelBinding.descriptorCount = 1;
-	modelBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-	modelBinding.pImmutableSamplers = nullptr;
-
 	VkDescriptorSetLayoutBinding samplerBinding{};
-	samplerBinding.binding = 2;
+	samplerBinding.binding = 1;
 	samplerBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 	samplerBinding.descriptorCount = 1;
 	samplerBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 	samplerBinding.pImmutableSamplers = nullptr;
 
 	VkDescriptorSetLayoutBinding normalBinding{};
-	normalBinding.binding = 3;
+	normalBinding.binding = 2;
 	normalBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 	normalBinding.descriptorCount = 1;
 	normalBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 	normalBinding.pImmutableSamplers = nullptr;
 
-	std::array<VkDescriptorSetLayoutBinding, 4> bindings = { cameraBinding, modelBinding, samplerBinding, normalBinding };
+	std::array<VkDescriptorSetLayoutBinding, 3> bindings = { cameraBinding, samplerBinding, normalBinding };
 
 	VkDescriptorSetLayoutCreateInfo layoutInfo{};
 	layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
@@ -51,19 +43,15 @@ void DescriptorSetLayout::createDescriptorPool(uint32_t materialCount) {
 	uint32_t meshSetCount =
 		Constants::MAX_FRAMES_IN_FLIGHT * materialCount;
 
-	std::array<VkDescriptorPoolSize, 3> poolSizes{};
+	std::array<VkDescriptorPoolSize, 2> poolSizes{};
 
 	// Camera UBO (binding 0)
 	poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 	poolSizes[0].descriptorCount = meshSetCount;
 
-	// Model UBO (binding 1, dynamic)
-	poolSizes[1].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-	poolSizes[1].descriptorCount = meshSetCount;
-
 	// BaseColor + Normal samplers (bindings 2 & 3)
-	poolSizes[2].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-	poolSizes[2].descriptorCount = meshSetCount * 2;
+	poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	poolSizes[1].descriptorCount = meshSetCount * 2;
 
 	VkDescriptorPoolCreateInfo poolInfo{};
 	poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;

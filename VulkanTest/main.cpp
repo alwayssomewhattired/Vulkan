@@ -224,24 +224,22 @@ private:
 		m_AttachmentManager->createDepthResources();
 		m_RenderPass->createRenderPass(*m_AttachmentManager);
 
-		m_GraphicsPipeline->createGraphicsPipeline();
+		m_UniformBuffer = std::make_unique<UniformBuffer>(*m_devices, g_Camera, *m_SwapChain, 
+			g_renderTarget.rotationEnabled);
+
+		m_UniformBuffer->createUniformBuffers();
+
+		m_GraphicsPipeline->createGraphicsPipeline(*m_UniformBuffer);
 
 		m_RenderPass->createFramebuffers(m_AttachmentManager->m_GPUColor.view(), m_AttachmentManager->m_GPUDepth.view());
 
 		createModel();
 
 		// | triangle vertex buffer 
-		m_Buffer->createVertexBuffer(m_Triangle->triangleVertices, m_Triangle->vertexBuffer(), m_Triangle->vertexMemory());
+		//m_Buffer->createVertexBuffer(m_Triangle->triangleVertices, m_Triangle->vertexBuffer(), m_Triangle->vertexMemory());
 
 	  // - incorporate for triangle in the future
 		//createIndexBuffer();
-
-		m_UniformBuffer = std::make_unique<UniformBuffer>(*m_devices, g_Camera, *m_SwapChain, 
-			g_renderTarget.rotationEnabled);
-
-		m_UniformBuffer->createUniformBuffers();
-
-		m_UniformBuffer->createUniformBuffer(m_SilentHill3Game->m_modelUBOSize);
 
 		m_StorageImageManager = std::make_unique<StorageImageManager>(*m_Image, *m_SwapChain, *m_devices);
 		m_StorageImageManager->createStorageImageResources();
@@ -380,8 +378,6 @@ private:
 
 		m_ModelLoad->loadModel("models/houseofmusic.glb", *m_Home);
 
-		// | shit house
-		//m_ModelLoad->loadModel("models/thedeathofallionceloved.glb", *m_Home);
 		m_ModelLoad->loadModel("models/silent-hill-3-ps2-game-cover/source/SilentHill3ps2Game.glb", *m_SilentHill3Game);
 
 	}
@@ -391,7 +387,6 @@ private:
 		
 		for (auto* item : items) {
 			m_DescriptorSetLayout->createDescriptorPool(item->gltfMaterials().size());
-			//m_DescriptorSetLayout->createDescriptorPool(item->gltfMaterials().size() * item->vertexBuffer().size());
 
 			m_DescriptorSet->createMeshDescriptorSets(*item);
 
@@ -416,7 +411,10 @@ private:
 		}
 		else {
 			m_UniformBuffer->updateUniformBuffer(currentFrame);
-			m_UniformBuffer->updateModelBuffer(currentFrame);
+			for (auto& item : items) {
+				item->updatePC(item->modelMatrix().model, g_renderTarget.rotationEnabled);
+
+			}
 		}
 
 

@@ -121,16 +121,16 @@ void CommandBuffer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t 
 
 		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.graphicsPipeline);
 		for (auto& item : items) {
-			std::cout << "desc sets: " << item->descriptorSets().size() << "\n";
 			for (int i = 0; i < item->vertices().size(); i++) { // primitive iteration
-				//uint32_t dsIndex = currentFrame * item->gltfMaterials().size() + item->gltfPrimitiveMaterialIndices()[i];
 				auto& descriptorSets = item->descriptorSets();
-				VkBuffer vertexBuffers[] = { item->vertexBuffer()[i]};
+				VkBuffer vertexBuffers[] = { item->vertexBuffer()[i] };
 				VkDeviceSize offsets[] = { 0 };
 				vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
 				vkCmdBindIndexBuffer(commandBuffer, item->indexBuffer()[i], 0, item->indexType());
 				vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.pipelineLayout, 0, 1,
 					&descriptorSets[item->gltfPrimitiveMaterialIndices()[i]], 0, nullptr);
+				vkCmdPushConstants(commandBuffer, graphicsPipeline.pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0,
+					sizeof(glm::mat4), &item->modelMatrix());
 				vkCmdDrawIndexed(commandBuffer, item->indexCount()[i], 1, 0, 0, 0);
 			}
 		}

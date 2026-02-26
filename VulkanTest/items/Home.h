@@ -10,12 +10,13 @@
 #include "../glm_config.h"
 #include "../Texture.h"
 #include "../GPUTexture.h"
+#include <chrono>
+
 
 class Home : public ItemInterface
 {
 
 public:
-	glm::mat4 modelMatrix = glm::translate(glm::mat4(1.0f), glm::vec3(0, 0, -3));
 	
 	std::vector<VkBuffer> m_vertexBuffer;
 	std::vector<VkDeviceMemory> m_vertexMemory;
@@ -36,9 +37,12 @@ public:
 	std::vector<int> m_gltfPrimitiveMaterialIndices;
 
 	std::string m_optionalTexturePath = "";
-	//std::string m_optionalTexturePath = "textures/Metal055C_8K-PNG_Color.png";
 
 	std::vector<VkDescriptorSet> m_descriptorSets;
+
+	ModelMatrix m_modelMatrix;
+
+	void m_updatePC(glm::mat4& modelMatrix, const bool rotationEnabled);
 
 	// | begin item interface block
 	std::vector<VkBuffer>& vertexBuffer() override {
@@ -93,5 +97,14 @@ public:
 	std::vector<VkDescriptorSet>& descriptorSets() override {
 		return m_descriptorSets;
 	}
+
+	ModelMatrix& modelMatrix() override {
+		return m_modelMatrix;
+	}
+
+	void updatePC(glm::mat4& modelMatrix, const bool rotationEnabled) override {
+		m_updatePC(modelMatrix, rotationEnabled);
+	}
+
 };
 

@@ -14,6 +14,8 @@
 #include <vector>
 #include <functional>
 #include <cstdint>
+#include <chrono>
+
 
 class SilentHill3Game : public ItemInterface {
 public:
@@ -40,6 +42,11 @@ public:
 	std::string m_optionalTexturePath = "";
 
 	std::vector<VkDescriptorSet> m_descriptorSets;
+
+	// | holds model matrices
+	ModelMatrix m_modelMatrix;
+
+	void m_updatePC(glm::mat4& modelMatrix, const bool rotationEnabled);
 
 	// | begin item interface block
 	std::vector<VkBuffer>& vertexBuffer() override {
@@ -86,7 +93,6 @@ public:
 		return m_gltfPrimitiveMaterialIndices;
 	}
 
-
 	std::string& optionalTexturePath() override {
 		return m_optionalTexturePath;
 	}
@@ -95,16 +101,19 @@ public:
 		return m_descriptorSets;
 	}
 
-	size_t m_modelUBOSize = sizeof(SilentHill3GamePC);
+	ModelMatrix& modelMatrix() override {
+		return m_modelMatrix;
+	}
+
+	void updatePC(glm::mat4& modelMatrix, const bool rotationEnabled) override {
+		m_updatePC(modelMatrix, rotationEnabled);
+	}
+
+	size_t m_modelUBOSize = sizeof(m_modelMatrix);
 
 private:
 
 	// - we need to actually make our shader use this push constants.
-
-	// | holds model matrices
-	struct SilentHill3GamePC {
-		alignas(16) glm::mat4 model;
-	};
 
 	VkDevice& m_device;
 	VkPhysicalDevice& m_physicalDevice;
