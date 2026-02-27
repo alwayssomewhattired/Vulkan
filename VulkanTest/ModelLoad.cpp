@@ -102,6 +102,23 @@ void ModelLoad::modelFileParse(tinygltf::Model& model, const tinygltf::Primitive
 
 	}
 
+	// | normals
+	const auto& normAccessor = model.accessors[primitive.attributes.at("NORMAL")];
+	const auto& normView = model.bufferViews[normAccessor.bufferView];
+	const auto& normBuffer = model.buffers[normView.buffer];
+
+	const size_t normOffsetInBuffer = normView.byteOffset + normAccessor.byteOffset;
+	const size_t normStride = normView.byteStride ? normView.byteStride : (3 * sizeof(float));
+	const unsigned char* normBase = normBuffer.data.data() + normOffsetInBuffer;
+	vertexCount = normAccessor.count;
+	vertices.resize(vertexCount);
+
+	for (size_t i = 0; i < vertexCount; ++i) {
+		const float* p = reinterpret_cast<const float*>(normBase + i * normStride);
+		vertices[i].normal = glm::vec3(p[0], p[1], p[2]);
+	}
+
+
 	// INDICES
 	//
 	const auto& idxAccessor = model.accessors[primitive.indices];
@@ -139,6 +156,8 @@ void ModelLoad::modelFileParse(tinygltf::Model& model, const tinygltf::Primitive
 		m_Texture.buildGPUMaterial(model, i, classReference, primitiveIdx);
 
 	}
+
+
 }
 
 void ModelLoad::loadModel(const std::string& path, ItemInterface& classReference) {

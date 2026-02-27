@@ -131,6 +131,11 @@ void CommandBuffer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t 
 					&descriptorSets[item->gltfPrimitiveMaterialIndices()[i]], 0, nullptr);
 				vkCmdPushConstants(commandBuffer, graphicsPipeline.pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0,
 					sizeof(glm::mat4), &item->modelMatrix());
+				// | light pc
+				glm::vec4 lightPos = { 0.0f, 1.5f, 3.0f, 1.0f };
+				vkCmdPushConstants(commandBuffer, graphicsPipeline.pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, sizeof(glm::mat4),
+					sizeof(glm::vec4), &lightPos);
+
 				vkCmdDrawIndexed(commandBuffer, item->indexCount()[i], 1, 0, 0, 0);
 			}
 		}
