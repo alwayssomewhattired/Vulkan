@@ -4,11 +4,14 @@
 layout(set = 0, binding = 0) uniform CameraUBO {
     mat4 view;
     mat4 proj;
+    vec4 pos;
+
 } camera;
 
 // | ignore the red underlines
-layout(push_constant) uniform ModelPC {
+layout(push_constant) uniform ModelLightPC {
     mat4 model;
+    vec4 pos;
 } modelPC;
  
 layout(location = 0) in vec3 inPosition;
@@ -20,7 +23,8 @@ layout(location = 0) out vec3 fragColor;
 layout(location = 1) out vec2 fragTextCoord;
 layout(location = 2) out vec3 fragNormal;
 layout(location = 3) out vec3 fragPos;
- 
+layout(location = 4) out vec3 fragCameraPos;
+
 void main() {
     
     vec4 worldPos = modelPC.model * vec4(inPosition, 1.0);
@@ -29,12 +33,12 @@ void main() {
 
     fragColor = inColor;
     fragTextCoord = inTextCoord;
-//    fragPos = worldPos.xyz;
-    fragPos = (camera.view * modelPC.model * vec4(inPosition, 1.0)).xyz;
+    fragPos = worldPos.xyz;
 
     // | normal transform
     mat3 normalMatrix = transpose(inverse(mat3(modelPC.model)));
 
-//    fragNormal = normalize(normalMatrix * normal);
-    fragNormal = normalize(mat3(camera.view * modelPC.model) * normal);
+    fragNormal = normalize(normalMatrix * normal);
+
+    fragCameraPos = camera.pos.xyz;
 }

@@ -121,21 +121,17 @@ void GraphicsPipeline::createGraphicsPipeline(UniformBuffer& uniformBuffer) {
 	colorBlending.blendConstants[2] = 0.0f;
 	colorBlending.blendConstants[3] = 0.0f;
 
-	VkPushConstantRange pushConstantRanges[2]{};
-	pushConstantRanges[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-	pushConstantRanges[0].offset = 0;
-	pushConstantRanges[0].size = sizeof(glm::mat4);
-
-	pushConstantRanges[1].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-	pushConstantRanges[1].offset = sizeof(glm::mat4);
-	pushConstantRanges[1].size = sizeof(glm::vec4);
+	VkPushConstantRange pushConstantRanges{};
+	pushConstantRanges.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+	pushConstantRanges.offset = 0;
+	pushConstantRanges.size = sizeof(glm::mat4) + sizeof(glm::vec4);
 
 	VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
 	pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 	pipelineLayoutInfo.setLayoutCount = 1;
 	pipelineLayoutInfo.pSetLayouts = &m_DescriptorSetLayout.descriptorSetLayout;
-	pipelineLayoutInfo.pushConstantRangeCount = 2;
-	pipelineLayoutInfo.pPushConstantRanges = pushConstantRanges;
+	pipelineLayoutInfo.pushConstantRangeCount = 1;
+	pipelineLayoutInfo.pPushConstantRanges = &pushConstantRanges;
 
 	if (vkCreatePipelineLayout(m_device, &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS)
 		throw std::runtime_error("failed to create pipeline layout!");

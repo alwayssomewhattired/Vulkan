@@ -34,6 +34,7 @@ public:
 	struct CameraUBO {
 		glm::mat4 view;
 		glm::mat4 proj;
+		glm::vec4 pos;
 	};
 
 	double lastX = 0;

@@ -158,6 +158,7 @@ void UniformBuffer::updateUniformBuffer(uint32_t currentImage) {
 	ubo.proj = glm::perspective(glm::radians(45.0f), m_SwapChain.swapChainExtent.width / (float)m_SwapChain.swapChainExtent.height, 
 		0.1f, 100.0f);
 	ubo.proj[1][1] *= -1;
+	ubo.pos = glm::vec4(m_Camera.Position, 1.0f);
 
 	memcpy(uniformBuffersMapped[currentImage], &ubo, sizeof(ubo));
 }
