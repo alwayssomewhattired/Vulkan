@@ -25,11 +25,7 @@ void main() {
 	vec3 lightPos = lightPC.pos.xyz;
 	float lightDistance = length(lightPos - fragPos);
 
-//	float attenuation = 1.0 / max(lightDistance * lightDistance, 0.0001);
-
-//	float attenuation = 1.0 / (1.0 + 0.09 * lightDistance + 0.032 * lightDistance * lightDistance);
-
-	float radius = 5.0;   // <- increase this for more coverage
+	float radius = 3.0;   // <- increase this for more coverage
 	float attenuation = clamp(1.0 - (lightDistance / radius), 0.0, 1.0);
 	attenuation *= attenuation;  // smoother falloff
 
@@ -43,7 +39,7 @@ void main() {
 
 	vec3 ambient = 0.1 * albedo;
 
-	float lightPower = 1.0;
+	float lightPower = 2.0f;
 
 	vec3 diffuse = diff * albedo * lightPower * attenuation;
 

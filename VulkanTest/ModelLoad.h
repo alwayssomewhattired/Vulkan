@@ -1,6 +1,9 @@
 #pragma once
 
 #include <tiny_gltf.h>
+#include <assimp/Importer.hpp>
+#include <assimp/scene.h>
+#include <assimp/postprocess.h>
 
 #include <iostream>
 #include <stdexcept>
@@ -41,7 +44,7 @@ private:
 	CommandBuffer& m_CommandBuffer;
 	Texture& m_Texture; 
 
-	void modelFileParse(tinygltf::Model& model, const tinygltf::Primitive& primitive, size_t& vertexCount, 
+	void modelFileParse(aiMesh* mesh, size_t& vertexCount, 
 		std::vector<Vertex>& vertices,
 		VkIndexType& indexType, std::vector<uint32_t>& indices, ItemInterface& classReference, const uint32_t primitiveIdx,
 		const uint32_t primitivesSize);

@@ -17,9 +17,9 @@
 #include <chrono>
 
 
-class SilentHill3Game : public ItemInterface {
+class StringLight : public ItemInterface {
 public:
-	SilentHill3Game(VkDevice& device, VkPhysicalDevice& physicalDevice);
+	StringLight(VkDevice& device, VkPhysicalDevice& physicalDevice);
 
 	std::vector<VkBuffer> m_vertexBuffer;
 	std::vector<VkDeviceMemory> m_vertexMemory;

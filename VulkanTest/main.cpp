@@ -30,8 +30,10 @@
 #include "items/Triangle.h"
 #include "items/Home.h"
 #include "items/SilentHill3Game.h"
+#include "items/StringLight.h"
 #include "RenderTarget.h"
 #include "Callbacks.h"
+#include "items/ItemInterface.h"
 
 
 #include <iostream>
@@ -49,7 +51,6 @@
 #include <unordered_map>
 #include <cmath>
 #include <memory>
-#include "items/ItemInterface.h"
 
 const uint32_t WIDTH = 800;
 const uint32_t HEIGHT = 600;
@@ -129,6 +130,7 @@ private:
 	std::unique_ptr<Triangle> m_Triangle = nullptr;
 	std::unique_ptr<Home> m_Home = nullptr;
 	std::unique_ptr<SilentHill3Game> m_SilentHill3Game = nullptr;
+	std::unique_ptr<StringLight> m_StringLight = nullptr;
 
 	std::unique_ptr<UniformBuffer> m_UniformBuffer = nullptr;
 
@@ -209,9 +211,11 @@ private:
 		m_Triangle = std::make_unique<Triangle>();
 		m_Home = std::make_unique<Home>();
 		m_SilentHill3Game = std::make_unique<SilentHill3Game>(m_devices->device, m_devices->physicalDevice);
+		m_StringLight = std::make_unique<StringLight>(m_devices->device, m_devices->physicalDevice);
 
 		items.push_back(m_Home.get());
 		items.push_back(m_SilentHill3Game.get());
+		items.push_back(m_StringLight.get());
 
 		m_SwapChain->createSwapChain();
 		m_SwapChain->createImageViews(*m_Image);
@@ -379,6 +383,8 @@ private:
 		m_ModelLoad->loadModel("models/houseofmusic.glb", *m_Home);
 
 		m_ModelLoad->loadModel("models/silent-hill-3-ps2-game-cover/source/SilentHill3ps2Game.glb", *m_SilentHill3Game);
+
+		//m_ModelLoad->loadModel("models/lightbulb.glb", *m_StringLight);
 
 	}
 
