@@ -36,6 +36,9 @@ void Texture::createTextureImage(const bool isDefault, const std::string& textur
 	VkBuffer stagingBuffer;
 	VkDeviceMemory stagingBufferMemory;
 
+	std::cout << "ohyeah\n";
+	// - this buffer is fucked
+	std::cout << imageSize << "\n";
 	m_Buffer.createBuffer(imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, 
 		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
 		stagingBuffer, stagingBufferMemory);
@@ -117,78 +120,126 @@ void Texture::createTextureSampler(const uint32_t& mipLevels, GPUTexture& outTex
 		throw std::runtime_error("failed to create texture sampler!");
 }
 
-int Texture::uploadGltfTextureToVulkan(tinygltf::Model& model, int& textureIndex, ItemInterface& classReference, 
+int Texture::uploadAssimpTextureToVulkan(const aiScene* scene, const aiString& path, ItemInterface& classReference, 
 	const VkFormat& format) {
 
 	GPUTexture gpuTex(m_Devices.device);
 
-	if (model.textures.empty()) {
-		createTextureImage(false, classReference.optionalTexturePath(), nullptr, gpuTex, format, 0, 0);
-		m_gpuTextures.push_back(std::move(gpuTex));
+	const aiTexture* embedded = scene->GetEmbeddedTexture(path.C_Str());
 
-		return static_cast<int>(m_gpuTextures.size() - 1);
+	if (embedded)
+	{
+		// | EMBEDDED TEXTURE
+
+		if (embedded->mHeight == 0)
+		{
+			// | COMPRESSED (PNG/JPG in memory)
+
+			int texWidth, texHeight, texChannels;
+
+			stbi_uc* pixels = stbi_load_from_memory(
+				reinterpret_cast<const stbi_uc*>(embedded->pcData),
+				embedded->mWidth,
+				&texWidth,
+				&texHeight,
+				&texChannels,
+				STBI_rgb_alpha
+			);
+
+			if (!pixels)
+				throw std::runtime_error("failed to decode embedded texture");
+
+			createTextureImage(false, classReference.optionalTexturePath(), pixels,
+				gpuTex, format, texWidth, texHeight);
+
+			stbi_image_free(pixels);
+		}
+		else
+		{
+			// | RAW RGBA pixels
+
+			createTextureImage(false, classReference.optionalTexturePath(), reinterpret_cast<const uint8_t*>(embedded->pcData),
+				gpuTex, format, embedded->mWidth, embedded->mHeight);
+		}
+	}
+	else
+	{
+		// | EXTERNAL FILE PATH
+
+		createTextureImage(false, path.C_Str(), nullptr, gpuTex, format, 0, 0);
 	}
 
-	const tinygltf::Texture& texture = model.textures[textureIndex];
-	const tinygltf::Image& image = model.images[texture.source];
-	// - use sampler at some point
-	const tinygltf::Sampler& sampler = model.samplers[texture.sampler];
-
-
-	const uint8_t* pixelData = image.image.data();
-	createTextureImage(false, classReference.optionalTexturePath(), pixelData, gpuTex, format, image.width, image.height);
-
 	m_gpuTextures.push_back(std::move(gpuTex));
-	int gpuIndex = static_cast<int>(m_gpuTextures.size() - 1);
 
-	return gpuIndex;
+	return static_cast<int>(m_gpuTextures.size() - 1);
 
 }
 
 
 int Texture::getOrCreateGpuTexture(
-	tinygltf::Model& model,
-	int gltfTexIndex,
+	const aiScene* scene,
+	aiMaterial* material,
+	aiTextureType type,
 	ItemInterface& classReference,
 	VkFormat format)
 {
-	if (gltfTexIndex < 0 && classReference.optionalTexturePath().empty())
+	aiString path;
+
+	if (material->GetTexture(type, 0, &path) != AI_SUCCESS)
 		return Constants::DEFAULT_BLACK_TEXTURE_INDEX;
 
-	int gpuIndex = uploadGltfTextureToVulkan(
-		model, gltfTexIndex, classReference, format
-	);
-
-	return gpuIndex;
+	return uploadAssimpTextureToVulkan(scene, path, classReference, format);
 }
 
+//int Texture::loadAssimpTexture
+
 void Texture::buildGPUMaterial(
-	tinygltf::Model& model,
-	int& materialIndex,
+	const aiScene* scene,
+	aiMaterial* material,
+	unsigned int materialIndex,
 	ItemInterface& classReference, const uint32_t primitiveIdx)
 {
-	const auto& material = model.materials[materialIndex];
 	GLTFMaterial mat{};
 
-	mat.baseColorFactor = glm::make_vec4(
-		material.pbrMetallicRoughness.baseColorFactor.data());
+	// | BASE COLOR
 
-	mat.baseColorTex = getOrCreateGpuTexture(
-		model,
-		material.pbrMetallicRoughness.baseColorTexture.index,
-		classReference,
-		VK_FORMAT_R8G8B8A8_SRGB
-	);
+	aiColor4D baseColor(1, 1, 1, 1);
 
-	mat.normalTex = getOrCreateGpuTexture(
-		model,
-		material.normalTexture.index,
-		classReference,
-		VK_FORMAT_R8G8B8A8_UNORM
-	);
+	if (material->Get(AI_MATKEY_BASE_COLOR, baseColor) == AI_SUCCESS ||
+		material->Get(AI_MATKEY_COLOR_DIFFUSE, baseColor) == AI_SUCCESS)
+	{
+		mat.baseColorFactor = glm::vec4(
+			baseColor.r,
+			baseColor.g,
+			baseColor.b,
+			baseColor.a
+		);
+	}
+	else
+	{
+		mat.baseColorFactor = glm::vec4(1.0f);
+	}
+
+	aiString path;
+
+	// | BASE COLOR TEXTURE (srgb)
+
+	if (material->GetTexture(aiTextureType_BASE_COLOR, 0, &path) == AI_SUCCESS ||
+		material->GetTexture(aiTextureType_DIFFUSE, 0, &path) == AI_SUCCESS)
+	{
+		mat.baseColorTex = getOrCreateGpuTexture(scene, material, aiTextureType_BASE_COLOR, classReference, 
+			VK_FORMAT_R8G8B8A8_SRGB);
+	}
+
+	// | NORMAL MAP (unorm)
+
+	if (material->GetTexture(aiTextureType_NORMALS, 0, &path) == AI_SUCCESS)
+	{
+		mat.normalTex = getOrCreateGpuTexture(scene, material, aiTextureType_NORMALS, classReference, VK_FORMAT_R8G8B8A8_UNORM);
+	}
 
 	classReference.gltfMaterials()[materialIndex] = mat;
-	//classReference.gltfMaterials()[materialIndex] = mat;
+
 }
 
 

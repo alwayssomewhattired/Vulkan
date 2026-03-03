@@ -44,9 +44,9 @@ private:
 	CommandBuffer& m_CommandBuffer;
 	Texture& m_Texture; 
 
-	void modelFileParse(aiMesh* mesh, size_t& vertexCount, 
+	void modelFileParse(const aiScene* scene, aiMesh* mesh, size_t& vertexCount, 
 		std::vector<Vertex>& vertices,
-		VkIndexType& indexType, std::vector<uint32_t>& indices, ItemInterface& classReference, const uint32_t primitiveIdx,
-		const uint32_t primitivesSize);
+		VkIndexType& indexType, std::vector<uint32_t>& indices, ItemInterface& classReference, const uint32_t meshIndex);
+
 	void fileDebug(const tinygltf::Model& model);
 };

@@ -3,14 +3,18 @@
 #include <tiny_gltf.h>
 #include <vulkan/vulkan.h>
 #include <vulkan/vulkan_core.h>
-#include <utility>
+#include <assimp/Importer.hpp>
+#include <assimp/scene.h>
+#include <assimp/postprocess.h>
+#include <stb_image.h>
+
 
 #include "glm_config.h"
 #include "GPUTexture.h"
 
+#include <utility>
 #include <stdexcept>
 
-#include <stb_image.h>
 
 
 class Image;
@@ -52,7 +56,8 @@ public:
 
 	uint32_t mipLevels;
 
-	void buildGPUMaterial(tinygltf::Model& model, int& materialIndex, ItemInterface& classReference, const uint32_t primitiveIdx);
+	void buildGPUMaterial(const aiScene* scene, aiMaterial* material, unsigned int materialIndex, ItemInterface& classReference,
+		const uint32_t primitiveIdx);
 
 private:
 	Buffer& m_Buffer;
@@ -60,15 +65,26 @@ private:
 	Devices& m_Devices;
 	CommandBuffer& m_CommandBuffer;
 	void createTextureSampler(const uint32_t& mipLevels, GPUTexture& outTex);
-	int uploadGltfTextureToVulkan(tinygltf::Model& model, int& textureIndex, ItemInterface& classReference,
+
+	//int uploadGltfTextureToVulkan(tinygltf::Model& model, int& textureIndex, ItemInterface& classReference,
+	//	const VkFormat& format);
+
+	int uploadAssimpTextureToVulkan(const aiScene* scene, const aiString& path, ItemInterface& classReference,
 		const VkFormat& format);
 
 	void createDefaultTextures();
 
 	int getOrCreateGpuTexture(
-		tinygltf::Model& model,
-		int gltfTexIndex,
+		const aiScene* scene,
+		aiMaterial* material,
+		aiTextureType type,
 		ItemInterface& classReference,
 		VkFormat format);
+	//int getOrCreateGpuTexture(
+	//	//tinygltf::Model& model,
+	//	aiMaterial* material,
+	//	int gltfTexIndex,
+	//	ItemInterface& classReference,
+	//	VkFormat format);
 };
 

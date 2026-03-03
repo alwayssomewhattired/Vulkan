@@ -20,7 +20,7 @@ void main() {
 
 	// | beging blinn-phong
 
-	vec3 albedo = texture(texSampler, vec2(fragTextCoord.x, 1.0 - fragTextCoord.y)).rgb;
+	vec3 albedo = texture(texSampler, vec2(fragTextCoord.x, fragTextCoord.y)).rgb;
 	float shininess = 32.0;
 	vec3 lightPos = lightPC.pos.xyz;
 	float lightDistance = length(lightPos - fragPos);
