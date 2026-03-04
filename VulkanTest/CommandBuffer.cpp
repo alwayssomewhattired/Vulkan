@@ -129,12 +129,6 @@ void CommandBuffer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t 
 				vkCmdBindIndexBuffer(commandBuffer, item->indexBuffer()[i], 0, item->indexType());
 				vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.pipelineLayout, 0, 1,
 					&descriptorSets[item->gltfPrimitiveMaterialIndices()[i]], 0, nullptr);
-				//vkCmdPushConstants(commandBuffer, graphicsPipeline.pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0,
-				//	sizeof(glm::mat4), &item->modelMatrix());
-				//// | light pc
-				//glm::vec4 lightPos = { 0.0f, 2.0f, 3.5f, 1.0f };
-				//vkCmdPushConstants(commandBuffer, graphicsPipeline.pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, sizeof(glm::mat4),
-				//	sizeof(glm::vec4), &lightPos);
 
 				struct PushConstants {
 					glm::mat4 model;

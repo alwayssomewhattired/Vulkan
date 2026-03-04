@@ -44,6 +44,12 @@ public:
 
 	void m_updatePC(glm::mat4& modelMatrix, const bool rotationEnabled);
 
+	struct alignas(16) MaterialUBO {
+		glm::vec4 baseColorFactor;
+	};
+
+	std::vector<MaterialUBO> materialUniformBuffers;
+
 	// | begin item interface block
 	std::vector<VkBuffer>& vertexBuffer() override {
 		return m_vertexBuffer;

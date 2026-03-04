@@ -28,7 +28,6 @@ public:
 		Buffer& buffer, CommandBuffer& commandBuffer, Texture& texture
 		);
 
-
 	// | loads model and fills in class
 	void loadModel(const std::string& path, ItemInterface& classReference);
 	

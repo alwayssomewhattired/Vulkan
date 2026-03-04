@@ -46,6 +46,12 @@ public:
 	// | holds model matrices
 	ModelMatrix m_modelMatrix;
 
+	struct alignas(16) MaterialUBO {
+		glm::vec4 baseColorFactor;
+	};
+
+	std::vector<MaterialUBO> materialUniformBuffers;
+
 	void m_updatePC(glm::mat4& modelMatrix, const bool rotationEnabled);
 
 	// | begin item interface block

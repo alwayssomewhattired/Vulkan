@@ -10,6 +10,10 @@ layout(location = 0) out vec4 outColor;
 
 layout(binding = 1) uniform sampler2D texSampler;
 
+layout(set = 0, binding = 3) uniform MaterialUBO {
+	vec4 baseColorFactor;
+} material;
+
 layout(push_constant) uniform ModelLightPC {
 	mat4 model;
     vec4 pos;
@@ -20,7 +24,7 @@ void main() {
 
 	// | beging blinn-phong
 
-	vec3 albedo = texture(texSampler, vec2(fragTextCoord.x, fragTextCoord.y)).rgb;
+	vec3 albedo = material.baseColorFactor.rgb * texture(texSampler, vec2(fragTextCoord.x, fragTextCoord.y)).rgb;
 	float shininess = 32.0;
 	vec3 lightPos = lightPC.pos.xyz;
 	float lightDistance = length(lightPos - fragPos);

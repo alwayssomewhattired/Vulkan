@@ -185,13 +185,12 @@ int Texture::getOrCreateGpuTexture(
 {
 	aiString path;
 
-	if (material->GetTexture(type, 0, &path) != AI_SUCCESS)
-		return Constants::DEFAULT_BLACK_TEXTURE_INDEX;
+	if (material->GetTexture(type, 0, &path) != AI_SUCCESS) {
+		return Constants::DEFAULT_WHITE_TEXTURE_INDEX;
+	}
 
 	return uploadAssimpTextureToVulkan(scene, path, classReference, format);
 }
-
-//int Texture::loadAssimpTexture
 
 void Texture::buildGPUMaterial(
 	const aiScene* scene,
@@ -201,7 +200,7 @@ void Texture::buildGPUMaterial(
 {
 	GLTFMaterial mat{};
 
-	// | BASE COLOR
+	// | BASE COLOR FACTOR
 
 	aiColor4D baseColor(1, 1, 1, 1);
 
@@ -217,7 +216,7 @@ void Texture::buildGPUMaterial(
 	}
 	else
 	{
-		mat.baseColorFactor = glm::vec4(1.0f);
+		mat.baseColorFactor = glm::vec4(0.0f);
 	}
 
 	aiString path;

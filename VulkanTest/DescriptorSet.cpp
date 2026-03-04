@@ -25,6 +25,8 @@ void DescriptorSet::createMeshDescriptorSets(ItemInterface& classReference) {
 
 	descriptorSets.resize(materials.size());
 
+	const auto& materialUniformBuffers = classReference.materialUniformBf
+
 	std::vector<VkDescriptorSetLayout> layouts(
 		descriptorSets.size(),
 		m_DescriptorSetLayout.descriptorSetLayout
@@ -52,6 +54,8 @@ void DescriptorSet::createMeshDescriptorSets(ItemInterface& classReference) {
 
 			const auto& material = materials[matIdx];
 			const GPUTexture& GPUBaseColorTex = textures[material.baseColorTex];
+
+
 			VkDescriptorBufferInfo bufferInfo{};
 			bufferInfo.buffer = m_UniformBuffer.uniformBuffers[frame];
 			bufferInfo.offset = 0;
@@ -68,7 +72,12 @@ void DescriptorSet::createMeshDescriptorSets(ItemInterface& classReference) {
 			normalInfo.imageView = textures[material.normalTex].view;
 			normalInfo.sampler = textures[material.normalTex].sampler;
 
-			std::array<VkWriteDescriptorSet, 3> descriptorWrites{};
+			VkDescriptorBufferInfo materialBufferInfo{};
+			bufferInfo.buffer = m_UniformBuffer.uniformBuffers[frame];
+			bufferInfo.offset = 0;
+			bufferInfo.range = sizeof(ItemInterface::MaterialUBO);
+
+			std::array<VkWriteDescriptorSet, 4> descriptorWrites{};
 			descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 			descriptorWrites[0].dstSet = dstSet;
 			descriptorWrites[0].dstBinding = 0;
@@ -92,6 +101,15 @@ void DescriptorSet::createMeshDescriptorSets(ItemInterface& classReference) {
 			descriptorWrites[2].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 			descriptorWrites[2].descriptorCount = 1;
 			descriptorWrites[2].pImageInfo = &normalInfo;
+
+			descriptorWrites[3].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			descriptorWrites[3].dstSet = dstSet;
+			descriptorWrites[3].dstBinding = 3;
+			descriptorWrites[3].dstArrayElement = 0;
+			descriptorWrites[3].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+			descriptorWrites[3].descriptorCount = 1;
+			descriptorWrites[3].pBufferInfo = &materialBufferInfo;
+
 			vkUpdateDescriptorSets(m_Devices.device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(),
 				0, nullptr);
 

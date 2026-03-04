@@ -43,6 +43,10 @@ struct ItemInterface {
 	struct ModelMatrix {
 		alignas(16) glm::mat4 model;
 	};
+
+	struct alignas(16) MaterialUBO {
+		glm::vec4 baseColorFactor;
+	};
 	
 	virtual ModelMatrix& modelMatrix() = 0;
 

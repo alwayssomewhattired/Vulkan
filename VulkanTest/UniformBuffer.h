@@ -21,22 +21,24 @@ public:
 
 	void createUniformBuffers();
 
-	void createUniformBuffer(const size_t& UBOSize);
+	void createMaterialUniformBuffer(std::vector<ItemInterface*> items);
+	//void createModelUniformBuffer(const size_t& UBOSize);
 
-	void updateUniformBuffer(uint32_t currentImage);
+	void updateCameraUniformBuffer(uint32_t currentImage);
 
 	void updateMandelbulbUBO(uint32_t currentImage);
 
-	void updateModelBuffer(uint32_t currentImage);
+	//void updateModelBuffer(uint32_t currentImage);
 
 	// | dynamic ubo
-	struct ModelUBO {
-		alignas(16) glm::mat4 model;
-	};
+	//struct ModelUBO {
+	//	alignas(16) glm::mat4 model;
+	//};
 
 	uint32_t maxPCSize;
-	uint32_t alignedModelUBOSize;
-	uint32_t modelUBOSize;
+	//uint32_t alignedModelUBOSize;
+
+	//uint32_t modelUBOSize;
 
 	struct MandelbulbUBO {
 

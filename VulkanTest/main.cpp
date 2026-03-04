@@ -233,11 +233,14 @@ private:
 
 		m_UniformBuffer->createUniformBuffers();
 
+		createModel();
+
+		m_UniformBuffer->createMaterialUniformBuffer(items);
+
 		m_GraphicsPipeline->createGraphicsPipeline(*m_UniformBuffer);
 
 		m_RenderPass->createFramebuffers(m_AttachmentManager->m_GPUColor.view(), m_AttachmentManager->m_GPUDepth.view());
 
-		createModel();
 
 		// | triangle vertex buffer 
 		//m_Buffer->createVertexBuffer(m_Triangle->triangleVertices, m_Triangle->vertexBuffer(), m_Triangle->vertexMemory());
@@ -417,7 +420,7 @@ private:
 			m_UniformBuffer->updateMandelbulbUBO(currentFrame);
 		}
 		else {
-			m_UniformBuffer->updateUniformBuffer(currentFrame);
+			m_UniformBuffer->updateCameraUniformBuffer(currentFrame);
 			for (auto& item : items) {
 				item->updatePC(item->modelMatrix().model, g_renderTarget.rotationEnabled);
 
