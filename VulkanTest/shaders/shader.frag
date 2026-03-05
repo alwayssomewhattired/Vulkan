@@ -1,7 +1,7 @@
 #version 450
 
 layout(location = 0) in vec3 fragColor;
-layout(location = 1) in vec2 fragTextCoord;
+layout(location = 1) in vec2 fragTexCoord;
 layout(location = 2) in vec3 fragNormal;
 layout(location = 3) in vec3 fragPos;
 layout(location = 4) in vec3 fragCameraPos;
@@ -24,7 +24,10 @@ void main() {
 
 	// | beging blinn-phong
 
-	vec3 albedo = material.baseColorFactor.rgb * texture(texSampler, vec2(fragTextCoord.x, fragTextCoord.y)).rgb;
+	vec4 texColor = texture(texSampler, fragTexCoord);
+//	vec4 baseColor = vec4(1.0f) * texColor;
+	vec4 baseColor = material.baseColorFactor * texColor;
+	vec3 albedo = baseColor.rgb;
 	float shininess = 32.0;
 	vec3 lightPos = lightPC.pos.xyz;
 	float lightDistance = length(lightPos - fragPos);

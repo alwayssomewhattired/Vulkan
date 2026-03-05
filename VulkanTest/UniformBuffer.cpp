@@ -1,5 +1,5 @@
 #include "UniformBuffer.h"
-
+#include "items/ItemInterface.h"
 #include <iostream>
 
 
@@ -13,6 +13,7 @@ UniformBuffer::UniformBuffer(Devices& devices, Camera& camera, SwapChain& swapCh
 	vkGetPhysicalDeviceProperties(devices.physicalDevice, &props);
 
 	maxPCSize = props.limits.maxPushConstantsSize;
+	cameraUBOSize = sizeof(Camera::CameraUBO);
 
 	//alignedModelUBOSize =
 	//	(sizeof(ModelUBO) + props.limits.minUniformBufferOffsetAlignment - 1) &
@@ -21,29 +22,32 @@ UniformBuffer::UniformBuffer(Devices& devices, Camera& camera, SwapChain& swapCh
 	//modelUBOSize = sizeof(ModelUBO);
 }
 
-// - make this generic. don't hardcode our models in here
+// | Triangle and Mandelbulb
 void UniformBuffer::createUniformBuffers() {
 
 	VkDeviceSize bufferSize = sizeof(Camera::CameraUBO);
-	VkDeviceSize modelBufferSize =
-		modelUBOSize *
-		Constants::MAX_FRAMES_IN_FLIGHT *
-		2; // or items.size()
+
+	//VkDeviceSize modelBufferSize =
+	//	//modelUBOSize *
+	//	cameraUBOSize *
+	//	Constants::MAX_FRAMES_IN_FLIGHT *
+	//	2; // or items.size()
+
 	VkDeviceSize mandelbulbBufferSize = sizeof(MandelbulbUBO);
 
 	uniformBuffers.resize(Constants::MAX_FRAMES_IN_FLIGHT);
 	uniformBuffersMemory.resize(Constants::MAX_FRAMES_IN_FLIGHT);
 	uniformBuffersMapped.resize(Constants::MAX_FRAMES_IN_FLIGHT);
 
-	modelUniformBuffers.resize(Constants::MAX_FRAMES_IN_FLIGHT);
-	modelUniformBuffersMemory.resize(Constants::MAX_FRAMES_IN_FLIGHT);
-	modelUniformBuffersMapped.resize(Constants::MAX_FRAMES_IN_FLIGHT);
+	//modelUniformBuffers.resize(Constants::MAX_FRAMES_IN_FLIGHT);
+	//modelUniformBuffersMemory.resize(Constants::MAX_FRAMES_IN_FLIGHT);
+	//modelUniformBuffersMapped.resize(Constants::MAX_FRAMES_IN_FLIGHT);
 
 	mandelbulbUniformBuffers.resize(Constants::MAX_FRAMES_IN_FLIGHT);
 	mandelbulbUniformBuffersMemory.resize(Constants::MAX_FRAMES_IN_FLIGHT);
 	mandelbulbUniformBuffersMapped.resize(Constants::MAX_FRAMES_IN_FLIGHT);
 
-	// | triangle path
+	// | camera path
 	for (size_t i = 0; i < Constants::MAX_FRAMES_IN_FLIGHT; i++) {
 
 		VkBufferCreateInfo bufferInfo{};
@@ -104,51 +108,52 @@ void UniformBuffer::createUniformBuffers() {
 	}
 }
 
-void UniformBuffer::createMaterialUniformBuffer(std::vector<ItemInterface*> items)
+void UniformBuffer::createMaterialUniformBuffer(ItemInterface& item)
 {
 
-	// - find out how we can store our uniform buffers in our item classes
 
-	for (ItemInterface* item : items) {
+	size_t uboSize = sizeof(ItemInterface::MaterialUBO);
+	size_t numMaterials = item.gltfMaterials().size();
 
-		size_t numMaterials = item->gltfMaterials().size();
-
-		std::vector<VkBuffer> uniformBuffers;
+		std::vector<VkBuffer>& uniformBuffers = item.materialUniformBuffers();
 		std::vector<VkDeviceMemory> uniformBuffersMemory;
 		std::vector<void*> uniformBuffersMapped;
 
-		VkDeviceSize bufferSize = numMaterials;
-		uniformBuffers.resize(numMaterials);
-		uniformBuffersMemory.resize(numMaterials);
-		uniformBuffersMapped.resize(numMaterials);
+		VkDeviceSize bufferSize = uboSize;
 
-		for (size_t i = 0; i < numMaterials; i++) {
+		uniformBuffers.resize(numMaterials * Constants::MAX_FRAMES_IN_FLIGHT);
+		uniformBuffersMemory.resize(numMaterials * Constants::MAX_FRAMES_IN_FLIGHT);
+		uniformBuffersMapped.resize(numMaterials * Constants::MAX_FRAMES_IN_FLIGHT);
 
-			VkBufferCreateInfo bufferInfo{};
-			bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-			bufferInfo.size = bufferSize;
-			bufferInfo.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
-			bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+		for (size_t frame = 0; frame < Constants::MAX_FRAMES_IN_FLIGHT; frame++) {
+			for (size_t i = 0; i < numMaterials; i++) {
 
-			if (vkCreateBuffer(m_Devices.device, &bufferInfo, nullptr, &uniformBuffers[i]) != VK_SUCCESS)
-				throw std::runtime_error("failed to create uniform buffer!");
+				size_t idx = frame * numMaterials + i;
 
-			VkMemoryRequirements memRequirements;
-			vkGetBufferMemoryRequirements(m_Devices.device, uniformBuffers[i], &memRequirements);
+				VkBufferCreateInfo bufferInfo{};
+				bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+				bufferInfo.size = bufferSize;
+				bufferInfo.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
+				bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-			VkMemoryAllocateInfo allocInfo{};
-			allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-			allocInfo.allocationSize = memRequirements.size;
-			allocInfo.memoryTypeIndex = Devices::findMemoryType(memRequirements.memoryTypeBits,
-				VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, m_Devices.physicalDevice);
+				if (vkCreateBuffer(m_Devices.device, &bufferInfo, nullptr, &uniformBuffers[idx]) != VK_SUCCESS)
+					throw std::runtime_error("failed to create uniform buffer!");
 
-			if (vkAllocateMemory(m_Devices.device, &allocInfo, nullptr, &uniformBuffersMemory[i]) != VK_SUCCESS)
-				throw std::runtime_error("failed to allocate uniform buffer memory");
+				VkMemoryRequirements memRequirements;
+				vkGetBufferMemoryRequirements(m_Devices.device, uniformBuffers[idx], &memRequirements);
 
-			vkBindBufferMemory(m_Devices.device, uniformBuffers[i], uniformBuffersMemory[i], 0);
+				VkMemoryAllocateInfo allocInfo{};
+				allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+				allocInfo.allocationSize = memRequirements.size;
+				allocInfo.memoryTypeIndex = Devices::findMemoryType(memRequirements.memoryTypeBits,
+					VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, m_Devices.physicalDevice);
 
-			vkMapMemory(m_Devices.device, uniformBuffersMemory[i], 0, bufferSize, 0, &uniformBuffersMapped[i]);
+				if (vkAllocateMemory(m_Devices.device, &allocInfo, nullptr, &uniformBuffersMemory[idx]) != VK_SUCCESS)
+					throw std::runtime_error("failed to allocate uniform buffer memory");
 
+				vkBindBufferMemory(m_Devices.device, uniformBuffers[idx], uniformBuffersMemory[idx], 0);
+
+				vkMapMemory(m_Devices.device, uniformBuffersMemory[idx], 0, bufferSize, 0, &uniformBuffersMapped[idx]);
 		}
 	}
 }

@@ -28,11 +28,11 @@ void DescriptorSetLayout::createMeshDescriptorSetLayout() {
 	normalBinding.pImmutableSamplers = nullptr;
 
 	VkDescriptorSetLayoutBinding materialBinding{};
-	cameraBinding.binding = 3;
-	cameraBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-	cameraBinding.descriptorCount = 1;
-	cameraBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-	cameraBinding.pImmutableSamplers = nullptr;
+	materialBinding.binding = 3;
+	materialBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	materialBinding.descriptorCount = 1;
+	materialBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+	materialBinding.pImmutableSamplers = nullptr;
 
 	std::array<VkDescriptorSetLayoutBinding, 4> bindings = { cameraBinding, samplerBinding, normalBinding, materialBinding };
 
@@ -52,11 +52,11 @@ void DescriptorSetLayout::createDescriptorPool(uint32_t materialCount) {
 
 	std::array<VkDescriptorPoolSize, 2> poolSizes{};
 
-	// Camera UBO (binding 0)
+	// camera + material ubo (binding 0 & binding 3)
 	poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-	poolSizes[0].descriptorCount = meshSetCount;
+	poolSizes[0].descriptorCount = meshSetCount * 2;
 
-	// BaseColor + Normal samplers (bindings 2 & 3)
+	// BaseColor + Normal samplers (bindings 1 & 2)
 	poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 	poolSizes[1].descriptorCount = meshSetCount * 2;
 

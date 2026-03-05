@@ -23,9 +23,9 @@ void DescriptorSet::createMeshDescriptorSets(ItemInterface& classReference) {
 
 	auto& descriptorSets = classReference.descriptorSets();
 
-	descriptorSets.resize(materials.size());
+	descriptorSets.resize(materials.size() * Constants::MAX_FRAMES_IN_FLIGHT);
 
-	const auto& materialUniformBuffers = classReference.materialUniformBf
+	const std::vector<VkBuffer>& materialUniformBuffers = classReference.materialUniformBuffers();
 
 	std::vector<VkDescriptorSetLayout> layouts(
 		descriptorSets.size(),
@@ -73,9 +73,9 @@ void DescriptorSet::createMeshDescriptorSets(ItemInterface& classReference) {
 			normalInfo.sampler = textures[material.normalTex].sampler;
 
 			VkDescriptorBufferInfo materialBufferInfo{};
-			bufferInfo.buffer = m_UniformBuffer.uniformBuffers[frame];
-			bufferInfo.offset = 0;
-			bufferInfo.range = sizeof(ItemInterface::MaterialUBO);
+			materialBufferInfo.buffer = materialUniformBuffers[frame * materials.size() + matIdx];
+			materialBufferInfo.offset = 0;
+			materialBufferInfo.range = sizeof(ItemInterface::MaterialUBO);
 
 			std::array<VkWriteDescriptorSet, 4> descriptorWrites{};
 			descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;

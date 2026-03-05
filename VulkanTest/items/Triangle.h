@@ -61,7 +61,9 @@ public:
 		glm::vec4 baseColorFactor;
 	};
 
-	std::vector<MaterialUBO> materialUniformBuffers;
+	//std::vector<MaterialUBO> materialUniformBuffers;
+
+	std::vector<VkBuffer> m_materialUniformBuffers;
 
 	std::vector<VkBuffer>& vertexBuffer() override {
 		return m_vertexBuffer;
@@ -121,6 +123,10 @@ public:
 
 	void updatePC(glm::mat4& modelMatrix, const bool rotationEnabled) override {
 		m_updatePC(modelMatrix, rotationEnabled);
+	}
+
+	std::vector<VkBuffer>& materialUniformBuffers() override {
+		return m_materialUniformBuffers;
 	}
 
 };

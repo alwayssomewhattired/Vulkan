@@ -52,5 +52,8 @@ struct ItemInterface {
 
 	virtual void updatePC(glm::mat4& modelMatrix, const bool rotationEnabled) = 0;
 
+	// | contiguous (material index + frame)
+	virtual std::vector<VkBuffer>& materialUniformBuffers() = 0;
+
 	virtual ~ItemInterface() = default;
 };

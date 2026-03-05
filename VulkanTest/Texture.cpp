@@ -216,7 +216,7 @@ void Texture::buildGPUMaterial(
 	}
 	else
 	{
-		mat.baseColorFactor = glm::vec4(0.0f);
+		mat.baseColorFactor = glm::vec4(1.0f);
 	}
 
 	aiString path;

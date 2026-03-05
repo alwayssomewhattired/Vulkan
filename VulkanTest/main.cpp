@@ -235,7 +235,8 @@ private:
 
 		createModel();
 
-		m_UniformBuffer->createMaterialUniformBuffer(items);
+		for (auto& item : items)
+			m_UniformBuffer->createMaterialUniformBuffer(*item);
 
 		m_GraphicsPipeline->createGraphicsPipeline(*m_UniformBuffer);
 

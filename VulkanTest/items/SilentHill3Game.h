@@ -50,7 +50,10 @@ public:
 		glm::vec4 baseColorFactor;
 	};
 
-	std::vector<MaterialUBO> materialUniformBuffers;
+	//std::vector<MaterialUBO> materialUniformBuffers;
+
+	// | contiguous (material index + frame)
+	std::vector<VkBuffer> m_materialUniformBuffers;
 
 	void m_updatePC(glm::mat4& modelMatrix, const bool rotationEnabled);
 
@@ -115,7 +118,11 @@ public:
 		m_updatePC(modelMatrix, rotationEnabled);
 	}
 
-	size_t m_modelUBOSize = sizeof(m_modelMatrix);
+	std::vector<VkBuffer>& materialUniformBuffers() override {
+		return m_materialUniformBuffers;
+	}
+
+	//size_t m_modelUBOSize = sizeof(m_modelMatrix);
 
 private:
 

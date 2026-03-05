@@ -14,6 +14,8 @@
 #include "SwapChain.h"
 #include "items/ItemInterface.h"
 
+struct ItemInterface;
+
 class UniformBuffer
 {
 public:
@@ -21,7 +23,7 @@ public:
 
 	void createUniformBuffers();
 
-	void createMaterialUniformBuffer(std::vector<ItemInterface*> items);
+	void createMaterialUniformBuffer(ItemInterface& item);
 	//void createModelUniformBuffer(const size_t& UBOSize);
 
 	void updateCameraUniformBuffer(uint32_t currentImage);
@@ -36,6 +38,9 @@ public:
 	//};
 
 	uint32_t maxPCSize;
+	uint32_t cameraUBOSize;
+
+
 	//uint32_t alignedModelUBOSize;
 
 	//uint32_t modelUBOSize;
@@ -52,14 +57,14 @@ public:
 		glm::vec3 pad;               // explicit padding
 	};
 
-	// | I think this is the uniform buffers for the triangle
+	// | Camera UBOS
 	std::vector<VkBuffer> uniformBuffers;
 	std::vector<VkDeviceMemory> uniformBuffersMemory;
 	std::vector<void*> uniformBuffersMapped;
 
-	std::vector<VkBuffer> modelUniformBuffers;
-	std::vector<VkDeviceMemory> modelUniformBuffersMemory;
-	std::vector<void*> modelUniformBuffersMapped;
+	//std::vector<VkBuffer> modelUniformBuffers;
+	//std::vector<VkDeviceMemory> modelUniformBuffersMemory;
+	//std::vector<void*> modelUniformBuffersMapped;
 
 	std::vector<VkBuffer> mandelbulbUniformBuffers;
 	std::vector<VkDeviceMemory> mandelbulbUniformBuffersMemory;

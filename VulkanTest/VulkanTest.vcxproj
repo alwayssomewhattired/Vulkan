@@ -158,7 +158,9 @@
     <ClCompile Include="Texture.cpp" />
     <ClCompile Include="tinygltf_impl.cpp" />
     <ClCompile Include="items\Triangle.cpp" />
-    <ClCompile Include="UniformBuffer.cpp" />
+    <ClCompile Include="UniformBuffer.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="ValidationLayers.cpp" />
   </ItemGroup>
   <ItemGroup>
