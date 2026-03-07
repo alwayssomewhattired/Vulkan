@@ -36,9 +36,6 @@ void Texture::createTextureImage(const bool isDefault, const std::string& textur
 	VkBuffer stagingBuffer;
 	VkDeviceMemory stagingBufferMemory;
 
-	std::cout << "ohyeah\n";
-	// - this buffer is fucked
-	std::cout << imageSize << "\n";
 	m_Buffer.createBuffer(imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, 
 		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
 		stagingBuffer, stagingBufferMemory);
@@ -207,12 +204,14 @@ void Texture::buildGPUMaterial(
 	if (material->Get(AI_MATKEY_BASE_COLOR, baseColor) == AI_SUCCESS ||
 		material->Get(AI_MATKEY_COLOR_DIFFUSE, baseColor) == AI_SUCCESS)
 	{
-		mat.baseColorFactor = glm::vec4(
+		glm::vec4 baseColorFactor(
 			baseColor.r,
 			baseColor.g,
 			baseColor.b,
 			baseColor.a
 		);
+
+		mat.baseColorFactor = baseColorFactor;
 	}
 	else
 	{

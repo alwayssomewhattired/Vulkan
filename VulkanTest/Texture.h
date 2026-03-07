@@ -80,11 +80,6 @@ private:
 		aiTextureType type,
 		ItemInterface& classReference,
 		VkFormat format);
-	//int getOrCreateGpuTexture(
-	//	//tinygltf::Model& model,
-	//	aiMaterial* material,
-	//	int gltfTexIndex,
-	//	ItemInterface& classReference,
-	//	VkFormat format);
+
 };
 

@@ -388,7 +388,6 @@ private:
 
 		m_ModelLoad->loadModel("models/silent-hill-3-ps2-game-cover/source/SilentHill3ps2Game.glb", *m_SilentHill3Game);
 
-		//m_ModelLoad->loadModel("models/alightbulb/source/Glodlampa.fbx.fbx", *m_StringLight);
 		m_ModelLoad->loadModel("models/lightbulb/scene.gltf", *m_StringLight);
 
 	}

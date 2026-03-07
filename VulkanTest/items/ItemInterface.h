@@ -54,6 +54,8 @@ struct ItemInterface {
 
 	// | contiguous (material index + frame)
 	virtual std::vector<VkBuffer>& materialUniformBuffers() = 0;
+	virtual std::vector<VkDeviceMemory>& materialUniformBuffersMemory() = 0;
+	virtual std::vector<void*>& materialUniformBuffersMapped() = 0;
 
 	virtual ~ItemInterface() = default;
 };

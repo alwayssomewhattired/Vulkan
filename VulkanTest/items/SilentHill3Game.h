@@ -54,6 +54,8 @@ public:
 
 	// | contiguous (material index + frame)
 	std::vector<VkBuffer> m_materialUniformBuffers;
+	std::vector<VkDeviceMemory> m_materialUniformBuffersMemory;
+	std::vector<void*> m_materialUniformBuffersMapped;
 
 	void m_updatePC(glm::mat4& modelMatrix, const bool rotationEnabled);
 
@@ -120,6 +122,14 @@ public:
 
 	std::vector<VkBuffer>& materialUniformBuffers() override {
 		return m_materialUniformBuffers;
+	}
+
+	std::vector<VkDeviceMemory>& materialUniformBuffersMemory() override {
+		return m_materialUniformBuffersMemory;
+	}
+
+	std::vector<void*>& materialUniformBuffersMapped() override {
+		return m_materialUniformBuffersMapped;
 	}
 
 	//size_t m_modelUBOSize = sizeof(m_modelMatrix);

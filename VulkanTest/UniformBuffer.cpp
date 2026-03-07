@@ -14,12 +14,6 @@ UniformBuffer::UniformBuffer(Devices& devices, Camera& camera, SwapChain& swapCh
 
 	maxPCSize = props.limits.maxPushConstantsSize;
 	cameraUBOSize = sizeof(Camera::CameraUBO);
-
-	//alignedModelUBOSize =
-	//	(sizeof(ModelUBO) + props.limits.minUniformBufferOffsetAlignment - 1) &
-	//	~(props.limits.minUniformBufferOffsetAlignment - 1);
-
-	//modelUBOSize = sizeof(ModelUBO);
 }
 
 // | Triangle and Mandelbulb
@@ -27,21 +21,11 @@ void UniformBuffer::createUniformBuffers() {
 
 	VkDeviceSize bufferSize = sizeof(Camera::CameraUBO);
 
-	//VkDeviceSize modelBufferSize =
-	//	//modelUBOSize *
-	//	cameraUBOSize *
-	//	Constants::MAX_FRAMES_IN_FLIGHT *
-	//	2; // or items.size()
-
 	VkDeviceSize mandelbulbBufferSize = sizeof(MandelbulbUBO);
 
 	uniformBuffers.resize(Constants::MAX_FRAMES_IN_FLIGHT);
 	uniformBuffersMemory.resize(Constants::MAX_FRAMES_IN_FLIGHT);
 	uniformBuffersMapped.resize(Constants::MAX_FRAMES_IN_FLIGHT);
-
-	//modelUniformBuffers.resize(Constants::MAX_FRAMES_IN_FLIGHT);
-	//modelUniformBuffersMemory.resize(Constants::MAX_FRAMES_IN_FLIGHT);
-	//modelUniformBuffersMapped.resize(Constants::MAX_FRAMES_IN_FLIGHT);
 
 	mandelbulbUniformBuffers.resize(Constants::MAX_FRAMES_IN_FLIGHT);
 	mandelbulbUniformBuffersMemory.resize(Constants::MAX_FRAMES_IN_FLIGHT);
@@ -115,94 +99,57 @@ void UniformBuffer::createMaterialUniformBuffer(ItemInterface& item)
 	size_t uboSize = sizeof(ItemInterface::MaterialUBO);
 	size_t numMaterials = item.gltfMaterials().size();
 
-		std::vector<VkBuffer>& uniformBuffers = item.materialUniformBuffers();
-		std::vector<VkDeviceMemory> uniformBuffersMemory;
-		std::vector<void*> uniformBuffersMapped;
+	std::vector<VkBuffer>& uniformBuffers = item.materialUniformBuffers();
+	std::vector<VkDeviceMemory>& uniformBuffersMemory = item.materialUniformBuffersMemory();
+	std::vector<void*>& uniformBuffersMapped = item.materialUniformBuffersMapped();
 
-		VkDeviceSize bufferSize = uboSize;
+	VkDeviceSize bufferSize = uboSize;
 
-		uniformBuffers.resize(numMaterials * Constants::MAX_FRAMES_IN_FLIGHT);
-		uniformBuffersMemory.resize(numMaterials * Constants::MAX_FRAMES_IN_FLIGHT);
-		uniformBuffersMapped.resize(numMaterials * Constants::MAX_FRAMES_IN_FLIGHT);
+	uniformBuffers.resize(numMaterials * Constants::MAX_FRAMES_IN_FLIGHT);
+	uniformBuffersMemory.resize(numMaterials * Constants::MAX_FRAMES_IN_FLIGHT);
+	uniformBuffersMapped.resize(numMaterials * Constants::MAX_FRAMES_IN_FLIGHT);
 
-		for (size_t frame = 0; frame < Constants::MAX_FRAMES_IN_FLIGHT; frame++) {
-			for (size_t i = 0; i < numMaterials; i++) {
+	for (size_t frame = 0; frame < Constants::MAX_FRAMES_IN_FLIGHT; frame++) {
+		for (size_t i = 0; i < numMaterials; i++) {
 
-				size_t idx = frame * numMaterials + i;
+			size_t idx = frame * numMaterials + i;
 
-				VkBufferCreateInfo bufferInfo{};
-				bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-				bufferInfo.size = bufferSize;
-				bufferInfo.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
-				bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+			VkBufferCreateInfo bufferInfo{};
+			bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+			bufferInfo.size = bufferSize;
+			bufferInfo.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
+			bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-				if (vkCreateBuffer(m_Devices.device, &bufferInfo, nullptr, &uniformBuffers[idx]) != VK_SUCCESS)
-					throw std::runtime_error("failed to create uniform buffer!");
+			if (vkCreateBuffer(m_Devices.device, &bufferInfo, nullptr, &uniformBuffers[idx]) != VK_SUCCESS)
+				throw std::runtime_error("failed to create uniform buffer!");
 
-				VkMemoryRequirements memRequirements;
-				vkGetBufferMemoryRequirements(m_Devices.device, uniformBuffers[idx], &memRequirements);
+			VkMemoryRequirements memRequirements;
+			vkGetBufferMemoryRequirements(m_Devices.device, uniformBuffers[idx], &memRequirements);
 
-				VkMemoryAllocateInfo allocInfo{};
-				allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-				allocInfo.allocationSize = memRequirements.size;
-				allocInfo.memoryTypeIndex = Devices::findMemoryType(memRequirements.memoryTypeBits,
-					VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, m_Devices.physicalDevice);
+			VkMemoryAllocateInfo allocInfo{};
+			allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+			allocInfo.allocationSize = memRequirements.size;
+			allocInfo.memoryTypeIndex = Devices::findMemoryType(memRequirements.memoryTypeBits,
+				VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, m_Devices.physicalDevice);
 
-				if (vkAllocateMemory(m_Devices.device, &allocInfo, nullptr, &uniformBuffersMemory[idx]) != VK_SUCCESS)
-					throw std::runtime_error("failed to allocate uniform buffer memory");
+			if (vkAllocateMemory(m_Devices.device, &allocInfo, nullptr, &uniformBuffersMemory[idx]) != VK_SUCCESS)
+				throw std::runtime_error("failed to allocate uniform buffer memory");
 
-				vkBindBufferMemory(m_Devices.device, uniformBuffers[idx], uniformBuffersMemory[idx], 0);
+			vkBindBufferMemory(m_Devices.device, uniformBuffers[idx], uniformBuffersMemory[idx], 0);
 
-				vkMapMemory(m_Devices.device, uniformBuffersMemory[idx], 0, bufferSize, 0, &uniformBuffersMapped[idx]);
+			if (vkMapMemory(m_Devices.device, uniformBuffersMemory[idx], 0, bufferSize, 0, &uniformBuffersMapped[idx]) != VK_SUCCESS)
+			{
+				throw std::runtime_error("failed to map material UBO memory");
+			}
+
+			ItemInterface::MaterialUBO materialUBO{};
+			materialUBO.baseColorFactor = item.gltfMaterials()[i].baseColorFactor;
+			memcpy(uniformBuffersMapped[idx], &materialUBO, sizeof(ItemInterface::MaterialUBO));
+
 		}
+
 	}
 }
-
-
-//void UniformBuffer::createModelUniformBuffer(const size_t& UBOSize)
-//{
-//
-//	std::vector<VkBuffer> modelUniformBuffers;
-//	std::vector<VkDeviceMemory> modelUniformBuffersMemory;
-//	std::vector<void*> modelUniformBuffersMapped;
-//
-//	//VkDeviceSize modelBufferSize = UBOSize;
-//	VkDeviceSize modelBufferSize =
-//		alignedModelUBOSize *
-//		Constants::MAX_FRAMES_IN_FLIGHT *
-//		2;
-//	modelUniformBuffers.resize(Constants::MAX_FRAMES_IN_FLIGHT);
-//	modelUniformBuffersMemory.resize(Constants::MAX_FRAMES_IN_FLIGHT);
-//	modelUniformBuffersMapped.resize(Constants::MAX_FRAMES_IN_FLIGHT);
-//
-//	for (size_t i = 0; i < Constants::MAX_FRAMES_IN_FLIGHT; i++) {
-//
-//		VkBufferCreateInfo modelBufferInfo{};
-//		modelBufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-//		modelBufferInfo.size = modelBufferSize;
-//		modelBufferInfo.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
-//		modelBufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-//
-//		if (vkCreateBuffer(m_Devices.device, &modelBufferInfo, nullptr, &modelUniformBuffers[i]) != VK_SUCCESS)
-//			throw std::runtime_error("failed to create uniform buffer!");
-//
-//		VkMemoryRequirements modelMemRequirements;
-//		vkGetBufferMemoryRequirements(m_Devices.device, modelUniformBuffers[i], &modelMemRequirements);
-//
-//		VkMemoryAllocateInfo modelAllocInfo{};
-//		modelAllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-//		modelAllocInfo.allocationSize = modelMemRequirements.size;
-//		modelAllocInfo.memoryTypeIndex = Devices::findMemoryType(modelMemRequirements.memoryTypeBits,
-//			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, m_Devices.physicalDevice);
-//
-//		if (vkAllocateMemory(m_Devices.device, &modelAllocInfo, nullptr, &modelUniformBuffersMemory[i]) != VK_SUCCESS)
-//			throw std::runtime_error("failed to allocate uniform buffer memory");
-//
-//		vkBindBufferMemory(m_Devices.device, modelUniformBuffers[i], modelUniformBuffersMemory[i], 0);
-//
-//		vkMapMemory(m_Devices.device, modelUniformBuffersMemory[i], 0, modelBufferSize, 0, &modelUniformBuffersMapped[i]);
-//	}
-//}
 
 
 void UniformBuffer::updateCameraUniformBuffer(uint32_t currentImage) {
@@ -243,29 +190,3 @@ void UniformBuffer::updateMandelbulbUBO(uint32_t currentImage)
 
 	memcpy(mandelbulbUniformBuffersMapped[currentImage], &ubo, sizeof(ubo));
 }
-
-
-//void UniformBuffer::updateModelBuffer(uint32_t currentImage) {
-//	static auto startTime = std::chrono::high_resolution_clock::now();
-//	auto currentTime = std::chrono::high_resolution_clock::now();
-//	float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
-//
-//	ModelUBO modelUbo{};
-//
-//	// item view (tilted, rotating)
-//	if (m_rotationEnabled) {
-//		modelUbo.model = glm::rotate(glm::mat4(1.0f),
-//			time * glm::radians(90.0f),
-//			glm::vec3(0.0f, 0.0f, 1.0f));
-//	}
-//	else {
-//		// normal view (straight, unchanging)
-//		modelUbo.model = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 4.0f));
-//	}
-//
-//	// | scaling
-//	modelUbo.model = glm::scale(glm::mat4(1.0f), glm::vec3(4.0f, 4.0f, 4.0f));
-//
-//	memcpy(modelUniformBuffersMapped[currentImage], &modelUbo, sizeof(modelUbo));
-//
-//}

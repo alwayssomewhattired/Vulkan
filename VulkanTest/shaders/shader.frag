@@ -25,7 +25,6 @@ void main() {
 	// | beging blinn-phong
 
 	vec4 texColor = texture(texSampler, fragTexCoord);
-//	vec4 baseColor = vec4(1.0f) * texColor;
 	vec4 baseColor = material.baseColorFactor * texColor;
 	vec3 albedo = baseColor.rgb;
 	float shininess = 32.0;

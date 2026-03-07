@@ -128,7 +128,7 @@ void CommandBuffer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t 
 				vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
 				vkCmdBindIndexBuffer(commandBuffer, item->indexBuffer()[i], 0, item->indexType());
 				vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.pipelineLayout, 0, 1,
-					&descriptorSets[item->gltfPrimitiveMaterialIndices()[i]], 0, nullptr);
+					&descriptorSets[i], 0, nullptr);
 
 				struct PushConstants {
 					glm::mat4 model;
