@@ -126,6 +126,7 @@ void CommandBuffer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t 
 			vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.pipelineLayout, 0, 1,
 				&descriptorSet.globalDescriptorSets[i], 0, nullptr);
 		}
+		
 		for (auto& item : items) {
 			for (int i = 0; i < item->vertices().size(); i++) { // primitive iteration
 				auto& materialDescriptorSets = item->descriptorSets();

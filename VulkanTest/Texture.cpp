@@ -233,6 +233,7 @@ void Texture::buildGPUMaterial(
 
 	if (material->GetTexture(aiTextureType_NORMALS, 0, &path) == AI_SUCCESS)
 	{
+
 		mat.normalTex = getOrCreateGpuTexture(scene, material, aiTextureType_NORMALS, classReference, VK_FORMAT_R8G8B8A8_UNORM);
 	}
 

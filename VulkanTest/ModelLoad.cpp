@@ -64,15 +64,27 @@ void ModelLoad::modelFileParse(const aiScene* scene, aiMesh* mesh, size_t& verte
 			vertices[i].color = glm::vec3(1.0f); // default color (white)
 		}
 
-		// | for future use bb
-		//if (mesh->mTangents) {
-		//	v.tangent = {
-		//		mesh->mTangents[i].x,
-		//		mesh->mTangents[i].y,
-		//		mesh->mTangents[i].z
-		//	};
-		//}
+		if (mesh->mTangents) {
+			vertices[i].tangent = {
+				mesh->mTangents[i].x,
+				mesh->mTangents[i].y,
+				mesh->mTangents[i].z
+			};
+		}
+		else {
+			vertices[i].tangent = { 0.0f, 0.0f, 0.0f };
+		}
 
+		if (mesh->mBitangents) {
+			vertices[i].bitangent = {
+				mesh->mBitangents[i].x,
+				mesh->mBitangents[i].y,
+				mesh->mBitangents[i].z
+			};
+		}
+		else {
+			vertices[i].bitangent = { 0.0f, 0.0f, 0.0f };
+		}
 	}
 
 

@@ -24,26 +24,13 @@ public:
 	void createUniformBuffers();
 
 	void createMaterialUniformBuffer(ItemInterface& item);
-	//void createModelUniformBuffer(const size_t& UBOSize);
 
 	void updateCameraUniformBuffer(uint32_t currentImage);
 
 	void updateMandelbulbUBO(uint32_t currentImage);
 
-	//void updateModelBuffer(uint32_t currentImage);
-
-	// | dynamic ubo
-	//struct ModelUBO {
-	//	alignas(16) glm::mat4 model;
-	//};
-
 	uint32_t maxPCSize;
 	uint32_t cameraUBOSize;
-
-
-	//uint32_t alignedModelUBOSize;
-
-	//uint32_t modelUBOSize;
 
 	struct MandelbulbUBO {
 
@@ -61,10 +48,6 @@ public:
 	std::vector<VkBuffer> uniformBuffers;
 	std::vector<VkDeviceMemory> uniformBuffersMemory;
 	std::vector<void*> uniformBuffersMapped;
-
-	//std::vector<VkBuffer> modelUniformBuffers;
-	//std::vector<VkDeviceMemory> modelUniformBuffersMemory;
-	//std::vector<void*> modelUniformBuffersMapped;
 
 	std::vector<VkBuffer> mandelbulbUniformBuffers;
 	std::vector<VkDeviceMemory> mandelbulbUniformBuffersMemory;

@@ -80,7 +80,6 @@ void Buffer::createVertexBuffer(const std::vector<Vertex>& triangleVertices,
 	createBuffer(triangleBufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, 
 		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
 		stagingBuffer, stagingBufferMemory);
-	// execution stops error
 
 	vkMapMemory(m_Devices.device, stagingBufferMemory, 0, triangleBufferSize, 0, &data);
 	memcpy(data, triangleVertices.data(), (size_t)triangleBufferSize);

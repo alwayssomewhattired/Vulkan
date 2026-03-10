@@ -11,7 +11,6 @@ GraphicsPipeline::GraphicsPipeline(Shaders& shaders, VkDevice device, SwapChain&
 	m_descriptorSetLayout(descriptorSetLayout), m_renderPass(renderPass){}
 
 void GraphicsPipeline::createGraphicsPipeline(UniformBuffer& uniformBuffer) {
-
 	createMandelbulbComputePipeline();
 	createMandelbulbGraphicsPipeline();
 
