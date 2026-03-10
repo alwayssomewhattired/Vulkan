@@ -8,25 +8,27 @@
 
 class Devices;
 
-class DescriptorSetLayout
+class descriptorSetLayout
 {
 public:
-	DescriptorSetLayout(Devices& devices);
-	void createMeshDescriptorSetLayout();
+	descriptorSetLayout(Devices& devices);
+	void createGlobalDescriptorSetLayout();
+	void createMeshdescriptorSetLayout();
 	void createDescriptorPool(uint32_t materialCount);
 
-	VkDescriptorSetLayout descriptorSetLayout;
+	VkDescriptorSetLayout globalDescriptorSetLayout;
+	VkDescriptorSetLayout materialDescriptorSetLayout;
 
 	VkDescriptorPool descriptorPool;
 	VkDescriptorPool computeDescriptorPool;
 	VkDescriptorPool graphicsDescriptorPool;
 
-	void createMandelbulbComputeDescriptorSetLayout();
-	VkDescriptorSetLayout mandelbulbComputeDescriptorSetLayout;
+	void createMandelbulbComputedescriptorSetLayout();
+	VkDescriptorSetLayout mandelbulbComputedescriptorSetLayout;
 	void createComputeDescriptorPool(uint32_t computeSetCount);
 
-	void createMandelbulbGraphicsDescriptorSetLayout();
-	VkDescriptorSetLayout mandelbulbGraphicsDescriptorSetLayout;
+	void createMandelbulbGraphicsdescriptorSetLayout();
+	VkDescriptorSetLayout mandelbulbGraphicsdescriptorSetLayout;
 	void createGraphicsDescriptorPool(uint32_t graphicsSetCount);
 
 private:

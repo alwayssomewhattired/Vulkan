@@ -120,15 +120,21 @@ void CommandBuffer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t 
 		}
 
 		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.graphicsPipeline);
+
+		for (int i = 0; i < Constants::MAX_FRAMES_IN_FLIGHT; i++) {
+
+			vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.pipelineLayout, 0, 1,
+				&descriptorSet.globalDescriptorSets[i], 0, nullptr);
+		}
 		for (auto& item : items) {
 			for (int i = 0; i < item->vertices().size(); i++) { // primitive iteration
-				auto& descriptorSets = item->descriptorSets();
+				auto& materialDescriptorSets = item->descriptorSets();
 				VkBuffer vertexBuffers[] = { item->vertexBuffer()[i] };
 				VkDeviceSize offsets[] = { 0 };
 				vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
 				vkCmdBindIndexBuffer(commandBuffer, item->indexBuffer()[i], 0, item->indexType());
-				vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.pipelineLayout, 0, 1,
-					&descriptorSets[i], 0, nullptr);
+				vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.pipelineLayout, 1, 1,
+					&materialDescriptorSets[i], 0, nullptr);
 
 				struct PushConstants {
 					glm::mat4 model;

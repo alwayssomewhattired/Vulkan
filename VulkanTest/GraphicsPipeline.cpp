@@ -6,9 +6,9 @@
 #include <stdexcept>
 
 GraphicsPipeline::GraphicsPipeline(Shaders& shaders, VkDevice device, SwapChain& swapChain, VkSampleCountFlagBits msaaSamples,
-	DescriptorSetLayout& descriptorSetLayout, VkRenderPass& renderPass) :
+	descriptorSetLayout& descriptorSetLayout, VkRenderPass& renderPass) :
 	m_Shaders(shaders), m_device(device), m_SwapChain(swapChain), m_msaaSamples(msaaSamples), 
-	m_DescriptorSetLayout(descriptorSetLayout), m_renderPass(renderPass){}
+	m_descriptorSetLayout(descriptorSetLayout), m_renderPass(renderPass){}
 
 void GraphicsPipeline::createGraphicsPipeline(UniformBuffer& uniformBuffer) {
 
@@ -126,10 +126,14 @@ void GraphicsPipeline::createGraphicsPipeline(UniformBuffer& uniformBuffer) {
 	pushConstantRanges.offset = 0;
 	pushConstantRanges.size = sizeof(glm::mat4) + sizeof(glm::vec4);
 
+	std::array<VkDescriptorSetLayout, 2> dsLayouts = {
+		m_descriptorSetLayout.globalDescriptorSetLayout,
+		m_descriptorSetLayout.materialDescriptorSetLayout
+	};
 	VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
 	pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-	pipelineLayoutInfo.setLayoutCount = 1;
-	pipelineLayoutInfo.pSetLayouts = &m_DescriptorSetLayout.descriptorSetLayout;
+	pipelineLayoutInfo.setLayoutCount = dsLayouts.size();
+	pipelineLayoutInfo.pSetLayouts = dsLayouts.data();
 	pipelineLayoutInfo.pushConstantRangeCount = 1;
 	pipelineLayoutInfo.pPushConstantRanges = &pushConstantRanges;
 
@@ -188,7 +192,7 @@ void GraphicsPipeline::createMandelbulbComputePipeline() {
 	VkPipelineLayoutCreateInfo layoutCompInfo{};
 	layoutCompInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 	layoutCompInfo.setLayoutCount = 1;
-	layoutCompInfo.pSetLayouts = &m_DescriptorSetLayout.mandelbulbComputeDescriptorSetLayout;
+	layoutCompInfo.pSetLayouts = &m_descriptorSetLayout.mandelbulbComputedescriptorSetLayout;
 
 	if (vkCreatePipelineLayout(m_device, &layoutCompInfo, nullptr, &mandelbulbPipelineComputeLayout) != VK_SUCCESS)
 		throw std::runtime_error("failed to create mandelbulb comp layout");
@@ -296,7 +300,7 @@ void GraphicsPipeline::createMandelbulbGraphicsPipeline() {
 	VkPipelineLayoutCreateInfo layoutInfo{};
 	layoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 	layoutInfo.setLayoutCount = 1;
-	layoutInfo.pSetLayouts = &m_DescriptorSetLayout.mandelbulbGraphicsDescriptorSetLayout;
+	layoutInfo.pSetLayouts = &m_descriptorSetLayout.mandelbulbGraphicsdescriptorSetLayout;
 	layoutInfo.pushConstantRangeCount = 0; // Raymarcher doesn't need push constants
 
 	if (vkCreatePipelineLayout(m_device, &layoutInfo, nullptr, &mandelbulbPipelineGraphicsLayout) != VK_SUCCESS)

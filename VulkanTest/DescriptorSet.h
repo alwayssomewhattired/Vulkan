@@ -5,7 +5,7 @@
 
 #include "Constants.h"
 
-class DescriptorSetLayout;
+class descriptorSetLayout;
 class Devices;
 class UniformBuffer;
 class StorageImageManager;
@@ -15,22 +15,22 @@ class Texture;
 class DescriptorSet
 {
 public:
-	DescriptorSet(DescriptorSetLayout& descriptorSetLayout, Devices& devices, UniformBuffer& uniformBuffer, 
+	DescriptorSet(descriptorSetLayout& descriptorSetLayout, Devices& devices, UniformBuffer& uniformBuffer, 
 		StorageImageManager& storageImageManager, Texture& texture);
+
 	// | GEOMETRY
+	void createGlobalDescriptorSets();
 	void createMeshDescriptorSets(ItemInterface& classReference);
 	void createMandelbulbComputeDescriptorSets();
 	void createMandelbulbGraphicsDescriptorSets();
-	//void createDescriptorPool(uint32_t materialCount);
 
-	/*VkDescriptorPool descriptorPool;*/
-
+	std::vector<VkDescriptorSet> globalDescriptorSets;
 	std::vector<VkDescriptorSet> mandelbulbComputeDescriptorSets;
 	std::vector<VkDescriptorSet> mandelbulbGraphicsDescriptorSets;
 
 private:
 	Devices& m_Devices;
-	DescriptorSetLayout& m_DescriptorSetLayout;
+	descriptorSetLayout& m_descriptorSetLayout;
 	UniformBuffer& m_UniformBuffer;
 	StorageImageManager& m_StorageImageManager;
 	Texture& m_Texture;

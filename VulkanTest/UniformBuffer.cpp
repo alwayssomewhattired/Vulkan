@@ -16,7 +16,7 @@ UniformBuffer::UniformBuffer(Devices& devices, Camera& camera, SwapChain& swapCh
 	cameraUBOSize = sizeof(Camera::CameraUBO);
 }
 
-// | Triangle and Mandelbulb
+// | Camera and Mandelbulb
 void UniformBuffer::createUniformBuffers() {
 
 	VkDeviceSize bufferSize = sizeof(Camera::CameraUBO);

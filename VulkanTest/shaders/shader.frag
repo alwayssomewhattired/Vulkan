@@ -8,9 +8,9 @@ layout(location = 4) in vec3 fragCameraPos;
 
 layout(location = 0) out vec4 outColor;
 
-layout(binding = 1) uniform sampler2D texSampler;
+layout(set = 1, binding = 0) uniform sampler2D texSampler;
 
-layout(set = 0, binding = 3) uniform MaterialUBO {
+layout(set = 1, binding = 2) uniform MaterialUBO {
 	vec4 baseColorFactor;
 } material;
 

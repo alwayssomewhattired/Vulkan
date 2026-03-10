@@ -4,7 +4,7 @@
 //#include "ValidationLayers.h"
 //#include "Devices.h"
 //#include "SwapChain.h"
-//#include "DescriptorSetLayout.h"
+//#include "descriptorSetLayout.h"
 //#include "GraphicsPipeline.h"
 //#include "Shaders.h"
 //#include "HostToDevice.h"
@@ -26,7 +26,7 @@
 //
 //	std::unique_ptr<SwapChain> m_SwapChain = nullptr;
 //
-//	std::unique_ptr<DescriptorSetLayout> m_DescriptorSetLayout = nullptr;
+//	std::unique_ptr<descriptorSetLayout> m_descriptorSetLayout = nullptr;
 //
 //	std::unique_ptr<Shaders> m_Shaders = nullptr;
 //

@@ -1,7 +1,7 @@
 #pragma once
 #include "Shaders.h"
 #include "SwapChain.h"
-#include "DescriptorSetLayout.h"
+#include "descriptorSetLayout.h"
 #include "UniformBuffer.h"
 
 #include <vulkan/vulkan.h>
@@ -11,7 +11,7 @@ class GraphicsPipeline
 {
 public:
 	GraphicsPipeline(Shaders& shaders, VkDevice device, SwapChain& swapChain, VkSampleCountFlagBits msaaSamples,
-		DescriptorSetLayout& descriptorSetLayout, VkRenderPass& renderPass);
+		descriptorSetLayout& descriptorSetLayout, VkRenderPass& renderPass);
 	void createGraphicsPipeline(UniformBuffer& uniformBuffer);
 	void createMandelbulbComputePipeline();
 	void createMandelbulbGraphicsPipeline();
@@ -30,7 +30,7 @@ private:
 	VkDevice m_device;
 	Shaders& m_Shaders;
 	SwapChain& m_SwapChain;
-	DescriptorSetLayout& m_DescriptorSetLayout;
+	descriptorSetLayout& m_descriptorSetLayout;
 	VkRenderPass& m_renderPass;
 
 };

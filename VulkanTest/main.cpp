@@ -10,7 +10,7 @@
 #include "ValidationLayers.h"
 #include "Devices.h"
 #include "SwapChain.h"
-#include "DescriptorSetLayout.h"
+#include "descriptorSetLayout.h"
 #include "RenderPass.h"
 #include "GraphicsPipeline.h"
 #include "CommandPool.h"
@@ -105,7 +105,7 @@ private:
 
 	std::unique_ptr<SwapChain> m_SwapChain = nullptr;
 
-	std::unique_ptr<DescriptorSetLayout> m_DescriptorSetLayout = nullptr;
+	std::unique_ptr<descriptorSetLayout> m_descriptorSetLayout = nullptr;
 
 	std::unique_ptr<Shaders> m_Shaders = nullptr;
 
@@ -186,14 +186,14 @@ private:
 
 		m_SwapChain = std::make_unique<SwapChain>(*m_devices, surface);
 
-		m_DescriptorSetLayout = std::make_unique<DescriptorSetLayout>(*m_devices);
+		m_descriptorSetLayout = std::make_unique<descriptorSetLayout>(*m_devices);
 
 		m_Shaders = std::make_unique<Shaders>(*m_device);
 
 		m_RenderPass = std::make_unique<RenderPass>(*m_devices, *m_SwapChain);
 
 		m_GraphicsPipeline = std::make_unique<GraphicsPipeline>(*m_Shaders, *m_device, *m_SwapChain, *m_msaaSamples,
-			*m_DescriptorSetLayout, m_RenderPass->renderPass);
+			*m_descriptorSetLayout, m_RenderPass->renderPass);
 
 		m_CommandPool = std::make_unique<CommandPool>();
 
@@ -219,9 +219,11 @@ private:
 
 		m_SwapChain->createSwapChain();
 		m_SwapChain->createImageViews(*m_Image);
-		m_DescriptorSetLayout->createMeshDescriptorSetLayout();
-		m_DescriptorSetLayout->createMandelbulbComputeDescriptorSetLayout();
-		m_DescriptorSetLayout->createMandelbulbGraphicsDescriptorSetLayout();
+
+		m_descriptorSetLayout->createGlobalDescriptorSetLayout();
+		m_descriptorSetLayout->createMeshdescriptorSetLayout();
+		m_descriptorSetLayout->createMandelbulbComputedescriptorSetLayout();
+		m_descriptorSetLayout->createMandelbulbGraphicsdescriptorSetLayout();
 
 		m_AttachmentManager = std::make_unique<AttachmentManager>(*m_SwapChain, *m_msaaSamples, *m_Image, *m_devices);
 		m_AttachmentManager->createColorResources();
@@ -252,7 +254,7 @@ private:
 		m_StorageImageManager = std::make_unique<StorageImageManager>(*m_Image, *m_SwapChain, *m_devices);
 		m_StorageImageManager->createStorageImageResources();
 
-		m_DescriptorSet = std::make_unique<DescriptorSet>(*m_DescriptorSetLayout, *m_devices, *m_UniformBuffer, 
+		m_DescriptorSet = std::make_unique<DescriptorSet>(*m_descriptorSetLayout, *m_devices, *m_UniformBuffer, 
 			*m_StorageImageManager, *m_Texture);
 
 		createDescriptorSets();
@@ -394,18 +396,26 @@ private:
 
 	// creates descriptor sets for models
 	void createDescriptorSets() {
-		
-		for (auto* item : items) {
-			m_DescriptorSetLayout->createDescriptorPool(item->gltfMaterials().size());
 
-			m_DescriptorSet->createMeshDescriptorSets(*item);
+
+		uint32_t materialsSize = 0;
+		for (auto* item : items) {
+
+			materialsSize += item->gltfMaterials().size();
 
 		}
 
-		m_DescriptorSetLayout->createComputeDescriptorPool(2);
+		m_descriptorSetLayout->createDescriptorPool(materialsSize);
+
+		m_DescriptorSet->createGlobalDescriptorSets();
+		for (auto* item : items) {
+			m_DescriptorSet->createMeshDescriptorSets(*item);
+		}
+
+		m_descriptorSetLayout->createComputeDescriptorPool(2);
 		m_DescriptorSet->createMandelbulbComputeDescriptorSets();
 
-		m_DescriptorSetLayout->createGraphicsDescriptorPool(2);
+		m_descriptorSetLayout->createGraphicsDescriptorPool(2);
 		m_DescriptorSet->createMandelbulbGraphicsDescriptorSets();
 	}
 
@@ -542,12 +552,13 @@ private:
 			vkFreeMemory(*m_device, m_UniformBuffer->uniformBuffersMemory[i], nullptr);
 		}
 
-		vkDestroyDescriptorPool(*m_device, m_DescriptorSetLayout->descriptorPool, nullptr);
-		vkDestroyDescriptorPool(*m_device, m_DescriptorSetLayout->computeDescriptorPool, nullptr);
+		vkDestroyDescriptorPool(*m_device, m_descriptorSetLayout->descriptorPool, nullptr);
+		vkDestroyDescriptorPool(*m_device, m_descriptorSetLayout->computeDescriptorPool, nullptr);
 
-		vkDestroyDescriptorSetLayout(*m_device, m_DescriptorSetLayout->descriptorSetLayout, nullptr);
-		vkDestroyDescriptorSetLayout(*m_device, m_DescriptorSetLayout->mandelbulbComputeDescriptorSetLayout, nullptr);
-		vkDestroyDescriptorSetLayout(*m_device, m_DescriptorSetLayout->mandelbulbGraphicsDescriptorSetLayout, nullptr);
+		vkDestroyDescriptorSetLayout(*m_device, m_descriptorSetLayout->globalDescriptorSetLayout, nullptr);
+		vkDestroyDescriptorSetLayout(*m_device, m_descriptorSetLayout->materialDescriptorSetLayout, nullptr);
+		vkDestroyDescriptorSetLayout(*m_device, m_descriptorSetLayout->mandelbulbComputedescriptorSetLayout, nullptr);
+		vkDestroyDescriptorSetLayout(*m_device, m_descriptorSetLayout->mandelbulbGraphicsdescriptorSetLayout, nullptr);
 
 		vkDestroyBuffer(*m_device, indexBuffer, nullptr);
 		vkFreeMemory(*m_device, indexBufferMemory, nullptr);

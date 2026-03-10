@@ -1,6 +1,6 @@
 #include "DescriptorSet.h"
 
-#include "DescriptorSetLayout.h"
+#include "descriptorSetLayout.h"
 #include "Devices.h"
 #include "UniformBuffer.h"
 #include "items/ItemInterface.h"
@@ -8,13 +8,61 @@
 #include "Texture.h"
 
 
-DescriptorSet::DescriptorSet(DescriptorSetLayout& descriptorSetLayout, Devices& devices, UniformBuffer& uniformBuffer, 
+DescriptorSet::DescriptorSet(descriptorSetLayout& descriptorSetLayout, Devices& devices, UniformBuffer& uniformBuffer, 
 	StorageImageManager& storageImageManager, Texture& texture) : 
-	m_DescriptorSetLayout(descriptorSetLayout), m_Devices(devices), m_UniformBuffer(uniformBuffer),
+	m_descriptorSetLayout(descriptorSetLayout), m_Devices(devices), m_UniformBuffer(uniformBuffer),
 	m_StorageImageManager(storageImageManager), m_Texture(texture) {}
 
+void DescriptorSet::createGlobalDescriptorSets() {
 
-// | generic descriptor set creator
+
+	auto& descriptorSets = globalDescriptorSets;
+
+	descriptorSets.resize(Constants::MAX_FRAMES_IN_FLIGHT);
+
+	std::vector<VkDescriptorSetLayout> layouts(
+		descriptorSets.size(),
+		m_descriptorSetLayout.globalDescriptorSetLayout
+	);
+
+	VkDescriptorSetAllocateInfo allocInfo{};
+	allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+	allocInfo.descriptorPool = m_descriptorSetLayout.descriptorPool;
+	allocInfo.descriptorSetCount = static_cast<uint32_t>(descriptorSets.size());
+	allocInfo.pSetLayouts = layouts.data();
+	if (vkAllocateDescriptorSets(
+		m_Devices.device,
+		&allocInfo,
+		descriptorSets.data()) != VK_SUCCESS)
+	{
+		throw std::runtime_error("failed to allocate descriptor sets!");
+	}
+
+	for (size_t frame = 0; frame < Constants::MAX_FRAMES_IN_FLIGHT; frame++) {
+
+		VkDescriptorSet dstSet = descriptorSets[frame];
+
+		VkDescriptorBufferInfo bufferInfo{};
+		bufferInfo.buffer = m_UniformBuffer.uniformBuffers[frame];
+		bufferInfo.offset = 0;
+		bufferInfo.range = sizeof(Camera::CameraUBO);
+
+		VkWriteDescriptorSet descriptorWrites{};
+
+		descriptorWrites.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		descriptorWrites.dstSet = dstSet;
+		descriptorWrites.dstBinding = 0;
+		descriptorWrites.dstArrayElement = 0;
+		descriptorWrites.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		descriptorWrites.descriptorCount = 1;
+		descriptorWrites.pBufferInfo = &bufferInfo;
+
+		vkUpdateDescriptorSets(m_Devices.device, 1, &descriptorWrites, 0, nullptr);
+
+	}
+};
+
+// | material descriptor set creator
 void DescriptorSet::createMeshDescriptorSets(ItemInterface& classReference) {
 
 	const auto& materials = classReference.gltfMaterials();
@@ -29,12 +77,12 @@ void DescriptorSet::createMeshDescriptorSets(ItemInterface& classReference) {
 
 	std::vector<VkDescriptorSetLayout> layouts(
 		descriptorSets.size(),
-		m_DescriptorSetLayout.descriptorSetLayout
+		m_descriptorSetLayout.materialDescriptorSetLayout
 	);
 
 	VkDescriptorSetAllocateInfo allocInfo{};
 	allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-	allocInfo.descriptorPool = m_DescriptorSetLayout.descriptorPool;
+	allocInfo.descriptorPool = m_descriptorSetLayout.descriptorPool;
 	allocInfo.descriptorSetCount = static_cast<uint32_t>(descriptorSets.size());
 	allocInfo.pSetLayouts = layouts.data();
 	if (vkAllocateDescriptorSets(
@@ -45,6 +93,8 @@ void DescriptorSet::createMeshDescriptorSets(ItemInterface& classReference) {
 		throw std::runtime_error("failed to allocate descriptor sets!");
 	}
 
+
+
 	for (size_t frame = 0; frame < Constants::MAX_FRAMES_IN_FLIGHT; frame++) {
 		for (size_t matIdx = 0; matIdx < materials.size(); ++matIdx) {
 
@@ -54,12 +104,6 @@ void DescriptorSet::createMeshDescriptorSets(ItemInterface& classReference) {
 
 			const auto& material = materials[matIdx];
 			const GPUTexture& GPUBaseColorTex = textures[material.baseColorTex];
-
-
-			VkDescriptorBufferInfo bufferInfo{};
-			bufferInfo.buffer = m_UniformBuffer.uniformBuffers[frame];
-			bufferInfo.offset = 0;
-			bufferInfo.range = sizeof(Camera::CameraUBO);
 
 			assert(material.baseColorTex < textures.size());
 			VkDescriptorImageInfo baseColorInfo{};
@@ -77,14 +121,15 @@ void DescriptorSet::createMeshDescriptorSets(ItemInterface& classReference) {
 			materialBufferInfo.offset = 0;
 			materialBufferInfo.range = sizeof(ItemInterface::MaterialUBO);
 
-			std::array<VkWriteDescriptorSet, 4> descriptorWrites{};
+			std::array<VkWriteDescriptorSet, 3> descriptorWrites{};
+
 			descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 			descriptorWrites[0].dstSet = dstSet;
 			descriptorWrites[0].dstBinding = 0;
 			descriptorWrites[0].dstArrayElement = 0;
-			descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+			descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 			descriptorWrites[0].descriptorCount = 1;
-			descriptorWrites[0].pBufferInfo = &bufferInfo;
+			descriptorWrites[0].pImageInfo = &baseColorInfo;
 
 			descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 			descriptorWrites[1].dstSet = dstSet;
@@ -92,23 +137,15 @@ void DescriptorSet::createMeshDescriptorSets(ItemInterface& classReference) {
 			descriptorWrites[1].dstArrayElement = 0;
 			descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 			descriptorWrites[1].descriptorCount = 1;
-			descriptorWrites[1].pImageInfo = &baseColorInfo;
+			descriptorWrites[1].pImageInfo = &normalInfo;
 
 			descriptorWrites[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 			descriptorWrites[2].dstSet = dstSet;
 			descriptorWrites[2].dstBinding = 2;
 			descriptorWrites[2].dstArrayElement = 0;
-			descriptorWrites[2].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+			descriptorWrites[2].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 			descriptorWrites[2].descriptorCount = 1;
-			descriptorWrites[2].pImageInfo = &normalInfo;
-
-			descriptorWrites[3].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			descriptorWrites[3].dstSet = dstSet;
-			descriptorWrites[3].dstBinding = 3;
-			descriptorWrites[3].dstArrayElement = 0;
-			descriptorWrites[3].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-			descriptorWrites[3].descriptorCount = 1;
-			descriptorWrites[3].pBufferInfo = &materialBufferInfo;
+			descriptorWrites[2].pBufferInfo = &materialBufferInfo;
 
 			vkUpdateDescriptorSets(m_Devices.device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(),
 				0, nullptr);
@@ -122,11 +159,11 @@ void DescriptorSet::createMandelbulbComputeDescriptorSets() {
 	mandelbulbComputeDescriptorSets.resize(Constants::MAX_FRAMES_IN_FLIGHT);
 
 	std::vector<VkDescriptorSetLayout> layouts(Constants::MAX_FRAMES_IN_FLIGHT, 
-		m_DescriptorSetLayout.mandelbulbComputeDescriptorSetLayout);
+		m_descriptorSetLayout.mandelbulbComputedescriptorSetLayout);
 
 	VkDescriptorSetAllocateInfo allocInfo{};
 	allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-	allocInfo.descriptorPool = m_DescriptorSetLayout.computeDescriptorPool;            // must support STORAGE_IMAGE + UBO
+	allocInfo.descriptorPool = m_descriptorSetLayout.computeDescriptorPool;            // must support STORAGE_IMAGE + UBO
 	allocInfo.descriptorSetCount = Constants::MAX_FRAMES_IN_FLIGHT;
 	allocInfo.pSetLayouts = layouts.data();
 
@@ -173,10 +210,10 @@ void DescriptorSet::createMandelbulbGraphicsDescriptorSets() {
 
 	mandelbulbGraphicsDescriptorSets.resize(Constants::MAX_FRAMES_IN_FLIGHT);
 	std::vector<VkDescriptorSetLayout> layouts(Constants::MAX_FRAMES_IN_FLIGHT, 
-		m_DescriptorSetLayout.mandelbulbGraphicsDescriptorSetLayout);
+		m_descriptorSetLayout.mandelbulbGraphicsdescriptorSetLayout);
 	VkDescriptorSetAllocateInfo allocInfo{};
 	allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-	allocInfo.descriptorPool = m_DescriptorSetLayout.graphicsDescriptorPool;
+	allocInfo.descriptorPool = m_descriptorSetLayout.graphicsDescriptorPool;
 	allocInfo.descriptorSetCount = static_cast<uint32_t>(Constants::MAX_FRAMES_IN_FLIGHT);
 	allocInfo.pSetLayouts = layouts.data();
 
