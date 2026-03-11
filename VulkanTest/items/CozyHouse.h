@@ -17,9 +17,10 @@
 #include <chrono>
 
 
-class SilentHill3Game : public ItemInterface {
+class CozyHouse : public ItemInterface {
+
 public:
-	SilentHill3Game(VkDevice& device, VkPhysicalDevice& physicalDevice);
+	CozyHouse(VkDevice& device, VkPhysicalDevice& physicalDevice);
 
 	std::vector<VkBuffer> m_vertexBuffer;
 	std::vector<VkDeviceMemory> m_vertexMemory;
@@ -138,3 +139,4 @@ private:
 	VkPhysicalDevice& m_physicalDevice;
 
 };
+

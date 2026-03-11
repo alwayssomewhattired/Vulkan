@@ -102,6 +102,15 @@
     <ClCompile Include="items\StringLight.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="items\Table.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="items\CozyHouse.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="items\Computer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\shader.vert" />
@@ -206,6 +215,15 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="items\StringLight.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="items\Table.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="items\CozyHouse.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="items\Computer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

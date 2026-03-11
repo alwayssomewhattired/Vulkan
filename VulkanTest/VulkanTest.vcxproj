@@ -137,6 +137,8 @@
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="CommandBuffer.cpp" />
     <ClCompile Include="CommandPool.cpp" />
+    <ClCompile Include="items\Computer.cpp" />
+    <ClCompile Include="items\CozyHouse.cpp" />
     <ClCompile Include="DescriptorSet.cpp" />
     <ClCompile Include="DescriptorSetLayout.cpp" />
     <ClCompile Include="Devices.cpp" />
@@ -155,6 +157,7 @@
     <ClCompile Include="StorageImageManager.cpp" />
     <ClCompile Include="items\StringLight.cpp" />
     <ClCompile Include="SwapChain.cpp" />
+    <ClCompile Include="items\Table.cpp" />
     <ClCompile Include="Texture.cpp" />
     <ClCompile Include="tinygltf_impl.cpp" />
     <ClCompile Include="items\Triangle.cpp" />
@@ -176,7 +179,9 @@
     <ClInclude Include="Camera.h" />
     <ClInclude Include="CommandBuffer.h" />
     <ClInclude Include="CommandPool.h" />
+    <ClInclude Include="items\Computer.h" />
     <ClInclude Include="Constants.h" />
+    <ClInclude Include="items\CozyHouse.h" />
     <ClInclude Include="DescriptorSet.h" />
     <ClInclude Include="DescriptorSetLayout.h" />
     <ClInclude Include="Devices.h" />
@@ -197,6 +202,7 @@
     <ClInclude Include="StorageImageManager.h" />
     <ClInclude Include="items\StringLight.h" />
     <ClInclude Include="SwapChain.h" />
+    <ClInclude Include="items\Table.h" />
     <ClInclude Include="Texture.h" />
     <ClInclude Include="items\Triangle.h" />
     <ClInclude Include="UniformBuffer.h" />
