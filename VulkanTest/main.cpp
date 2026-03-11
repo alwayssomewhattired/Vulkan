@@ -136,7 +136,7 @@ private:
 	std::unique_ptr<StringLight> m_StringLight = nullptr;
 	std::unique_ptr<Table> m_Table = nullptr;
 	std::unique_ptr<Computer> m_Computer = nullptr;
-	std::unique_ptr<CozyHouse> m_CozyHouse = nullptr;
+	//std::unique_ptr<CozyHouse> m_CozyHouse = nullptr;
 
 	std::unique_ptr<UniformBuffer> m_UniformBuffer = nullptr;
 
@@ -220,14 +220,14 @@ private:
 		m_StringLight = std::make_unique<StringLight>(m_devices->device, m_devices->physicalDevice);
 		m_Table = std::make_unique<Table>(m_devices->device, m_devices->physicalDevice);
 		m_Computer = std::make_unique<Computer>(m_devices->device, m_devices->physicalDevice);
-		m_CozyHouse = std::make_unique<CozyHouse>(m_devices->device, m_devices->physicalDevice);
+		//m_CozyHouse = std::make_unique<CozyHouse>(m_devices->device, m_devices->physicalDevice);
 
 		items.push_back(m_Home.get());
 		items.push_back(m_SilentHill3Game.get());
 		items.push_back(m_StringLight.get());
 		items.push_back(m_Table.get());
 		items.push_back(m_Computer.get());
-		items.push_back(m_CozyHouse.get());
+		//items.push_back(m_CozyHouse.get());
 
 		m_SwapChain->createSwapChain();
 		m_SwapChain->createImageViews(*m_Image);
@@ -406,17 +406,13 @@ private:
 
 		m_ModelLoad->loadModel("models/Table.glb", *m_Table);
 
-		// - computer doesn't render its keyboard and mouse. check validation errors
-		m_ModelLoad->loadModel("models/computer/source/Retro_Pc.glb", *m_Computer);
-
+		m_ModelLoad->loadModel("models/computer/source/myComputer.glb", *m_Computer);
 
 
 		// - we crash when loading this.
 		// - optimize and check where we are crashing?
 		// - this model rules so hard
 		//m_ModelLoad->loadModel("models/cozy_house/cozy_houseGLB/cozy_house.glb", * m_CozyHouse);
-
-
 
 	}
 

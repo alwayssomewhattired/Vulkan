@@ -229,6 +229,7 @@ void Texture::buildGPUMaterial(
 			VK_FORMAT_R8G8B8A8_SRGB);
 	}
 
+
 	// | NORMAL MAP (unorm)
 
 	if (material->GetTexture(aiTextureType_NORMALS, 0, &path) == AI_SUCCESS)
@@ -238,6 +239,16 @@ void Texture::buildGPUMaterial(
 	}
 
 	classReference.gltfMaterials()[materialIndex] = mat;
+
+	//for (unsigned i = 0; i < scene->mNumMeshes; i++)
+	//{
+	//	std::cout << "Mesh " << i
+	//		<< " material "
+	//		<< scene->mMeshes[i]->mMaterialIndex
+	//		<< " gltf materials count " 
+	//		<< classReference.gltfMaterials().size()
+	//		<< std::endl;
+	//}
 
 }
 

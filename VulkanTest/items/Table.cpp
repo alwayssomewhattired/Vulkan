@@ -23,5 +23,5 @@ void Table::m_updatePC(glm::mat4& modelMatrix, const bool rotationEnabled) {
 	modelMatrix = glm::rotate(modelMatrix, glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
 
 	// | scaling
-	modelMatrix = glm::scale(modelMatrix, glm::vec3(0.019f, 0.019f, 0.019f));
+	modelMatrix = glm::scale(modelMatrix, glm::vec3(0.03f, 0.02f, 0.019f));
 }

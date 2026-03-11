@@ -38,6 +38,7 @@ struct ItemInterface {
 
 	virtual std::string& optionalTexturePath() = 0;
 
+	// | indexing: frame * materials.size() + materialIdx
 	virtual std::vector<VkDescriptorSet>& descriptorSets() = 0;
 
 	struct ModelMatrix {

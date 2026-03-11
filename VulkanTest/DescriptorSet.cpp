@@ -72,7 +72,6 @@ void DescriptorSet::createMeshDescriptorSets(ItemInterface& classReference) {
 	auto& descriptorSets = classReference.descriptorSets();
 
 	descriptorSets.resize(materials.size() * Constants::MAX_FRAMES_IN_FLIGHT);
-
 	const std::vector<VkBuffer>& materialUniformBuffers = classReference.materialUniformBuffers();
 
 	std::vector<VkDescriptorSetLayout> layouts(
@@ -98,7 +97,7 @@ void DescriptorSet::createMeshDescriptorSets(ItemInterface& classReference) {
 	for (size_t frame = 0; frame < Constants::MAX_FRAMES_IN_FLIGHT; frame++) {
 		for (size_t matIdx = 0; matIdx < materials.size(); ++matIdx) {
 
-			size_t dsIndex = matIdx;
+			size_t dsIndex = frame * materials.size() + matIdx;
 
 			VkDescriptorSet dstSet = descriptorSets[dsIndex];
 
