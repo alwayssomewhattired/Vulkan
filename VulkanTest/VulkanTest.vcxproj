@@ -29,26 +29,26 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v143</PlatformToolset>
+    <PlatformToolset>v145</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v143</PlatformToolset>
+    <PlatformToolset>v145</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v143</PlatformToolset>
+    <PlatformToolset>v145</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v143</PlatformToolset>
+    <PlatformToolset>v145</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
@@ -102,14 +102,15 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\include\glm-1.0.2;C:\VulkanSDK\1.4.328.1\Include;C:\libs\glfw-3.4.bin.WIN64\include;C:\Users\zacha\Desktop\stb-master\stb-master;C:\include\tinygltf-release;C:\libs\assimp\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\include\glm-1.0.2;C:\VulkanSDK\1.4.328.1\Include;C:\libs\glfw-3.4.bin.WIN64\include;C:\Users\zacha\Desktop\stb-master\stb-master;C:\include\tinygltf-release;C:\libs\assimp\include;C:\Users\zacha\Desktop\VulkanTest\PhysX\physx\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>C:\libs\glfw-3.4.bin.WIN64\lib-vc2022;C:\VulkanSDK\1.4.328.1\Lib;C:\libs\assimp\lib\Debug;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>vulkan-1.lib;glfw3.lib;assimp-vc143-mtd.lib;unit.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>C:\libs\glfw-3.4.bin.WIN64\lib-vc2022;C:\VulkanSDK\1.4.328.1\Lib;C:\libs\assimp\lib\Debug;C:\Users\zacha\Desktop\VulkanTest\PhysX\physx\bin\win.x86_64.vc143.md\debug;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>vulkan-1.lib;glfw3.lib;assimp-vc143-mtd.lib;unit.lib;PhysX_64.lib;PhysXCommon_64.lib;PhysXFoundation_64.lib;PhysXExtensions_static_64.lib;PVDRuntime_64.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -152,6 +153,7 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="MathConfig.hpp" />
     <ClCompile Include="ModelLoad.cpp" />
+    <ClCompile Include="PhysXEngine.cpp" />
     <ClCompile Include="RenderPass.cpp" />
     <ClCompile Include="Shaders.cpp" />
     <ClCompile Include="StorageImageManager.cpp" />
@@ -196,6 +198,7 @@
     <ClInclude Include="items\ItemInterface.h" />
     <ClInclude Include="items\SilentHill3Game.h" />
     <ClInclude Include="ModelLoad.h" />
+    <ClInclude Include="PhysXEngine.h" />
     <ClInclude Include="RenderPass.h" />
     <ClInclude Include="RenderTarget.h" />
     <ClInclude Include="Shaders.h" />

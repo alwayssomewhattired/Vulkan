@@ -131,7 +131,7 @@ void ModelLoad::loadModel(const std::string& path, ItemInterface& classReference
 		throw std::runtime_error(importer.GetErrorString());
 	}
 	classReference.gltfMaterials().resize(scene->mNumMaterials);
-	std::cout << scene->mNumMeshes << "\n";
+
 	for (uint32_t i = 0; i < scene->mNumMeshes; i++) {
 		
 		aiMesh* mesh = scene->mMeshes[i];

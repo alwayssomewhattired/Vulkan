@@ -33,6 +33,7 @@
 #include "items/StringLight.h"
 #include "RenderTarget.h"
 #include "Callbacks.h"
+#include "PhysXEngine.h"
 #include "items/ItemInterface.h"
 #include "items/Table.h"
 #include "items/CozyHouse.h"
@@ -143,6 +144,8 @@ private:
 	std::unique_ptr<DescriptorSet> m_DescriptorSet = nullptr;
 
 	std::unique_ptr<StorageImageManager> m_StorageImageManager = nullptr;
+
+	std::unique_ptr<PhysXEngine> m_PhysXEngine = nullptr;
 
 	/// 
 	///
@@ -273,6 +276,8 @@ private:
 
 		m_CommandBuffer->createCommandBuffers(*m_CommandPool);
 		m_SwapChain->createSyncObjects();
+
+		m_PhysXEngine = std::make_unique<PhysXEngine>();
 
 		std::cout << "Vulkan Engine Initialized\n";
 	}
@@ -557,6 +562,9 @@ private:
 			ubo.proj = glm::perspective(glm::radians(45.0f), 
 				m_SwapChain->swapChainExtent.width / (float)m_SwapChain->swapChainExtent.height, 0.1f, 100.0f);
 			ubo.proj[1][1] *= -1.0f;
+			std::cout << deltaTime << "\n";
+			// | step physics before render
+			m_PhysXEngine->stepPhysics(deltaTime);
 
 			drawFrame();
 		}
