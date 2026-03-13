@@ -552,19 +552,58 @@ private:
 
 			glfwPollEvents();
 
-			if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) g_Camera.ProcessKeyboard(Camera_Movement::FORWARD, deltaTime);
-			if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) g_Camera.ProcessKeyboard(Camera_Movement::BACKWARD, deltaTime);
-			if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) g_Camera.ProcessKeyboard(Camera_Movement::LEFT, deltaTime);
-			if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) g_Camera.ProcessKeyboard(Camera_Movement::RIGHT, deltaTime);
+			// | deprecated.
+			// | physX handles this with velocity
+			//if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) g_Camera.ProcessKeyboard(Camera_Movement::FORWARD, deltaTime);
+			//if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) g_Camera.ProcessKeyboard(Camera_Movement::BACKWARD, deltaTime);
+			//if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) g_Camera.ProcessKeyboard(Camera_Movement::LEFT, deltaTime);
+			//if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) g_Camera.ProcessKeyboard(Camera_Movement::RIGHT, deltaTime);
+
+
+			//if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) m_PhysXEngine->processKeyboard(Camera_Movement::FORWARD, 1,
+			//	g_Camera.GetFront());
+			//else m_PhysXEngine->processKeyboard(Camera_Movement::FORWARD, 0, g_Camera.GetFront());
+
+			//if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) m_PhysXEngine->processKeyboard(Camera_Movement::BACKWARD, 1,
+			//	g_Camera.GetFront());
+			//else m_PhysXEngine->processKeyboard(Camera_Movement::BACKWARD, 0, g_Camera.GetFront());
+
+			//if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) m_PhysXEngine->processKeyboard(Camera_Movement::LEFT, 1,
+			//	g_Camera.GetRight());
+			//else m_PhysXEngine->processKeyboard(Camera_Movement::LEFT, 0, g_Camera.GetRight());
+
+			//if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) m_PhysXEngine->processKeyboard(Camera_Movement::RIGHT, 1,
+			//	g_Camera.GetRight());
+			//else m_PhysXEngine->processKeyboard(Camera_Movement::RIGHT, 0, g_Camera.GetRight());
+
+			glm::vec3 move(0.0f);
+
+			if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+				move += g_Camera.GetFront();
+
+			if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+				move -= g_Camera.GetFront();
+
+			if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+				move += g_Camera.GetRight();
+
+			if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+				move -= g_Camera.GetRight();
+
+			m_PhysXEngine->processKeyboard(move);
+
 			// Now after updating camera, we write UBO for current swapchain image
 			Camera::CameraUBO ubo{};
 			ubo.view = g_Camera.GetViewMatrix();
 			ubo.proj = glm::perspective(glm::radians(45.0f), 
 				m_SwapChain->swapChainExtent.width / (float)m_SwapChain->swapChainExtent.height, 0.1f, 100.0f);
 			ubo.proj[1][1] *= -1.0f;
-			std::cout << deltaTime << "\n";
+
 			// | step physics before render
 			m_PhysXEngine->stepPhysics(deltaTime);
+
+			// | update camera with physx
+			m_PhysXEngine->readTransforms(g_Camera.Position);
 
 			drawFrame();
 		}

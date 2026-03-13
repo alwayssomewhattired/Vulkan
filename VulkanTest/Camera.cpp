@@ -39,6 +39,7 @@
 	//	return glm::vec3(glm::inverse(view)[3]);
 	//}
 
+	// | phyx now handles this
 	void Camera::ProcessKeyboard(Camera_Movement dir, float dt) {
 		float velocity = MovementSpeed * dt;
 

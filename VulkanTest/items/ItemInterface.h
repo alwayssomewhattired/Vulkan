@@ -58,5 +58,7 @@ struct ItemInterface {
 	virtual std::vector<VkDeviceMemory>& materialUniformBuffersMemory() = 0;
 	virtual std::vector<void*>& materialUniformBuffersMapped() = 0;
 
+	virtual std::unique_ptr<PxRigidStatic> collisionBody() = 0;
+
 	virtual ~ItemInterface() = default;
 };
