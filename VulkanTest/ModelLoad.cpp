@@ -41,6 +41,9 @@ void ModelLoad::modelFileParse(const aiScene* scene, aiMesh* mesh, size_t& verte
 	std::vector<Vertex>& vertices, VkIndexType& indexType, std::vector<uint32_t>& indices,
 	ItemInterface& classReference, const uint32_t meshIndex) {
 
+	glm::vec3 min(FLT_MAX);
+	glm::vec3 max(-FLT_MAX);
+
 	for (uint32_t i = 0; i < mesh->mNumVertices; i++) {
 		vertices[i].pos = {
 			mesh->mVertices[i].x,
@@ -85,8 +88,22 @@ void ModelLoad::modelFileParse(const aiScene* scene, aiMesh* mesh, size_t& verte
 		else {
 			vertices[i].bitangent = { 0.0f, 0.0f, 0.0f };
 		}
+
+		min.x = std::min(min.x, vertices[i].pos.x);
+		min.y = std::min(min.y, vertices[i].pos.y);
+		min.z = std::min(min.z, vertices[i].pos.z);
+
+		max.x = std::max(max.x, vertices[i].pos.x);
+		max.y = std::max(max.y, vertices[i].pos.y);
+		max.z = std::max(max.z, vertices[i].pos.z);
+
 	}
 
+	glm::vec3 center = (min + max) * 0.5f;
+	glm::vec3 extents = (max - min) * 0.5f;
+
+	classReference.center() = center;
+	classReference.extents() = extents;
 
 	for (uint32_t i = 0; i < mesh->mNumFaces; i++) {
 		const aiFace& face = mesh->mFaces[i];

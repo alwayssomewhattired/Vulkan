@@ -53,7 +53,7 @@ struct ItemInterface {
 	
 	virtual ModelMatrix& modelMatrix() = 0;
 
-	virtual void updatePC(glm::mat4& modelMatrix, const bool rotationEnabled) = 0;
+	virtual void updatePC() = 0;
 
 	// | contiguous (material index + frame)
 	virtual std::vector<VkBuffer>& materialUniformBuffers() = 0;
@@ -62,6 +62,9 @@ struct ItemInterface {
 
 	virtual bool hasCollision() = 0;
 	virtual physx::PxRigidStatic* collisionBody() = 0;
+
+	virtual glm::vec3& center() = 0;
+	virtual glm::vec3& extents() = 0;
 
 	virtual ~ItemInterface() = default;
 };

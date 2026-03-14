@@ -255,7 +255,10 @@ private:
 		createModel();
 
 		for (auto& item : items) {
-			if (item->hasCollision()) m_PhysXEngine->boxCollider(*item);
+			if (item->hasCollision()) {
+				item->updatePC();
+				m_PhysXEngine->boxCollider(*item);
+			}
 			m_UniformBuffer->createMaterialUniformBuffer(*item);
 		}
 
@@ -462,7 +465,7 @@ private:
 		else {
 			m_UniformBuffer->updateCameraUniformBuffer(currentFrame);
 			for (auto& item : items) {
-				item->updatePC(item->modelMatrix().model, g_renderTarget.rotationEnabled);
+				item->updatePC();
 
 			}
 		}

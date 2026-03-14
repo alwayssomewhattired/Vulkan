@@ -61,32 +61,6 @@ PhysXEngine::PhysXEngine() {
 
 	//house->attachShape(*houseShape);
 
-	//// | impassable object collider
-	//glm::mat4& model = classReference.modelMatrix().model;
-	//glm::vec3 pos = glm::vec3(model[3]);
-	//PxMaterial* computerMaterial = physics->createMaterial(
-	//	0.5f, // static friction
-	//	0.5f, // dynamic friction
-	//	0.5f  // bounciness
-	//);
-
-	//PxBoxGeometry computerGeom(0.5f, 0.5f, 0.5f);
-
-	//PxTransform computerTransform(PxVec3(pos.x, pos.y, pos.z);
-
-	//computer = physics->createRigidStatic(computerTransform);
-
-	//PxShape* computerShape = physics->createShape(computerGeom, *computerMaterial);
-
-	//PxFilterData computerFilterData;
-	//computerFilterData.word0 = CollisionGroups::WORLD;
-	//computerFilterData.word1 = CollisionGroups::PLAYER;
-	//computerShape->setSimulationFilterData(computerFilterData);
-
-	//computer->attachShape(*computerShape);
-	//computerShape->release();
-
-	//scene->addActor(*computer);
 }
 
 void PhysXEngine::stepPhysics(float deltaTime) {
@@ -144,24 +118,13 @@ void PhysXEngine::readTransforms(glm::vec3& cameraPosition) {
 		pose.q.z
 	);
 
-
-	//glm::mat4 view =
-	//	glm::inverse(
-	//		glm::translate(glm::mat4(1.0f), pos) * glm::mat4_cast(rot));
 }
 
 
+// | impassable object collider
 void PhysXEngine::boxCollider(ItemInterface& classReference) {
-	std::cout << "floating\n";
-	// | impassable object collider
 	glm::mat4& model = classReference.modelMatrix().model;
 	glm::vec3 pos = glm::vec3(model[3]);
-
-	// | scale extraction
-	glm::vec3 scale;
-	scale.x = glm::length(glm::vec3(model[0]));
-	scale.y = glm::length(glm::vec3(model[1]));
-	scale.z = glm::length(glm::vec3(model[2]));
 
 	material = physics->createMaterial(
 		0.5f, // static friction
@@ -169,11 +132,17 @@ void PhysXEngine::boxCollider(ItemInterface& classReference) {
 		0.5f  // bounciness
 	);
 
-	std::cout << scale.x << "\n";
-	std::cout << scale.y << "\n";
-	std::cout << scale.z << "\n";
+	glm::vec3 scale(
+		glm::length(glm::vec3(model[0])),
+		glm::length(glm::vec3(model[1])),
+		glm::length(glm::vec3(model[2]))
+	);
 
-	PxBoxGeometry geom(0.5f, 0.5f, 0.5f);
+	PxBoxGeometry geom(
+		classReference.extents().x * scale.x,
+		classReference.extents().y * scale.y,
+		classReference.extents().z * scale.z
+	);
 
 	// | rotation extraction
 	glm::quat rot = glm::quat_cast(model);
@@ -181,12 +150,18 @@ void PhysXEngine::boxCollider(ItemInterface& classReference) {
 	PxQuat q(rot.x, rot.y, rot.z, rot.w);
 	PxTransform transform(PxVec3(pos.x, pos.y, pos.z), q);
 
-	//PxTransform transform(PxVec3(pos.x, pos.y, pos.z));
-
 	auto rigid = classReference.collisionBody();
 	rigid = physics->createRigidStatic(transform);
 
 	PxShape* rigidShape = physics->createShape(geom, *material);
+
+	rigidShape->setLocalPose(
+		PxTransform(PxVec3(
+			classReference.center().x * scale.x,
+			classReference.center().y * scale.y,
+			classReference.center().z * scale.z
+		))
+	);
 
 	PxFilterData filterData;
 	filterData.word0 = CollisionGroups::WORLD;

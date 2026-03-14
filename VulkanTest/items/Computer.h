@@ -60,7 +60,10 @@ public:
 
 	PxRigidStatic* m_collisionBody = nullptr;
 
-	void m_updatePC(glm::mat4& modelMatrix, const bool rotationEnabled);
+	glm::vec3 m_center;
+	glm::vec3 m_extents;
+
+	void m_updatePC();
 
 	// | begin item interface block
 	std::vector<VkBuffer>& vertexBuffer() override {
@@ -119,8 +122,8 @@ public:
 		return m_modelMatrix;
 	}
 
-	void updatePC(glm::mat4& modelMatrix, const bool rotationEnabled) override {
-		m_updatePC(modelMatrix, rotationEnabled);
+	void updatePC() override {
+		m_updatePC();
 	}
 
 	std::vector<VkBuffer>& materialUniformBuffers() override {
@@ -141,6 +144,14 @@ public:
 
 	PxRigidStatic* collisionBody() override {
 		return m_collisionBody;
+	}
+
+	glm::vec3& center() override {
+		return m_center;
+	}
+
+	glm::vec3& extents() override {
+		return m_extents;
 	}
 
 

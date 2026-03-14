@@ -43,7 +43,7 @@ public:
 
 	ModelMatrix m_modelMatrix;
 
-	void m_updatePC(glm::mat4& modelMatrix, const bool rotationEnabled);
+	void m_updatePC();
 
 	struct alignas(16) MaterialUBO {
 		glm::vec4 baseColorFactor;
@@ -56,6 +56,9 @@ public:
 	std::vector<void*> m_materialUniformBuffersMapped;
 
 	PxRigidStatic* m_collisionBody = nullptr;
+
+	glm::vec3 m_center;
+	glm::vec3 m_extents;
 
 	// | begin item interface block
 	std::vector<VkBuffer>& vertexBuffer() override {
@@ -115,8 +118,8 @@ public:
 		return m_modelMatrix;
 	}
 
-	void updatePC(glm::mat4& modelMatrix, const bool rotationEnabled) override {
-		m_updatePC(modelMatrix, rotationEnabled);
+	void updatePC() override {
+		m_updatePC();
 	}
 
 	std::vector<VkBuffer>& materialUniformBuffers() override {
@@ -137,6 +140,14 @@ public:
 
 	PxRigidStatic* collisionBody() override {
 		return m_collisionBody;
+	}
+
+	glm::vec3& center() override {
+		return m_center;
+	}
+
+	glm::vec3& extents() override {
+		return m_extents;
 	}
 
 };
