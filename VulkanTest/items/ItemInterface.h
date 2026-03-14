@@ -1,4 +1,6 @@
 #pragma once
+
+#include <PxPhysicsAPI.h>
 #include <glm/fwd.hpp>
 
 #include "../glm_config.h"
@@ -58,7 +60,8 @@ struct ItemInterface {
 	virtual std::vector<VkDeviceMemory>& materialUniformBuffersMemory() = 0;
 	virtual std::vector<void*>& materialUniformBuffersMapped() = 0;
 
-	virtual std::unique_ptr<PxRigidStatic> collisionBody() = 0;
+	virtual bool hasCollision() = 0;
+	virtual physx::PxRigidStatic* collisionBody() = 0;
 
 	virtual ~ItemInterface() = default;
 };

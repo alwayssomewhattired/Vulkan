@@ -18,6 +18,7 @@
 #include "../glm_config.h"
 #include "../Texture.h"
 #include "../GPUTexture.h"
+#include "../PhysXEngine.h"
 
 class Triangle : public ItemInterface
 {
@@ -66,6 +67,8 @@ public:
 	std::vector<VkBuffer> m_materialUniformBuffers;
 	std::vector<VkDeviceMemory> m_materialUniformBuffersMemory;
 	std::vector<void*> m_materialUniformBuffersMapped;
+
+	PxRigidStatic* m_collisionBody = nullptr;
 
 	std::vector<VkBuffer>& vertexBuffer() override {
 		return m_vertexBuffer;
@@ -137,6 +140,14 @@ public:
 
 	std::vector<void*>& materialUniformBuffersMapped() override {
 		return m_materialUniformBuffersMapped;
+	}
+
+	bool hasCollision() override {
+		return false;
+	}
+
+	PxRigidStatic* collisionBody() override {
+		return m_collisionBody;
 	}
 
 };

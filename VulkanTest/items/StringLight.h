@@ -8,6 +8,7 @@
 #include "ItemInterface.h"
 #include "../Texture.h"
 #include "../GPUTexture.h"
+#include "../PhysXEngine.h"
 
 #include <vulkan/vulkan.h>
 #include <vulkan/vulkan_core.h>
@@ -57,6 +58,8 @@ public:
 	std::vector<VkBuffer> m_materialUniformBuffers;
 	std::vector<VkDeviceMemory> m_materialUniformBuffersMemory;
 	std::vector<void*> m_materialUniformBuffersMapped;
+
+	PxRigidStatic* m_collisionBody = nullptr;
 
 	// | begin item interface block
 	std::vector<VkBuffer>& vertexBuffer() override {
@@ -131,11 +134,15 @@ public:
 		return m_materialUniformBuffersMapped;
 	}
 
-	//size_t m_modelUBOSize = sizeof(m_modelMatrix);
+	bool hasCollision() override {
+		return false;
+	}
+
+	PxRigidStatic* collisionBody() override {
+		return m_collisionBody;
+	}
 
 private:
-
-	// - we need to actually make our shader use this push constants.
 
 	VkDevice& m_device;
 	VkPhysicalDevice& m_physicalDevice;

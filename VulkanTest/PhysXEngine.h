@@ -8,6 +8,7 @@
 
 #include <thread>
 #include <algorithm>
+#include <iostream>
 
 using namespace physx;
 
@@ -24,6 +25,8 @@ public:
 
 
 private:
+
+	PxMaterial* material;
 
 	PxDefaultAllocator allocator;
 	PxDefaultErrorCallback errorCallback;

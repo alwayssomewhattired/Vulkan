@@ -152,34 +152,52 @@ void PhysXEngine::readTransforms(glm::vec3& cameraPosition) {
 
 
 void PhysXEngine::boxCollider(ItemInterface& classReference) {
-
+	std::cout << "floating\n";
 	// | impassable object collider
 	glm::mat4& model = classReference.modelMatrix().model;
 	glm::vec3 pos = glm::vec3(model[3]);
-	PxMaterial* material = physics->createMaterial(
+
+	// | scale extraction
+	glm::vec3 scale;
+	scale.x = glm::length(glm::vec3(model[0]));
+	scale.y = glm::length(glm::vec3(model[1]));
+	scale.z = glm::length(glm::vec3(model[2]));
+
+	material = physics->createMaterial(
 		0.5f, // static friction
 		0.5f, // dynamic friction
 		0.5f  // bounciness
 	);
 
+	std::cout << scale.x << "\n";
+	std::cout << scale.y << "\n";
+	std::cout << scale.z << "\n";
+
 	PxBoxGeometry geom(0.5f, 0.5f, 0.5f);
 
-	PxTransform transform(PxVec3(pos.x, pos.y, pos.z));
+	// | rotation extraction
+	glm::quat rot = glm::quat_cast(model);
+	rot = glm::normalize(rot);
+	PxQuat q(rot.x, rot.y, rot.z, rot.w);
+	PxTransform transform(PxVec3(pos.x, pos.y, pos.z), q);
 
-	auto& rigid = classReference.rigid()
+	//PxTransform transform(PxVec3(pos.x, pos.y, pos.z));
+
+	auto rigid = classReference.collisionBody();
 	rigid = physics->createRigidStatic(transform);
 
-	PxShape * rigidShape = physics->createShape(geom, *material);
+	PxShape* rigidShape = physics->createShape(geom, *material);
 
-	PxFilterData computerFilterData;
-	computerFilterData.word0 = CollisionGroups::WORLD;
-	computerFilterData.word1 = CollisionGroups::PLAYER;
-	rigidShape->setSimulationFilterData(computerFilterData);
+	PxFilterData filterData;
+	filterData.word0 = CollisionGroups::WORLD;
+	filterData.word1 = CollisionGroups::PLAYER;
+	rigidShape->setSimulationFilterData(filterData);
 
 	rigid->attachShape(*rigidShape);
 	rigidShape->release();
 
 	scene->addActor(*rigid);
+
 }
 
 

@@ -8,6 +8,7 @@
 #include "ItemInterface.h"
 #include "../Texture.h"
 #include "../GPUTexture.h"
+#include "../PhysXEngine.h"
 
 #include <vulkan/vulkan.h>
 #include <vulkan/vulkan_core.h>
@@ -56,6 +57,8 @@ class Table : public ItemInterface {
 		std::vector<VkBuffer> m_materialUniformBuffers;
 		std::vector<VkDeviceMemory> m_materialUniformBuffersMemory;
 		std::vector<void*> m_materialUniformBuffersMapped;
+
+		PxRigidStatic* m_collisionBody = nullptr;
 
 		void m_updatePC(glm::mat4& modelMatrix, const bool rotationEnabled);
 
@@ -132,6 +135,13 @@ class Table : public ItemInterface {
 			return m_materialUniformBuffersMapped;
 		}
 
+		bool hasCollision() override {
+			return false;
+		}
+
+		PxRigidStatic* collisionBody() override {
+			return m_collisionBody;
+		}
 
 	private:
 

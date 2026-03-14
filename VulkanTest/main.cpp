@@ -250,10 +250,14 @@ private:
 
 		m_UniformBuffer->createUniformBuffers();
 
+		m_PhysXEngine = std::make_unique<PhysXEngine>();
+
 		createModel();
 
-		for (auto& item : items)
+		for (auto& item : items) {
+			if (item->hasCollision()) m_PhysXEngine->boxCollider(*item);
 			m_UniformBuffer->createMaterialUniformBuffer(*item);
+		}
 
 		m_GraphicsPipeline->createGraphicsPipeline(*m_UniformBuffer);
 
@@ -277,7 +281,6 @@ private:
 		m_CommandBuffer->createCommandBuffers(*m_CommandPool);
 		m_SwapChain->createSyncObjects();
 
-		m_PhysXEngine = std::make_unique<PhysXEngine>();
 
 		std::cout << "Vulkan Engine Initialized\n";
 	}
