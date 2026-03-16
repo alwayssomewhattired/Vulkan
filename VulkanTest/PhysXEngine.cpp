@@ -123,7 +123,7 @@ void PhysXEngine::readTransforms(glm::vec3& cameraPosition) {
 
 // | impassable object collider
 void PhysXEngine::boxCollider(ItemInterface& classReference) {
-	glm::mat4& model = classReference.modelMatrix().model;
+	glm::mat4& model = classReference.modelMatrix.model;
 	glm::vec3 pos = glm::vec3(model[3]);
 
 	material = physics->createMaterial(
@@ -139,9 +139,9 @@ void PhysXEngine::boxCollider(ItemInterface& classReference) {
 	);
 
 	PxBoxGeometry geom(
-		classReference.extents().x * scale.x,
-		classReference.extents().y * scale.y,
-		classReference.extents().z * scale.z
+		classReference.extents.x * scale.x,
+		classReference.extents.y * scale.y,
+		classReference.extents.z * scale.z
 	);
 
 	// | rotation extraction
@@ -150,16 +150,16 @@ void PhysXEngine::boxCollider(ItemInterface& classReference) {
 	PxQuat q(rot.x, rot.y, rot.z, rot.w);
 	PxTransform transform(PxVec3(pos.x, pos.y, pos.z), q);
 
-	auto rigid = classReference.collisionBody();
+	auto rigid = classReference.collisionBody;
 	rigid = physics->createRigidStatic(transform);
 
 	PxShape* rigidShape = physics->createShape(geom, *material);
 
 	rigidShape->setLocalPose(
 		PxTransform(PxVec3(
-			classReference.center().x * scale.x,
-			classReference.center().y * scale.y,
-			classReference.center().z * scale.z
+			classReference.center.x * scale.x,
+			classReference.center.y * scale.y,
+			classReference.center.z * scale.z
 		))
 	);
 

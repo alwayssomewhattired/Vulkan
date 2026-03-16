@@ -255,7 +255,7 @@ private:
 		createModel();
 
 		for (auto& item : items) {
-			if (item->hasCollision()) {
+			if (item->hasCollision) {
 				item->updatePC();
 				m_PhysXEngine->boxCollider(*item);
 			}
@@ -434,7 +434,7 @@ private:
 		uint32_t materialsSize = 0;
 		for (auto* item : items) {
 
-			materialsSize += item->gltfMaterials().size();
+			materialsSize += item->materialData.gltfMaterials.size();
 
 		}
 
@@ -638,8 +638,8 @@ private:
 		vkDestroyBuffer(*m_device, indexBuffer, nullptr);
 		vkFreeMemory(*m_device, indexBufferMemory, nullptr);
 
-		vkDestroyBuffer(*m_device, m_Triangle->vertexBuffer()[0], nullptr);
-		vkFreeMemory(*m_device, m_Triangle->vertexMemory()[0], nullptr);
+		//vkDestroyBuffer(*m_device, m_Triangle->vertexBuffer()[0], nullptr);
+		//vkFreeMemory(*m_device, m_Triangle->vertexMemory()[0], nullptr);
 
 		vkDestroyPipeline(*m_device, m_GraphicsPipeline->graphicsPipeline, nullptr);
 		vkDestroyPipelineLayout(*m_device, m_GraphicsPipeline->pipelineLayout, nullptr);

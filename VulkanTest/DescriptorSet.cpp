@@ -65,14 +65,14 @@ void DescriptorSet::createGlobalDescriptorSets() {
 // | material descriptor set creator
 void DescriptorSet::createMeshDescriptorSets(ItemInterface& classReference) {
 
-	const auto& materials = classReference.gltfMaterials();
+	const auto& materials = classReference.materialData.gltfMaterials;
 
 	const auto& textures = m_Texture.m_gpuTextures;
 
-	auto& descriptorSets = classReference.descriptorSets();
+	auto& descriptorSets = classReference.materialData.descriptorSets;
 
 	descriptorSets.resize(materials.size() * Constants::MAX_FRAMES_IN_FLIGHT);
-	const std::vector<VkBuffer>& materialUniformBuffers = classReference.materialUniformBuffers();
+	const std::vector<VkBuffer>& materialUniformBuffers = classReference.materialData.materialUniformBuffers;
 
 	std::vector<VkDescriptorSetLayout> layouts(
 		descriptorSets.size(),

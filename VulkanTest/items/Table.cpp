@@ -10,19 +10,19 @@ Table::Table(VkDevice& device, VkPhysicalDevice& physicalDevice) :
 	m_device(device), m_physicalDevice(physicalDevice) {
 }
 
-void Table::m_updatePC() {
+void Table::updatePC() {
 	static auto startTime = std::chrono::high_resolution_clock::now();
 	auto currentTime = std::chrono::high_resolution_clock::now();
 	float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
 
-	glm::mat4& modelMatrix = m_modelMatrix.model;
-	modelMatrix = glm::mat4(1.0f);
+	glm::mat4& modelMatrixModel = modelMatrix.model;
+	modelMatrixModel = glm::mat4(1.0f);
 
-	modelMatrix = glm::translate(modelMatrix, glm::vec3(1.7f, 0.0f, 0.75f));
+	modelMatrixModel = glm::translate(modelMatrixModel, glm::vec3(1.7f, 0.0f, 0.75f));
 
-	modelMatrix = glm::rotate(modelMatrix, glm::radians(-90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-	modelMatrix = glm::rotate(modelMatrix, glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+	modelMatrixModel = glm::rotate(modelMatrixModel, glm::radians(-90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+	modelMatrixModel = glm::rotate(modelMatrixModel, glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
 
 	// | scaling
-	modelMatrix = glm::scale(modelMatrix, glm::vec3(0.03f, 0.02f, 0.019f));
+	modelMatrixModel = glm::scale(modelMatrixModel, glm::vec3(0.03f, 0.02f, 0.019f));
 }

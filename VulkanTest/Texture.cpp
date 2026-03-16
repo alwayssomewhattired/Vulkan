@@ -146,7 +146,7 @@ int Texture::uploadAssimpTextureToVulkan(const aiScene* scene, const aiString& p
 			if (!pixels)
 				throw std::runtime_error("failed to decode embedded texture");
 
-			createTextureImage(false, classReference.optionalTexturePath(), pixels,
+			createTextureImage(false, classReference.materialData.optionalTexturePath, pixels,
 				gpuTex, format, texWidth, texHeight);
 
 			stbi_image_free(pixels);
@@ -155,7 +155,7 @@ int Texture::uploadAssimpTextureToVulkan(const aiScene* scene, const aiString& p
 		{
 			// | RAW RGBA pixels
 
-			createTextureImage(false, classReference.optionalTexturePath(), reinterpret_cast<const uint8_t*>(embedded->pcData),
+			createTextureImage(false, classReference.materialData.optionalTexturePath, reinterpret_cast<const uint8_t*>(embedded->pcData),
 				gpuTex, format, embedded->mWidth, embedded->mHeight);
 		}
 	}
@@ -238,7 +238,7 @@ void Texture::buildGPUMaterial(
 		mat.normalTex = getOrCreateGpuTexture(scene, material, aiTextureType_NORMALS, classReference, VK_FORMAT_R8G8B8A8_UNORM);
 	}
 
-	classReference.gltfMaterials()[materialIndex] = mat;
+	classReference.materialData.gltfMaterials[materialIndex] = mat;
 
 	//for (unsigned i = 0; i < scene->mNumMeshes; i++)
 	//{

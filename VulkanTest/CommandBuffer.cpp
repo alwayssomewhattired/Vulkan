@@ -128,12 +128,13 @@ void CommandBuffer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t 
 		}
 		
 		for (auto& item : items) {
-			for (int i = 0; i < item->vertices().size(); i++) { // primitive iteration
-				auto& materialDescriptorSets = item->descriptorSets();
-				VkBuffer vertexBuffers[] = { item->vertexBuffer()[i] };
+			auto& mesh = item->meshData;
+			for (int i = 0; i < mesh.vertices.size(); i++) { // primitive iteration
+				auto& materialDescriptorSets = item->materialData.descriptorSets;
+				VkBuffer vertexBuffers[] = { mesh.vertexBuffer[i] };
 				VkDeviceSize offsets[] = { 0 };
 				vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
-				vkCmdBindIndexBuffer(commandBuffer, item->indexBuffer()[i], 0, item->indexType());
+				vkCmdBindIndexBuffer(commandBuffer, mesh.indexBuffer[i], 0, mesh.indexType);
 				vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.pipelineLayout, 1, 1,
 					&materialDescriptorSets[i], 0, nullptr);
 
@@ -143,7 +144,7 @@ void CommandBuffer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t 
 				};
 
 				PushConstants pc{};
-				pc.model = item->modelMatrix().model;
+				pc.model = item->modelMatrix.model;
 				pc.lightPos = { 0.0f, 2.0f, 3.5f, 1.0f };
 
 				glm::vec4 lightPos = { 0.0f, 2.0f, 3.5f, 1.0f };
@@ -157,7 +158,7 @@ void CommandBuffer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t 
 					&pc
 				);
 
-				vkCmdDrawIndexed(commandBuffer, item->indexCount()[i], 1, 0, 0, 0);
+				vkCmdDrawIndexed(commandBuffer, mesh.indexCount[i], 1, 0, 0, 0);
 			}
 		}
 	}
@@ -245,12 +246,12 @@ void CommandBuffer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t 
 	else if (renderTriangle && !renderMandelbulb) {
 		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.graphicsPipeline);
 
-		VkBuffer triangleVertexBuffers[] = { triangleClass.vertexBuffer()[0]};
+		VkBuffer triangleVertexBuffers[] = { triangleClass.meshData.vertexBuffer[0]};
 		VkDeviceSize triangleOffsets[] = { 0 };
 		vkCmdBindVertexBuffers(commandBuffer, 0, 1, triangleVertexBuffers, triangleOffsets);
 
 		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.pipelineLayout, 0, 1,
-			&triangleClass.descriptorSets()[currentFrame], 0, nullptr);
+			&triangleClass.materialData.descriptorSets[currentFrame], 0, nullptr);
 
 		vkCmdDraw(commandBuffer, 3, 1, 0, 0);
 	}

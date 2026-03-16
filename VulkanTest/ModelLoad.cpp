@@ -102,8 +102,8 @@ void ModelLoad::modelFileParse(const aiScene* scene, aiMesh* mesh, size_t& verte
 	glm::vec3 center = (min + max) * 0.5f;
 	glm::vec3 extents = (max - min) * 0.5f;
 
-	classReference.center() = center;
-	classReference.extents() = extents;
+	classReference.center = center;
+	classReference.extents = extents;
 
 	for (uint32_t i = 0; i < mesh->mNumFaces; i++) {
 		const aiFace& face = mesh->mFaces[i];
@@ -114,7 +114,7 @@ void ModelLoad::modelFileParse(const aiScene* scene, aiMesh* mesh, size_t& verte
 
 	aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
 
-	classReference.gltfPrimitiveMaterialIndices().push_back(mesh->mMaterialIndex);
+	classReference.materialData.gltfPrimitiveMaterialIndices.push_back(mesh->mMaterialIndex);
 
 	m_Texture.buildGPUMaterial(scene, material, mesh->mMaterialIndex, classReference, meshIndex);
 
@@ -122,15 +122,15 @@ void ModelLoad::modelFileParse(const aiScene* scene, aiMesh* mesh, size_t& verte
 
 void ModelLoad::loadModel(const std::string& path, ItemInterface& classReference) {
 
-	auto& vertexBufferManager = classReference.vertexBuffer();
-	auto& vertexMemoryManager = classReference.vertexMemory();
-	auto& indexBufferManager = classReference.indexBuffer();
-	auto& indexMemoryManager = classReference.indexMemory();
-	auto& vertexCountManager = classReference.vertexCount();
-	auto& indexCountManager = classReference.indexCount();
-	auto& indexType = classReference.indexType();
-	auto& verticesManager = classReference.vertices();
-	auto& indicesManager = classReference.indices();
+	auto& vertexBufferManager = classReference.meshData.vertexBuffer;
+	auto& vertexMemoryManager = classReference.meshData.vertexMemory;
+	auto& indexBufferManager = classReference.meshData.indexBuffer;
+	auto& indexMemoryManager = classReference.meshData.indexMemory;
+	auto& vertexCountManager = classReference.meshData.vertexCount;
+	auto& indexCountManager = classReference.meshData.indexCount;
+	auto& indexType = classReference.meshData.indexType;
+	auto& verticesManager = classReference.meshData.vertices;
+	auto& indicesManager = classReference.meshData.indices;
 
 
 	Assimp::Importer importer;
@@ -147,7 +147,7 @@ void ModelLoad::loadModel(const std::string& path, ItemInterface& classReference
 	if (!scene || !scene->HasMeshes()) {
 		throw std::runtime_error(importer.GetErrorString());
 	}
-	classReference.gltfMaterials().resize(scene->mNumMaterials);
+	classReference.materialData.gltfMaterials.resize(scene->mNumMaterials);
 
 	for (uint32_t i = 0; i < scene->mNumMeshes; i++) {
 		

@@ -97,11 +97,11 @@ void UniformBuffer::createMaterialUniformBuffer(ItemInterface& item)
 
 
 	size_t uboSize = sizeof(ItemInterface::MaterialUBO);
-	size_t numMaterials = item.gltfMaterials().size();
+	size_t numMaterials = item.materialData.gltfMaterials.size();
 
-	std::vector<VkBuffer>& uniformBuffers = item.materialUniformBuffers();
-	std::vector<VkDeviceMemory>& uniformBuffersMemory = item.materialUniformBuffersMemory();
-	std::vector<void*>& uniformBuffersMapped = item.materialUniformBuffersMapped();
+	std::vector<VkBuffer>& uniformBuffers = item.materialData.materialUniformBuffers;
+	std::vector<VkDeviceMemory>& uniformBuffersMemory = item.materialData.materialUniformBuffersMemory;
+	std::vector<void*>& uniformBuffersMapped = item.materialData.materialUniformBuffersMapped;
 
 	VkDeviceSize bufferSize = uboSize;
 
@@ -143,7 +143,7 @@ void UniformBuffer::createMaterialUniformBuffer(ItemInterface& item)
 			}
 
 			ItemInterface::MaterialUBO materialUBO{};
-			materialUBO.baseColorFactor = item.gltfMaterials()[i].baseColorFactor;
+			materialUBO.baseColorFactor = item.materialData.gltfMaterials[i].baseColorFactor;
 			memcpy(uniformBuffersMapped[idx], &materialUBO, sizeof(ItemInterface::MaterialUBO));
 
 		}

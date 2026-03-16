@@ -13,58 +13,74 @@
 #include "../Vertex.h"
 #include "../Texture.h"
 
+class Item {
+public:
+	std::vector<VkBuffer> vertexBuffers;
+};
+
 // | blueprint for all items
 struct ItemInterface {
 
-	virtual std::vector<VkBuffer>& vertexBuffer() = 0;
-	virtual std::vector<VkDeviceMemory>& vertexMemory() = 0;
+	struct MeshData {
+		std::vector<VkBuffer> vertexBuffer;
 
-	virtual std::vector<VkBuffer>& indexBuffer() = 0;
-	virtual std::vector<VkDeviceMemory>& indexMemory() = 0;
+		std::vector<VkDeviceMemory> vertexMemory;
 
-	virtual std::vector<size_t>& vertexCount() = 0;
-	virtual std::vector<uint32_t>& indexCount() = 0;
+		std::vector<VkBuffer> indexBuffer;
+		std::vector<VkDeviceMemory> indexMemory;
 
-	virtual VkIndexType& indexType() = 0;
+		std::vector<size_t> vertexCount;
+		std::vector<uint32_t> indexCount;
 
-	// | vertices of primitives
-	virtual std::vector<std::vector<Vertex>>& vertices() = 0;
+		VkIndexType indexType;
 
-	virtual std::vector<std::vector<uint32_t>>& indices() = 0;
+		// | vertices of primitives
+		std::vector<std::vector<Vertex>> vertices;
 
-	// | gltf material indices to gltf textures
-	virtual std::vector<Texture::GLTFMaterial>& gltfMaterials() = 0;
+		std::vector<std::vector<uint32_t>> indices;
+	};
 
-	// | primitive-material indices
-	virtual std::vector<int>& gltfPrimitiveMaterialIndices() = 0;
+	MeshData meshData;
 
-	virtual std::string& optionalTexturePath() = 0;
+	struct MaterialData {
+		// | gltf material indices to gltf textures
+		std::vector<Texture::GLTFMaterial> gltfMaterials;
 
-	// | indexing: frame * materials.size() + materialIdx
-	virtual std::vector<VkDescriptorSet>& descriptorSets() = 0;
+		// | primitive-material indices
+		std::vector<int> gltfPrimitiveMaterialIndices;
+
+		std::string optionalTexturePath;
+
+		// | indexing: frame * materials.size() + materialIdx
+		std::vector<VkDescriptorSet> descriptorSets;
+
+		// | contiguous (material index + frame)
+		std::vector<VkBuffer> materialUniformBuffers;
+		std::vector<VkDeviceMemory> materialUniformBuffersMemory;
+		std::vector<void*> materialUniformBuffersMapped;
+	};
+
+	MaterialData materialData;
+
 
 	struct ModelMatrix {
 		alignas(16) glm::mat4 model;
 	};
 
+	ModelMatrix modelMatrix;
+
 	struct alignas(16) MaterialUBO {
 		glm::vec4 baseColorFactor;
 	};
 	
-	virtual ModelMatrix& modelMatrix() = 0;
-
 	virtual void updatePC() = 0;
 
-	// | contiguous (material index + frame)
-	virtual std::vector<VkBuffer>& materialUniformBuffers() = 0;
-	virtual std::vector<VkDeviceMemory>& materialUniformBuffersMemory() = 0;
-	virtual std::vector<void*>& materialUniformBuffersMapped() = 0;
+	bool hasCollision = false;
+	physx::PxRigidStatic* collisionBody = nullptr;
 
-	virtual bool hasCollision() = 0;
-	virtual physx::PxRigidStatic* collisionBody() = 0;
 
-	virtual glm::vec3& center() = 0;
-	virtual glm::vec3& extents() = 0;
+	glm::vec3 center;
+	glm::vec3 extents;
 
 	virtual ~ItemInterface() = default;
 };
