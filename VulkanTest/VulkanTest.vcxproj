@@ -132,6 +132,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Animation.cpp" />
     <ClCompile Include="AttachmentManager.cpp" />
     <ClCompile Include="Buffer.cpp" />
     <ClCompile Include="Callbacks.cpp" />
@@ -156,6 +157,7 @@
     <ClCompile Include="PhysXEngine.cpp" />
     <ClCompile Include="RenderPass.cpp" />
     <ClCompile Include="Shaders.cpp" />
+    <ClCompile Include="items\Skeleton.cpp" />
     <ClCompile Include="StorageImageManager.cpp" />
     <ClCompile Include="items\StringLight.cpp" />
     <ClCompile Include="SwapChain.cpp" />
@@ -175,6 +177,7 @@
     <None Include="shaders\shader.vert" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Animation.h" />
     <ClInclude Include="AttachmentManager.h" />
     <ClInclude Include="Buffer.h" />
     <ClInclude Include="Callbacks.h" />
@@ -202,6 +205,7 @@
     <ClInclude Include="RenderPass.h" />
     <ClInclude Include="RenderTarget.h" />
     <ClInclude Include="Shaders.h" />
+    <ClInclude Include="items\Skeleton.h" />
     <ClInclude Include="StorageImageManager.h" />
     <ClInclude Include="items\StringLight.h" />
     <ClInclude Include="SwapChain.h" />

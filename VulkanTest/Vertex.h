@@ -12,6 +12,8 @@ struct Vertex {
     glm::vec3 normal;
     glm::vec3 tangent;
     glm::vec3 bitangent;
+    glm::ivec4 boneIDs;
+    glm::vec4 weights;
 
     bool operator==(const Vertex& other) const {
         return pos == other.pos && color == other.color && texCoord == other.texCoord;

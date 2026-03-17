@@ -35,6 +35,15 @@ ModelLoad::ModelLoad(
 {
 }
 
+void ModelLoad::convert(const aiMatrix4x4& m)
+{
+	return glm::transpose(glm::mat4(
+		m.a1, m.a2, m.a3, m.a4,
+		m.b1, m.b2, m.b3, m.b4,
+		m.c1, m.c2, m.c3, m.c4,
+		m.d1, m.d2, m.d3, m.d4
+	));
+}
 
 // | Mutates 'vertices' and 'indices' and 'vertexCount' params
 void ModelLoad::modelFileParse(const aiScene* scene, aiMesh* mesh, size_t& vertexCount, 
@@ -112,12 +121,129 @@ void ModelLoad::modelFileParse(const aiScene* scene, aiMesh* mesh, size_t& verte
 		}
 	}
 
+	// | bones
+
+	auto& boneMap = classReference.skeleton.boneMap;
+	auto& bones = classReference.skeleton.bones;
+
+	for (uint32_t i = 0; i < mesh->mNumBones; i++) {
+		aiBone* aiBone = mesh->mBones[i];
+
+		std::string name = aiBone->mName.C_Str();
+
+		int boneIndex;
+
+		if (boneMap.find(name) == boneMap.end()) {
+			boneIndex = bones.size();
+			boneMap[name] = boneIndex;
+
+			ItemInterface::Bone bone;
+			bone.inverseBindMatrix = convert(aiBone->mOffsetMatrix);
+
+			bones.push_back(bone);
+		}
+		else
+		{
+			boneIndex = boneMap[name];
+		}
+
+		// process vertex weights
+		for (uint32_t w = 0; w < aiBone->mNumWeights; w++) {
+			aiVertexWeight weight = aiBone->mWeights[w];
+
+			int vertexID = weight.mVertexId;
+			float value = weight.mWeight;
+
+			addBoneWeight(vertices[vertexID], boneIndex, value);
+		}
+	}
+
+	// | animation
+
+	aiAnimation* animation = scene->mAnimations[0];
+
+	for (uint32_t i = 0; i < animation->mNumChannels; i++)
+	{
+		aiNodeAnim* channel = animation->mChannels[i];
+
+		std::string boneName = channel->mNodeName.C_Str();
+		int boneIndex = boneMap[boneName];
+
+		AnimationChannel animChannel;
+
+		for (uint32_t k = 0; k < channel->mNumPositionKeys; k++)
+		{
+			aiVectorKey key = channel->mPositionKeys[k];
+
+			animChannel.positions.push_back({
+				key.mTime,
+				convert(key.mValue)
+				});
+		}
+
+		for (uint32_t k = 0; k < channel->mNumRotationKeys; k++)
+		{
+			aiQuatKey key = channel->mRotationKeys[k];
+
+			animChannel.positions.push_back({
+				key.mTime,
+				convert(key.mValue)
+				});
+		}
+
+		for (uint32_t k = 0; k < channel->mNumScalingKeys; k++)
+		{
+			aiVectorKey key = channel->mScalingKeys[k];
+
+			animChannel.positions.push_back({
+				key.mTime,
+				convert(key.mValue)
+				});
+		}
+
+		animationData.channels[boneIndex] = animChannel;
+
+	}
+
 	aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
 
 	classReference.materialData.gltfPrimitiveMaterialIndices.push_back(mesh->mMaterialIndex);
 
 	m_Texture.buildGPUMaterial(scene, material, mesh->mMaterialIndex, classReference, meshIndex);
 
+}
+
+void ModelLoad::addBoneWeight(Vertex& v, int boneID, float weight) {
+
+	for (int i = 0; i < 4; i++) {
+
+		if (v.weights[i] == 0.0f) {
+			v.boneIDs[i] = boneID;
+			v.weights[i] = weight;
+			return;
+		}
+	}
+}
+
+void ModelLoad::processNode(aiNode* node, int parentIndex, ItemInterface& classReference)
+{
+	auto& boneMap = classReference.skeleton.boneMap;
+	auto& bones = classReference.skeleton.bones;
+
+	std::string name = node->mName.C_Str();
+
+	int index = 1;
+
+	if (boneMap.contains(name))
+	{
+		index = boneMap[name];
+		bones[index].parentIndex = parentIndex;
+	}
+
+	for (uint32_t i = 0; i < node->mNumChildren; i++)
+	{
+		processNode(node->mChildren[i], index);
+	}
 }
 
 void ModelLoad::loadModel(const std::string& path, ItemInterface& classReference) {
@@ -141,7 +267,8 @@ void ModelLoad::loadModel(const std::string& path, ItemInterface& classReference
 		aiProcess_GenNormals |
 		aiProcess_CalcTangentSpace |
 		aiProcess_JoinIdenticalVertices |
-		aiProcess_FlipUVs
+		aiProcess_FlipUVs |
+		aiProcess_LimitBoneWeights
 	);
 
 	if (!scene || !scene->HasMeshes()) {
@@ -164,6 +291,7 @@ void ModelLoad::loadModel(const std::string& path, ItemInterface& classReference
 		uint32_t indexCount;
 
 		modelFileParse(scene, mesh, vertexCount, vertices, indexType, indices, classReference, i);
+		processNode(scene->mRootNode, -1, classReference);
 
 
 		// | Vertex 

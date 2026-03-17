@@ -47,5 +47,10 @@ private:
 		std::vector<Vertex>& vertices,
 		VkIndexType& indexType, std::vector<uint32_t>& indices, ItemInterface& classReference, const uint32_t meshIndex);
 
+	void addBoneWeight(Vertex& v, int boneID, float weight);
+	void processNode(aiNode* node, int parentIndex, ItemInterface& classReference);
+	void convert(const aiMatrix4x4& m);
+
+
 	void fileDebug(const tinygltf::Model& model);
 };

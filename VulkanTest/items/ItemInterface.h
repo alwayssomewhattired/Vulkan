@@ -62,6 +62,20 @@ struct ItemInterface {
 
 	MaterialData materialData;
 
+	// bones
+
+	struct Bone {
+		int parentIndex;
+		glm::mat4 inverseBindMatrix;
+	};
+
+	struct Skeleton {
+		std::unordered_map<std::string, int> boneMap;
+		std::vector<Bone> bones;
+	};
+
+	Skeleton skeleton;
+
 
 	struct ModelMatrix {
 		alignas(16) glm::mat4 model;
