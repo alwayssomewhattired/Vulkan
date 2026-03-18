@@ -26,5 +26,7 @@ namespace Constants {
 
 	inline constexpr uint8_t NORMAL_PIXEL[4] = { 128, 128, 255, 255 };
 	inline int DEFAULT_NORMAL_TEXTURE_INDEX = -1;
+
+	inline constexpr int MAX_BONES = 100;
 	
 };

@@ -1,15 +1,23 @@
 #pragma once
 
-#include <glm/fwd.hpp>
-#include <glm/gtx/quaternion.hpp>
-
 #include "glm_config.h"
+//#include <glm/fwd.hpp>
+//#include <glm/glm.hpp>
+//#include <glm/gtc/quaternion.hpp>
+//#include <glm/gtc/matrix_transform.hpp>
+
 #include "items/ItemInterface.h"
 
 #include <vector>
-class Animation
+
+class Animator
 {
 public:
+
+	Animator();
+
+	void initialize(ItemInterface& item);
+	void update(float deltaTime, ItemInterface& item);
 
 	struct PositionKey
 	{
@@ -27,42 +35,39 @@ public:
 		glm::vec3 value;
 	};
 
-	struct AnimationChannel
+	struct AnimatorChannel
 	{
 		std::vector<PositionKey> positions;
 		std::vector<RotationKey> rotations;
 		std::vector<ScaleKey> scales;
 	};
 
-	struct AnimationData
+	struct AnimatorData
 	{
 		float duration;
 		float ticksPerSecond;
 
-		std::vector<AnimationChannel> channels;
+		std::vector<AnimatorChannel> channels;
 	};
 
-	void initialize();
-	void update(float deltaTime);
+	AnimatorData* AnimatorData;
 
 private:
 
 	ItemInterface::Skeleton* skeleton;
-	AnimationData* animation;
 
 	float currentTime = 0.0f;
 
-	std::vector<glm::mat4> boneMatrices;
 	std::vector<glm::mat4> localTransforms;
 	std::vector<glm::mat4> globalTransforms;
 
-	glm::vec3 InterpolatePosition(const AnimationChannel& channel, float time);
-	glm::quat InterpolateRotation(const AnimationChannel& channel, float time);
-	glm::vec3 InterpolateScale(const AnimationChannel& channel, float time);
+	glm::vec3 InterpolatePosition(const AnimatorChannel& channel, float time);
+	glm::quat InterpolateRotation(const AnimatorChannel& channel, float time);
+	glm::vec3 InterpolateScale(const AnimatorChannel& channel, float time);
 
 	void computeLocalTransforms();
 	void computeGlobalTransforms();
-	void computeFinalMatrices();
+	void computeFinalMatrices(ItemInterface& item);
 
 };
 

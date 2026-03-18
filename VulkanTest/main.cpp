@@ -20,6 +20,7 @@
 #include "Image.h"
 #include "Texture.h"
 #include "Shaders.h"
+#include "Animator.h"
 #include "ModelLoad.h"
 #include "Camera.h"
 #include "Vertex.h"
@@ -27,14 +28,14 @@
 #include "UniformBuffer.h"
 #include "DescriptorSet.h"
 #include "StorageImageManager.h"
-#include "items/Triangle.h"
-#include "items/Home.h"
-#include "items/SilentHill3Game.h"
-#include "items/StringLight.h"
 #include "RenderTarget.h"
 #include "Callbacks.h"
 #include "PhysXEngine.h"
 #include "items/ItemInterface.h"
+#include "items/Triangle.h"
+#include "items/Home.h"
+#include "items/SilentHill3Game.h"
+#include "items/StringLight.h"
 #include "items/Table.h"
 #include "items/CozyHouse.h"
 #include "items/Computer.h"
@@ -126,6 +127,8 @@ private:
 
 	std::unique_ptr<Buffer> m_Buffer = nullptr;
 
+	std::unique_ptr<Animator> m_Animation = nullptr;
+
 	std::unique_ptr<ModelLoad> m_ModelLoad = nullptr;
 
 	std::unique_ptr<Image> m_Image = nullptr;
@@ -216,8 +219,10 @@ private:
 
 		m_Texture = std::make_unique<Texture>(*m_Buffer, *m_Image, *m_devices, *m_CommandBuffer);
 
+		m_Animation = std::make_unique<Animator>();
+
 		m_ModelLoad = std::make_unique<ModelLoad>(m_devices->device, m_devices->physicalDevice, m_CommandPool->commandPool,
-			m_devices->graphicsQueue, *m_Buffer, *m_CommandBuffer, *m_Texture);
+			m_devices->graphicsQueue, *m_Buffer, *m_CommandBuffer, *m_Texture, *m_Animation);
 
 		m_Triangle = std::make_unique<Triangle>();
 		m_Home = std::make_unique<Home>();
@@ -259,11 +264,13 @@ private:
 		createModel();
 
 		for (auto& item : items) {
+			m_Animation->initialize(*item);
 			if (item->hasCollision) {
 				item->updatePC();
 				m_PhysXEngine->boxCollider(*item);
 			}
 			m_UniformBuffer->createMaterialUniformBuffer(*item);
+			m_UniformBuffer->createAnimationUniformBuffer(*item);
 		}
 
 		m_GraphicsPipeline->createGraphicsPipeline(*m_UniformBuffer);
@@ -445,11 +452,12 @@ private:
 
 		}
 
-		m_descriptorSetLayout->createDescriptorPool(materialsSize);
+		m_descriptorSetLayout->createDescriptorPool(materialsSize, items.size());
 
 		m_DescriptorSet->createGlobalDescriptorSets();
 		for (auto* item : items) {
 			m_DescriptorSet->createMeshDescriptorSets(*item);
+			m_DescriptorSet->createAnimationDescriptorSets(*item);
 		}
 
 		m_descriptorSetLayout->createComputeDescriptorPool(2);
@@ -565,30 +573,6 @@ private:
 
 			glfwPollEvents();
 
-			// | deprecated.
-			// | physX handles this with velocity
-			//if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) g_Camera.ProcessKeyboard(Camera_Movement::FORWARD, deltaTime);
-			//if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) g_Camera.ProcessKeyboard(Camera_Movement::BACKWARD, deltaTime);
-			//if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) g_Camera.ProcessKeyboard(Camera_Movement::LEFT, deltaTime);
-			//if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) g_Camera.ProcessKeyboard(Camera_Movement::RIGHT, deltaTime);
-
-
-			//if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) m_PhysXEngine->processKeyboard(Camera_Movement::FORWARD, 1,
-			//	g_Camera.GetFront());
-			//else m_PhysXEngine->processKeyboard(Camera_Movement::FORWARD, 0, g_Camera.GetFront());
-
-			//if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) m_PhysXEngine->processKeyboard(Camera_Movement::BACKWARD, 1,
-			//	g_Camera.GetFront());
-			//else m_PhysXEngine->processKeyboard(Camera_Movement::BACKWARD, 0, g_Camera.GetFront());
-
-			//if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) m_PhysXEngine->processKeyboard(Camera_Movement::LEFT, 1,
-			//	g_Camera.GetRight());
-			//else m_PhysXEngine->processKeyboard(Camera_Movement::LEFT, 0, g_Camera.GetRight());
-
-			//if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) m_PhysXEngine->processKeyboard(Camera_Movement::RIGHT, 1,
-			//	g_Camera.GetRight());
-			//else m_PhysXEngine->processKeyboard(Camera_Movement::RIGHT, 0, g_Camera.GetRight());
-
 			glm::vec3 move(0.0f);
 
 			if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
@@ -617,6 +601,12 @@ private:
 
 			// | update camera with physx
 			m_PhysXEngine->readTransforms(g_Camera.Position);
+
+			// | animation
+			for (auto& item : items) {
+				m_Animation->update(deltaTime, *item);
+				m_UniformBuffer->updateAnimationUBO(*item, currentFrame); // bones UBO upload
+			}
 
 			drawFrame();
 		}

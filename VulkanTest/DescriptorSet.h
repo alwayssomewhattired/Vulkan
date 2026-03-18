@@ -21,6 +21,7 @@ public:
 	// | GEOMETRY
 	void createGlobalDescriptorSets();
 	void createMeshDescriptorSets(ItemInterface& classReference);
+	void createAnimationDescriptorSets(ItemInterface& classReference);
 	void createMandelbulbComputeDescriptorSets();
 	void createMandelbulbGraphicsDescriptorSets();
 

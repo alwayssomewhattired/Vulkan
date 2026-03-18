@@ -23,7 +23,8 @@ ModelLoad::ModelLoad(
 	VkQueue graphicsQueue,
 	Buffer& buffer,
 	CommandBuffer& commandBuffer,
-	Texture& texture
+	Texture& texture,
+	Animator& animator
 ) 
 	: device(device),
 	physicalDevice(physicalDevice),
@@ -31,11 +32,13 @@ ModelLoad::ModelLoad(
 	graphicsQueue(graphicsQueue),
 	m_Buffer(buffer),
 	m_CommandBuffer(commandBuffer),
-	m_Texture(texture)
+	m_Texture(texture),
+	m_Animator(animator)
 {
 }
 
-void ModelLoad::convert(const aiMatrix4x4& m)
+// | for inverse-bind-matrix and bind-pose
+glm::mat4 ModelLoad::convert(const aiMatrix4x4& m)
 {
 	return glm::transpose(glm::mat4(
 		m.a1, m.a2, m.a3, m.a4,
@@ -43,6 +46,16 @@ void ModelLoad::convert(const aiMatrix4x4& m)
 		m.c1, m.c2, m.c3, m.c4,
 		m.d1, m.d2, m.d3, m.d4
 	));
+}
+
+glm::vec3 ModelLoad::convert(const aiVector3D& v)
+{
+	return glm::vec3(v.x, v.y, v.z);
+}
+
+glm::quat ModelLoad::convert(const aiQuaternion& q)
+{
+	return glm::quat(q.w, q.x, q.y, q.z);
 }
 
 // | Mutates 'vertices' and 'indices' and 'vertexCount' params
@@ -158,50 +171,52 @@ void ModelLoad::modelFileParse(const aiScene* scene, aiMesh* mesh, size_t& verte
 		}
 	}
 
-	// | animation
+	// | Animator
+	if (scene->HasAnimations()) {
+		aiAnimation* animator = scene->mAnimations[0];
 
-	aiAnimation* animation = scene->mAnimations[0];
-
-	for (uint32_t i = 0; i < animation->mNumChannels; i++)
-	{
-		aiNodeAnim* channel = animation->mChannels[i];
-
-		std::string boneName = channel->mNodeName.C_Str();
-		int boneIndex = boneMap[boneName];
-
-		AnimationChannel animChannel;
-
-		for (uint32_t k = 0; k < channel->mNumPositionKeys; k++)
+		for (uint32_t i = 0; i < animator->mNumChannels; i++)
 		{
-			aiVectorKey key = channel->mPositionKeys[k];
 
-			animChannel.positions.push_back({
-				key.mTime,
-				convert(key.mValue)
-				});
+			aiNodeAnim* channel = animator->mChannels[i];
+
+			std::string boneName = channel->mNodeName.C_Str();
+			int boneIndex = boneMap[boneName];
+
+			Animator::AnimatorChannel animChannel;
+
+			for (uint32_t k = 0; k < channel->mNumPositionKeys; k++)
+			{
+				aiVectorKey key = channel->mPositionKeys[k];
+
+				animChannel.positions.push_back({
+					(float)key.mTime,
+					convert(key.mValue)
+					});
+			}
+
+			for (uint32_t k = 0; k < channel->mNumRotationKeys; k++)
+			{
+				aiQuatKey key = channel->mRotationKeys[k];
+
+				animChannel.rotations.push_back({
+					(float)key.mTime,
+					convert(key.mValue)
+					});
+			}
+
+			for (uint32_t k = 0; k < channel->mNumScalingKeys; k++)
+			{
+				aiVectorKey key = channel->mScalingKeys[k];
+
+				animChannel.scales.push_back({
+					(float)key.mTime,
+					convert(key.mValue)
+					});
+			}
+			// - we crash here
+			m_Animator.AnimatorData->channels[boneIndex] = animChannel;
 		}
-
-		for (uint32_t k = 0; k < channel->mNumRotationKeys; k++)
-		{
-			aiQuatKey key = channel->mRotationKeys[k];
-
-			animChannel.positions.push_back({
-				key.mTime,
-				convert(key.mValue)
-				});
-		}
-
-		for (uint32_t k = 0; k < channel->mNumScalingKeys; k++)
-		{
-			aiVectorKey key = channel->mScalingKeys[k];
-
-			animChannel.positions.push_back({
-				key.mTime,
-				convert(key.mValue)
-				});
-		}
-
-		animationData.channels[boneIndex] = animChannel;
 
 	}
 
@@ -242,7 +257,7 @@ void ModelLoad::processNode(aiNode* node, int parentIndex, ItemInterface& classR
 
 	for (uint32_t i = 0; i < node->mNumChildren; i++)
 	{
-		processNode(node->mChildren[i], index);
+		processNode(node->mChildren[i], index, classReference);
 	}
 }
 

@@ -27,7 +27,11 @@ public:
 
 	void updateCameraUniformBuffer(uint32_t currentImage);
 
+	void createAnimationUniformBuffer(ItemInterface& item);
+
 	void updateMandelbulbUBO(uint32_t currentImage);
+
+	void updateAnimationUBO(ItemInterface& item, uint32_t currentFrame);
 
 	uint32_t maxPCSize;
 	uint32_t cameraUBOSize;

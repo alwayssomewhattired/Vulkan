@@ -76,6 +76,13 @@ struct ItemInterface {
 
 	Skeleton skeleton;
 
+	std::vector<VkDescriptorSet> animationDescriptorSets;
+
+	std::vector<VkBuffer> animationUniformBuffers;
+	std::vector<VkDeviceMemory> animationUniformBuffersMemory;
+	std::vector<void*> animationUniformBuffersMapped;
+
+	std::vector<glm::mat4> boneMatrices;
 
 	struct ModelMatrix {
 		alignas(16) glm::mat4 model;

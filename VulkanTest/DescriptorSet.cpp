@@ -153,6 +153,58 @@ void DescriptorSet::createMeshDescriptorSets(ItemInterface& classReference) {
 	}
 }
 
+void DescriptorSet::createAnimationDescriptorSets(ItemInterface& classReference) {
+
+	auto& descriptorSets = classReference.animationDescriptorSets;
+
+	descriptorSets.resize(Constants::MAX_FRAMES_IN_FLIGHT);
+	const std::vector<VkBuffer>& animationUniformBuffers = classReference.animationUniformBuffers;
+
+	std::vector<VkDescriptorSetLayout> layouts(
+		descriptorSets.size(),
+		m_descriptorSetLayout.animationDescriptorSetLayout
+	);
+
+	VkDescriptorSetAllocateInfo allocInfo{};
+	allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+	allocInfo.descriptorPool = m_descriptorSetLayout.descriptorPool;
+	allocInfo.descriptorSetCount = static_cast<uint32_t>(descriptorSets.size());
+	allocInfo.pSetLayouts = layouts.data();
+	if (vkAllocateDescriptorSets(
+		m_Devices.device,
+		&allocInfo,
+		descriptorSets.data()) != VK_SUCCESS)
+	{
+		throw std::runtime_error("failed to allocate descriptor sets!");
+	}
+
+
+
+	for (size_t frame = 0; frame < Constants::MAX_FRAMES_IN_FLIGHT; frame++) {
+
+		VkDescriptorSet dstSet = descriptorSets[frame];
+
+		VkDescriptorBufferInfo animationBufferInfo{};
+		animationBufferInfo.buffer = animationUniformBuffers[frame];
+		animationBufferInfo.offset = 0;
+		animationBufferInfo.range = sizeof(classReference.boneMatrices);
+
+		VkWriteDescriptorSet descriptorWrites{};
+
+		descriptorWrites.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		descriptorWrites.dstSet = dstSet;
+		descriptorWrites.dstBinding = 0;
+		descriptorWrites.dstArrayElement = 0;
+		descriptorWrites.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		descriptorWrites.descriptorCount = 1;
+		descriptorWrites.pBufferInfo = &animationBufferInfo;
+
+		vkUpdateDescriptorSets(m_Devices.device, 1, &descriptorWrites,
+			0, nullptr);
+
+	}
+}
+
 void DescriptorSet::createMandelbulbComputeDescriptorSets() {
 
 	mandelbulbComputeDescriptorSets.resize(Constants::MAX_FRAMES_IN_FLIGHT);

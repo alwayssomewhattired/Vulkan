@@ -132,7 +132,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="Animation.cpp" />
+    <ClCompile Include="Animator.cpp" />
     <ClCompile Include="AttachmentManager.cpp" />
     <ClCompile Include="Buffer.cpp" />
     <ClCompile Include="Callbacks.cpp" />
@@ -177,7 +177,7 @@
     <None Include="shaders\shader.vert" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Animation.h" />
+    <ClInclude Include="Animator.h" />
     <ClInclude Include="AttachmentManager.h" />
     <ClInclude Include="Buffer.h" />
     <ClInclude Include="Callbacks.h" />

@@ -56,7 +56,25 @@ void descriptorSetLayout::createMeshdescriptorSetLayout() {
 		throw std::runtime_error("failed to create descriptor set layout!");
 }
 
-void descriptorSetLayout::createDescriptorPool(uint32_t materialCount) {
+void descriptorSetLayout::createAnimationDescriptorSetLayout() {
+
+	VkDescriptorSetLayoutBinding animationBinding{};
+	animationBinding.binding = 0;
+	animationBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	animationBinding.descriptorCount = 1;
+	animationBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+	animationBinding.pImmutableSamplers = nullptr;
+
+	VkDescriptorSetLayoutCreateInfo layoutInfo{};
+	layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+	layoutInfo.bindingCount = 1;
+	layoutInfo.pBindings = &animationBinding;
+
+	if (vkCreateDescriptorSetLayout(m_Devices.device, &layoutInfo, nullptr, &animationDescriptorSetLayout) != VK_SUCCESS)
+		throw std::runtime_error("failed to create descriptor set layout!");
+}
+
+void descriptorSetLayout::createDescriptorPool(uint32_t materialCount, uint32_t numberModels) {
 
 	uint32_t frames = Constants::MAX_FRAMES_IN_FLIGHT;
 
@@ -65,10 +83,10 @@ void descriptorSetLayout::createDescriptorPool(uint32_t materialCount) {
 
 	std::array<VkDescriptorPoolSize, 2> poolSizes{};
 
-	// camera UBO + material UBOs
+	// camera UBO + material UBOs + anim UBOs
 	poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 	poolSizes[0].descriptorCount =
-		globalSetCount + materialSetCount;
+		globalSetCount + materialSetCount + numberModels;
 
 	// material textures
 	poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;

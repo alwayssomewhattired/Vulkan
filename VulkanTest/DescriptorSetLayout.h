@@ -14,10 +14,12 @@ public:
 	descriptorSetLayout(Devices& devices);
 	void createGlobalDescriptorSetLayout();
 	void createMeshdescriptorSetLayout();
-	void createDescriptorPool(uint32_t materialCount);
+	void createAnimationDescriptorSetLayout();
+	void createDescriptorPool(uint32_t materialCount, uint32_t numberModels);
 
 	VkDescriptorSetLayout globalDescriptorSetLayout;
 	VkDescriptorSetLayout materialDescriptorSetLayout;
+	VkDescriptorSetLayout animationDescriptorSetLayout;
 
 	VkDescriptorPool descriptorPool;
 	VkDescriptorPool computeDescriptorPool;

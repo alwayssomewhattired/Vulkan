@@ -18,6 +18,7 @@
 #include "CommandBuffer.h"
 #include "Texture.h"
 #include "GPUTexture.h"
+#include "Animator.h"
 
 // | model loader
 class ModelLoad
@@ -25,7 +26,7 @@ class ModelLoad
 public:
 
 	ModelLoad(VkDevice device, VkPhysicalDevice physicalDevice, VkCommandPool commandPool, VkQueue graphicsQueue,
-		Buffer& buffer, CommandBuffer& commandBuffer, Texture& texture
+		Buffer& buffer, CommandBuffer& commandBuffer, Texture& texture, Animator& animator
 		);
 
 	// | loads model and fills in class
@@ -42,6 +43,7 @@ private:
 	Buffer& m_Buffer;
 	CommandBuffer& m_CommandBuffer;
 	Texture& m_Texture; 
+	Animator& m_Animator;
 
 	void modelFileParse(const aiScene* scene, aiMesh* mesh, size_t& vertexCount, 
 		std::vector<Vertex>& vertices,
@@ -49,7 +51,10 @@ private:
 
 	void addBoneWeight(Vertex& v, int boneID, float weight);
 	void processNode(aiNode* node, int parentIndex, ItemInterface& classReference);
-	void convert(const aiMatrix4x4& m);
+
+	glm::mat4 convert(const aiMatrix4x4& m);
+	glm::vec3 convert(const aiVector3D& v);
+	glm::quat convert(const aiQuaternion& q);
 
 
 	void fileDebug(const tinygltf::Model& model);

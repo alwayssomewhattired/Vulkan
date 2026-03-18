@@ -117,7 +117,7 @@
     <ClCompile Include="items\Skeleton.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Animation.cpp">
+    <ClCompile Include="Animator.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -241,7 +241,7 @@
     <ClInclude Include="items\Skeleton.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Animation.h">
+    <ClInclude Include="Animator.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
