@@ -3,14 +3,14 @@
 Animator::Animator() {};
 
 void Animator::initialize(ItemInterface& item) {
-	int count = skeleton->bones.size();
+	int count = item.skeleton.bones.size();
 
 	item.boneMatrices.resize(count);
-	localTransforms.resize(count);
-	globalTransforms.resize(count);
+	item.localTransforms.resize(count);
+	item.globalTransforms.resize(count);
 }
 
-glm::vec3 Animator::InterpolatePosition(const AnimatorChannel& channel, float time)
+glm::vec3 Animator::InterpolatePosition(const AnimatorStruct::AnimatorChannel& channel, float time)
 {
 	if (channel.positions.size() == 1)
 		return channel.positions[0].value;
@@ -30,7 +30,7 @@ glm::vec3 Animator::InterpolatePosition(const AnimatorChannel& channel, float ti
 	return channel.positions.back().value;
 }
 
-glm::quat Animator::InterpolateRotation(const AnimatorChannel& channel, float time)
+glm::quat Animator::InterpolateRotation(const AnimatorStruct::AnimatorChannel& channel, float time)
 {
 	if (channel.rotations.size() == 1)
 		return glm::normalize(channel.rotations[0].value);
@@ -57,7 +57,7 @@ glm::quat Animator::InterpolateRotation(const AnimatorChannel& channel, float ti
 	return glm::normalize(channel.rotations.back().value);
 }
 
-glm::vec3 Animator::InterpolateScale(const AnimatorChannel& channel, float time)
+glm::vec3 Animator::InterpolateScale(const AnimatorStruct::AnimatorChannel& channel, float time)
 {
 	if (channel.scales.size() == 1)
 		return channel.scales[0].value;
@@ -77,13 +77,14 @@ glm::vec3 Animator::InterpolateScale(const AnimatorChannel& channel, float time)
 	return channel.scales.back().value;
 }
 
-void Animator::computeLocalTransforms()
+void Animator::computeLocalTransforms(ItemInterface& item)
 {
-	int boneCount = skeleton->bones.size();
+	int boneCount = item.skeleton.bones.size();
 
 	for (int i = 0; i < boneCount; i++)
 	{
-		const AnimatorChannel& channel = AnimatorData->channels[i];
+		const AnimatorStruct::AnimatorChannel& channel = item.animatorData.channels[i];
+		auto& currentTime = item.currentTimeAnim;
 
 		glm::vec3 pos = InterpolatePosition(channel, currentTime);
 		glm::quat rot = InterpolateRotation(channel, currentTime);
@@ -93,43 +94,43 @@ void Animator::computeLocalTransforms()
 		glm::mat4 R = glm::toMat4(rot);
 		glm::mat4 S = glm::scale(glm::mat4(1.0f), scale);
 
-		localTransforms[i] = T * R * S;
+		item.localTransforms[i] = T * R * S;
 	}
 
 }
 
-void Animator::computeGlobalTransforms()
+void Animator::computeGlobalTransforms(ItemInterface& item)
 {
-	int boneCount = skeleton->bones.size();
+	int boneCount = item.skeleton.bones.size();
 
 	for (int i = 0; i < boneCount; i++)
 	{
-		int parent = skeleton->bones[i].parentIndex;
+		int parent = item.skeleton.bones[i].parentIndex;
 
 		if (parent < 0)
-			globalTransforms[i] = localTransforms[i];
+			item.globalTransforms[i] = item.localTransforms[i];
 		else
-			globalTransforms[i] = globalTransforms[parent] * localTransforms[i];
+			item.globalTransforms[i] = item.globalTransforms[parent] * item.localTransforms[i];
 	}
 }
 
 void Animator::computeFinalMatrices(ItemInterface& item)
 {
-	int boneCount = skeleton->bones.size();
+	int boneCount = item.skeleton.bones.size();
 
 	for (int i = 0; i < boneCount; i++)
 	{
-		item.boneMatrices[i] = globalTransforms[i] * skeleton->bones[i].inverseBindMatrix;
+		item.boneMatrices[i] = item.globalTransforms[i] * item.skeleton.bones[i].inverseBindMatrix;
 	}
 }
 
 void Animator::update(float deltaTime, ItemInterface& item) {
-	float tps = AnimatorData->ticksPerSecond != 0 ? AnimatorData->ticksPerSecond : 25.0f;
+	float tps = item.animatorData.ticksPerSecond != 0 ? item.animatorData.ticksPerSecond : 25.0f;
 
-	currentTime += deltaTime * tps;
-	currentTime = fmod(currentTime, AnimatorData->duration);
+	item.currentTimeAnim += deltaTime * tps;
+	item.currentTimeAnim = fmod(item.currentTimeAnim, item.animatorData.duration);
 
-	computeLocalTransforms();
-	computeGlobalTransforms();
+	computeLocalTransforms(item);
+	computeGlobalTransforms(item);
 	computeFinalMatrices(item);
 }

@@ -177,6 +177,7 @@
     <None Include="shaders\shader.vert" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="animation\AnimatorStruct.h" />
     <ClInclude Include="Animator.h" />
     <ClInclude Include="AttachmentManager.h" />
     <ClInclude Include="Buffer.h" />

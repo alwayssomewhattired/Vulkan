@@ -125,9 +125,10 @@ void GraphicsPipeline::createGraphicsPipeline(UniformBuffer& uniformBuffer) {
 	pushConstantRanges.offset = 0;
 	pushConstantRanges.size = sizeof(glm::mat4) + sizeof(glm::vec4);
 
-	std::array<VkDescriptorSetLayout, 2> dsLayouts = {
+	std::array<VkDescriptorSetLayout, 3> dsLayouts = {
 		m_descriptorSetLayout.globalDescriptorSetLayout,
-		m_descriptorSetLayout.materialDescriptorSetLayout
+		m_descriptorSetLayout.materialDescriptorSetLayout,
+		m_descriptorSetLayout.animationDescriptorSetLayout
 	};
 	VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
 	pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;

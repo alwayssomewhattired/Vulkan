@@ -8,9 +8,9 @@ layout(set = 0, binding = 0) uniform CameraUBO {
 
 } camera;
 
-layout(set = 1, binding = 0) uniform BonesUBO {
+layout(set = 2, binding = 0) uniform BonesUBO {
     mat4 bones[100];
-} bones;
+} bonesUBO;
 
 // | ignore the red underlines
 layout(push_constant) uniform ModelLightPC {
@@ -37,23 +37,41 @@ layout(location = 5) out mat3 fragTBN;
 void main() {
 
     // | animation
-    mat4 skinMatrix = 
-        inWeights.x * bones[inBoneIDs.x] +
-        inWeights.y * bones[inBoneIDs.y] +
-        inWeights.z * bones[inBoneIDs.z] +
-        inWeights.w * bones[inBoneIDs.w];
-    vec4 skinnedPos = skinMatrix * vec4(inPosition, 1.0);
+
+    mat4 skinMatrix = mat4(0.0);
+    float totalWeight = 0.0;
+
+    for (int i = 0; i < 4; i++) {
+        int id = inBoneIDs[i];
+        float w = inWeights[i];
+
+        if (id >= 0 && w > 0.0) {
+            skinMatrix += w * bonesUBO.bones[id];
+            totalWeight += w;
+        }
+    }
+
+    if (totalWeight == 0.0) {
+        skinMatrix = mat4(1.0);
+    }
+
+    mat3 skinMat3 = mat3(skinMatrix);
+
+    vec3 skinnedNormal = normalize(skinMat3 * inNormal);
+    vec3 skinnedTangent = normalize(skinMat3 * inTangent);
+    vec3 skinnedBitangent = normalize(skinMat3 * inBitangent);
     
     // | lighting
-    vec3 T = normalize(mat3(modelPC.model) * inTangent);
-    vec3 B = normalize(mat3(modelPC.model) * inBitangent);
-    vec3 N = normalize(mat3(modelPC.model) * inNormal);
-//    vec3 B = cross(N, T) * inTangent.w;
+    vec3 T = normalize(mat3(modelPC.model) * skinnedTangent);
+    vec3 B = normalize(mat3(modelPC.model) * skinnedBitangent);
+    vec3 N = normalize(mat3(modelPC.model) * skinnedNormal);
+
    fragTBN = mat3(T, B, N);
 
-    vec4 worldPos = modelPC.model * vec4(inPosition, 1.0);
+    vec4 skinnedPos = skinMatrix * vec4(inPosition, 1.0);
+    vec4 worldPos = modelPC.model * skinnedPos;
 
-    gl_Position = camera.proj * camera.view * worldPos * skinnedPos;
+    gl_Position = camera.proj * camera.view * worldPos;
 
     fragColor = inColor;
     fragTextCoord = inTextCoord;
@@ -62,7 +80,7 @@ void main() {
     // | normal transform
     mat3 normalMatrix = transpose(inverse(mat3(modelPC.model)));
 
-    fragNormal = normalize(normalMatrix * inNormal);
+    fragNormal = normalize(normalMatrix * skinnedNormal);
 
     fragCameraPos = camera.pos.xyz;
 }

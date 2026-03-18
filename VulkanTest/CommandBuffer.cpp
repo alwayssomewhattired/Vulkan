@@ -127,9 +127,14 @@ void CommandBuffer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t 
 				&descriptorSet.globalDescriptorSets[i], 0, nullptr);
 		}
 		
-		for (auto& item : items) {
-			static int count = 0;
+		for (size_t itemIndex = 0; itemIndex < items.size(); itemIndex++) {
+			auto& item = items[itemIndex];
 			auto& mesh = item->meshData;
+
+			const auto& animationDescriptorSets = item->animationDescriptorSets;
+			vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.pipelineLayout, 2, 1,
+				&animationDescriptorSets[0], 0, nullptr);
+
 			for (int i = 0; i < mesh.vertices.size(); i++) { // primitive iteration
 				auto& materialDescriptorSets = item->materialData.descriptorSets;
 				VkBuffer vertexBuffers[] = { mesh.vertexBuffer[i] };
@@ -161,14 +166,6 @@ void CommandBuffer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t 
 
 				vkCmdDrawIndexed(commandBuffer, mesh.indexCount[i], 1, 0, 0, 0);
 			}
-
-			// | animation
-			// - probably should be in primitive loop
-			const auto& animationDescriptorSets = item->animationDescriptorSets;
-			vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.pipelineLayout, 2, 1,
-				&animationDescriptorSets[count], 0, nullptr);
-
-			count++;
 		}
 	}
 	// mandelbulb

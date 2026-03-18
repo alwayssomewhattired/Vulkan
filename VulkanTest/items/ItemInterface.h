@@ -12,6 +12,7 @@
 
 #include "../Vertex.h"
 #include "../Texture.h"
+#include "../animation/AnimatorStruct.h"
 
 class Item {
 public:
@@ -63,18 +64,10 @@ struct ItemInterface {
 	MaterialData materialData;
 
 	// bones
+	//
 
-	struct Bone {
-		int parentIndex;
-		glm::mat4 inverseBindMatrix;
-	};
-
-	struct Skeleton {
-		std::unordered_map<std::string, int> boneMap;
-		std::vector<Bone> bones;
-	};
-
-	Skeleton skeleton;
+	//
+	AnimatorStruct::Skeleton skeleton;
 
 	std::vector<VkDescriptorSet> animationDescriptorSets;
 
@@ -83,6 +76,13 @@ struct ItemInterface {
 	std::vector<void*> animationUniformBuffersMapped;
 
 	std::vector<glm::mat4> boneMatrices;
+
+	float currentTimeAnim = 0.0f;
+
+	std::vector<glm::mat4> localTransforms;
+	std::vector<glm::mat4> globalTransforms;
+
+	AnimatorStruct::AnimatorData animatorData;
 
 	struct ModelMatrix {
 		alignas(16) glm::mat4 model;

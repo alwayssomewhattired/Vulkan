@@ -245,6 +245,7 @@ private:
 		m_SwapChain->createImageViews(*m_Image);
 
 		m_descriptorSetLayout->createGlobalDescriptorSetLayout();
+		m_descriptorSetLayout->createAnimationDescriptorSetLayout();
 		m_descriptorSetLayout->createMeshdescriptorSetLayout();
 		m_descriptorSetLayout->createMandelbulbComputedescriptorSetLayout();
 		m_descriptorSetLayout->createMandelbulbGraphicsdescriptorSetLayout();
@@ -430,7 +431,7 @@ private:
 
 		m_ModelLoad->loadModel("models/computer/source/myComputer.glb", *m_Computer);
 
-		m_ModelLoad->loadModel("models/skeleton/skeleton_static.FBX", *m_Skeleton);
+		m_ModelLoad->loadModel("models/skeleton/skeleton_animated.FBX", *m_Skeleton);
 
 
 

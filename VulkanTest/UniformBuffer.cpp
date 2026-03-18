@@ -242,17 +242,18 @@ void UniformBuffer::updateMandelbulbUBO(uint32_t currentImage)
 
 void UniformBuffer::updateAnimationUBO(ItemInterface& item, uint32_t currentFrame)
 {
-	void* mapped = item.animationUniformBuffersMapped[currentFrame];
+
+	void* mapped = item.animationUniformBuffersMapped[0];
 	auto& boneMatrices = item.boneMatrices;
 	size_t count = boneMatrices.size();
 
 	// | copy real bone data
 	memcpy(mapped, boneMatrices.data(), sizeof(glm::mat4) * count);
-
 	// | fill in bone data if empty
 	glm::mat4* matrices = (glm::mat4*)mapped;
 	for (size_t i = count; i < Constants::MAX_BONES; i++)
 	{
 		matrices[i] = glm::mat4(1.0f);
 	}
+
 }

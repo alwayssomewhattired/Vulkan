@@ -111,6 +111,7 @@ void ModelLoad::modelFileParse(const aiScene* scene, aiMesh* mesh, size_t& verte
 			vertices[i].bitangent = { 0.0f, 0.0f, 0.0f };
 		}
 
+
 		min.x = std::min(min.x, vertices[i].pos.x);
 		min.y = std::min(min.y, vertices[i].pos.y);
 		min.z = std::min(min.z, vertices[i].pos.z);
@@ -149,8 +150,9 @@ void ModelLoad::modelFileParse(const aiScene* scene, aiMesh* mesh, size_t& verte
 		if (boneMap.find(name) == boneMap.end()) {
 			boneIndex = bones.size();
 			boneMap[name] = boneIndex;
+			
 
-			ItemInterface::Bone bone;
+			AnimatorStruct::Bone bone;
 			bone.inverseBindMatrix = convert(aiBone->mOffsetMatrix);
 
 			bones.push_back(bone);
@@ -171,8 +173,11 @@ void ModelLoad::modelFileParse(const aiScene* scene, aiMesh* mesh, size_t& verte
 		}
 	}
 
+	classReference.animatorData.channels.resize(boneMap.size());
+
 	// | Animator
 	if (scene->HasAnimations()) {
+		// | selects animation from list
 		aiAnimation* animator = scene->mAnimations[0];
 
 		for (uint32_t i = 0; i < animator->mNumChannels; i++)
@@ -181,9 +186,14 @@ void ModelLoad::modelFileParse(const aiScene* scene, aiMesh* mesh, size_t& verte
 			aiNodeAnim* channel = animator->mChannels[i];
 
 			std::string boneName = channel->mNodeName.C_Str();
-			int boneIndex = boneMap[boneName];
+			auto it = boneMap.find(boneName);
+			if (it == boneMap.end())
+			{
+				continue;
+			}
+			int boneIndex = it->second;
 
-			Animator::AnimatorChannel animChannel;
+			AnimatorStruct::AnimatorChannel animChannel;
 
 			for (uint32_t k = 0; k < channel->mNumPositionKeys; k++)
 			{
@@ -214,11 +224,18 @@ void ModelLoad::modelFileParse(const aiScene* scene, aiMesh* mesh, size_t& verte
 					convert(key.mValue)
 					});
 			}
-			// - we crash here
-			m_Animator.AnimatorData->channels[boneIndex] = animChannel;
+
+			classReference.animatorData.channels[boneIndex] = animChannel;
 		}
 
+		classReference.animatorData.duration = (float)animator->mDuration;
+		classReference.animatorData.ticksPerSecond =
+			animator->mTicksPerSecond != 0.0
+			? (float)animator->mTicksPerSecond
+			: 25.0f; // fallback
+
 	}
+
 
 	aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
 
@@ -272,7 +289,6 @@ void ModelLoad::loadModel(const std::string& path, ItemInterface& classReference
 	auto& indexType = classReference.meshData.indexType;
 	auto& verticesManager = classReference.meshData.vertices;
 	auto& indicesManager = classReference.meshData.indices;
-
 
 	Assimp::Importer importer;
 

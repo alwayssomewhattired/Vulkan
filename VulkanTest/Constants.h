@@ -28,5 +28,6 @@ namespace Constants {
 	inline int DEFAULT_NORMAL_TEXTURE_INDEX = -1;
 
 	inline constexpr int MAX_BONES = 100;
+	inline constexpr int MAX_BONES_INFLUENCE = 4;
 	
 };
