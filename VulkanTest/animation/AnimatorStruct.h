@@ -17,6 +17,7 @@ struct AnimatorStruct {
 		// | bone-name to bone-index
 		std::unordered_map<std::string, int> boneMap;
 		std::vector<Bone> bones;
+		glm::mat4 globalInverseTransform;
 	};
 
 	struct PositionKey

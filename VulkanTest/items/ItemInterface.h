@@ -75,6 +75,7 @@ struct ItemInterface {
 	std::vector<VkDeviceMemory> animationUniformBuffersMemory;
 	std::vector<void*> animationUniformBuffersMapped;
 
+	// | for UBO (final bone matrices)
 	std::vector<glm::mat4> boneMatrices;
 
 	float currentTimeAnim = 0.0f;

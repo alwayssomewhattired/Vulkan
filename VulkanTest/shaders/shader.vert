@@ -68,7 +68,10 @@ void main() {
 
    fragTBN = mat3(T, B, N);
 
-    vec4 skinnedPos = skinMatrix * vec4(inPosition, 1.0);
+//    vec4 skinnedPos = skinMatrix * vec4(inPosition, 1.0);
+
+    vec4 skinnedPos = bonesUBO.bones[0] * vec4(inPosition, 1.0);
+//    vec4 skinnedPos = vec4(inPosition, 1.0);
     vec4 worldPos = modelPC.model * skinnedPos;
 
     gl_Position = camera.proj * camera.view * worldPos;

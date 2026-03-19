@@ -99,19 +99,39 @@ void Animator::computeLocalTransforms(ItemInterface& item)
 
 }
 
+glm::mat4 computeGlobal(int i, ItemInterface& item) {
+
+	int parent = item.skeleton.bones[i].parentIndex;
+
+	if (parent < 0)
+		return item.localTransforms[i];
+
+	return computeGlobal(parent, item) * item.localTransforms[i];
+}
+
 void Animator::computeGlobalTransforms(ItemInterface& item)
 {
 	int boneCount = item.skeleton.bones.size();
+	for (int i = 0; i < boneCount; i++) {
+		item.globalTransforms[i] = computeGlobal(i, item);
 
-	for (int i = 0; i < boneCount; i++)
-	{
-		int parent = item.skeleton.bones[i].parentIndex;
-
-		if (parent < 0)
-			item.globalTransforms[i] = item.localTransforms[i];
-		else
-			item.globalTransforms[i] = item.globalTransforms[parent] * item.localTransforms[i];
+		//const glm::mat4& m = item.globalTransforms[i];
+		//std::cout << m[0][0] << " " << m[1][1] << " " << m[2][2] << " " << m[3][3] << "\n";
 	}
+
+	//int parent = item.skeleton.bones[i].parentIndex;
+
+	//for (int i = 0; i < boneCount; i++)
+	//{
+	//	
+	//	int parent = item.skeleton.bones[i].parentIndex;
+
+
+		//if (parent < 0)
+		//	item.globalTransforms[i] = item.localTransforms[i];
+		//else
+		//	item.globalTransforms[i] = item.globalTransforms[parent] * item.localTransforms[i];
+	//}
 }
 
 void Animator::computeFinalMatrices(ItemInterface& item)
@@ -120,7 +140,13 @@ void Animator::computeFinalMatrices(ItemInterface& item)
 
 	for (int i = 0; i < boneCount; i++)
 	{
-		item.boneMatrices[i] = item.globalTransforms[i] * item.skeleton.bones[i].inverseBindMatrix;
+		item.boneMatrices[i] = item.skeleton.globalInverseTransform * item.globalTransforms[i] * 
+			item.skeleton.bones[i].inverseBindMatrix;
+
+		//const glm::mat4& m = item.globalTransforms[i];
+		//const glm::mat4& m = item.boneMatrices[i];
+		//const glm::mat4& m = item.skeleton.bones[i].inverseBindMatrix;
+		//std::cout << m[0][0] << " " << m[1][1] << " " << m[2][2] << " " << m[3][3] << "\n";
 	}
 }
 

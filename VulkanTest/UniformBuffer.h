@@ -31,7 +31,7 @@ public:
 
 	void updateMandelbulbUBO(uint32_t currentImage);
 
-	void updateAnimationUBO(ItemInterface& item, uint32_t currentFrame);
+	void updateAnimationUBO(ItemInterface& item, uint32_t frameIndex);
 
 	uint32_t maxPCSize;
 	uint32_t cameraUBOSize;

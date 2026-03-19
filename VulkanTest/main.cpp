@@ -571,6 +571,7 @@ private:
 			static float lastFrame = currentFrame;
 			float deltaTime = currentFrame - lastFrame;
 			lastFrame = currentFrame;
+			uint32_t frameIndex = (int)currentFrame % MAX_FRAMES_IN_FLIGHT;
 
 			glfwPollEvents();
 
@@ -602,11 +603,11 @@ private:
 
 			// | update camera with physx
 			m_PhysXEngine->readTransforms(g_Camera.Position);
-
+			
 			// | animation
 			for (auto& item : items) {
 				m_Animation->update(deltaTime, *item);
-				m_UniformBuffer->updateAnimationUBO(*item, currentFrame); // bones UBO upload
+				m_UniformBuffer->updateAnimationUBO(*item, frameIndex); // bones UBO upload
 			}
 
 			drawFrame();

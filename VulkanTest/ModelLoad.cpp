@@ -139,6 +139,8 @@ void ModelLoad::modelFileParse(const aiScene* scene, aiMesh* mesh, size_t& verte
 
 	auto& boneMap = classReference.skeleton.boneMap;
 	auto& bones = classReference.skeleton.bones;
+	auto& globalInverseTransform = classReference.skeleton.globalInverseTransform;
+	globalInverseTransform = glm::inverse(convert(scene->mRootNode->mTransformation));
 
 	for (uint32_t i = 0; i < mesh->mNumBones; i++) {
 		aiBone* aiBone = mesh->mBones[i];
@@ -264,18 +266,23 @@ void ModelLoad::processNode(aiNode* node, int parentIndex, ItemInterface& classR
 
 	std::string name = node->mName.C_Str();
 
-	int index = 1;
-
-	if (boneMap.contains(name))
+	auto it = boneMap.find(name);
+	if (it != boneMap.end())
 	{
-		index = boneMap[name];
-		bones[index].parentIndex = parentIndex;
+		int index = it->second;
+
+		for (uint32_t i = 0; i < node->mNumChildren; i++)
+		{
+			processNode(node->mChildren[i], index, classReference);
+		}
+		return;
 	}
 
 	for (uint32_t i = 0; i < node->mNumChildren; i++)
 	{
-		processNode(node->mChildren[i], index, classReference);
+		processNode(node->mChildren[i], parentIndex, classReference);
 	}
+
 }
 
 void ModelLoad::loadModel(const std::string& path, ItemInterface& classReference) {

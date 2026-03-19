@@ -178,7 +178,6 @@ void DescriptorSet::createAnimationDescriptorSets(ItemInterface& classReference)
 		throw std::runtime_error("failed to allocate descriptor sets!");
 	}
 
-	std::cout << "passed\n";
 
 	for (size_t frame = 0; frame < Constants::MAX_FRAMES_IN_FLIGHT; frame++) {
 
