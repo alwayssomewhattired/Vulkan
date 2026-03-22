@@ -10,7 +10,9 @@ struct AnimatorStruct {
 	
 	struct Bone {
 		int parentIndex;
+		std::string name;
 		glm::mat4 inverseBindMatrix;
+		glm::mat4 localBindTransform;
 	};
 
 	struct Skeleton {
@@ -48,6 +50,6 @@ struct AnimatorStruct {
 		float duration;
 		float ticksPerSecond;
 
-		std::vector<AnimatorChannel> channels;
+		std::unordered_map<std::string, AnimatorChannel> channels;
 	};
 };

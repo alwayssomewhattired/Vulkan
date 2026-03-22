@@ -45,17 +45,19 @@ void main() {
         int id = inBoneIDs[i];
         float w = inWeights[i];
 
-        if (id >= 0 && w > 0.0) {
+        if (id >= 0 && id < bonesUBO.bones.length() && w > 0.0) {
             skinMatrix += w * bonesUBO.bones[id];
             totalWeight += w;
         }
     }
 
-    if (totalWeight == 0.0) {
+    if (totalWeight > 0.0) {
+        skinMatrix /= totalWeight;
+    } else {
         skinMatrix = mat4(1.0);
     }
 
-    mat3 skinMat3 = mat3(skinMatrix);
+    mat3 skinMat3 = transpose(inverse(mat3(skinMatrix)));
 
     vec3 skinnedNormal = normalize(skinMat3 * inNormal);
     vec3 skinnedTangent = normalize(skinMat3 * inTangent);
@@ -68,10 +70,12 @@ void main() {
 
    fragTBN = mat3(T, B, N);
 
-//    vec4 skinnedPos = skinMatrix * vec4(inPosition, 1.0);
+   vec4 skinnedPos = skinMatrix * vec4(inPosition, 1.0);
 
-    vec4 skinnedPos = bonesUBO.bones[0] * vec4(inPosition, 1.0);
+
+//    vec4 skinnedPos = bonesUBO.bones[0] * vec4(inPosition, 1.0);
 //    vec4 skinnedPos = vec4(inPosition, 1.0);
+
     vec4 worldPos = modelPC.model * skinnedPos;
 
     gl_Position = camera.proj * camera.view * worldPos;

@@ -186,7 +186,7 @@ void DescriptorSet::createAnimationDescriptorSets(ItemInterface& classReference)
 		VkDescriptorBufferInfo animationBufferInfo{};
 		animationBufferInfo.buffer = animationUniformBuffers[frame];
 		animationBufferInfo.offset = 0;
-		animationBufferInfo.range = sizeof(classReference.boneMatrices);
+		animationBufferInfo.range = sizeof(glm::mat4) * Constants::MAX_BONES;
 
 		VkWriteDescriptorSet descriptorWrites{};
 

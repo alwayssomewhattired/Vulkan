@@ -79,22 +79,37 @@ glm::vec3 Animator::InterpolateScale(const AnimatorStruct::AnimatorChannel& chan
 
 void Animator::computeLocalTransforms(ItemInterface& item)
 {
-	int boneCount = item.skeleton.bones.size();
+	const int boneCount = item.skeleton.bones.size();
 
 	for (int i = 0; i < boneCount; i++)
 	{
-		const AnimatorStruct::AnimatorChannel& channel = item.animatorData.channels[i];
-		auto& currentTime = item.currentTimeAnim;
+		const std::string name = item.skeleton.bones[i].name;
+		const AnimatorStruct::AnimatorChannel& channel = item.animatorData.channels[name];
+		const float currentTime = item.currentTimeAnim;
 
-		glm::vec3 pos = InterpolatePosition(channel, currentTime);
-		glm::quat rot = InterpolateRotation(channel, currentTime);
-		glm::vec3 scale = InterpolateScale(channel, currentTime);
+		const bool hasAnimation =
+			!channel.positions.empty() ||
+			!channel.rotations.empty() ||
+			!channel.scales.empty();
+		if (hasAnimation)
+		{
+			glm::vec3 pos = InterpolatePosition(channel, currentTime);
+			glm::quat rot = InterpolateRotation(channel, currentTime);
+			glm::vec3 scale = InterpolateScale(channel, currentTime);
 
-		glm::mat4 T = glm::translate(glm::mat4(1.0f), pos);
-		glm::mat4 R = glm::toMat4(rot);
-		glm::mat4 S = glm::scale(glm::mat4(1.0f), scale);
+			glm::mat4 T = glm::translate(glm::mat4(1.0f), pos);
+			glm::mat4 R = glm::toMat4(rot);
+			glm::mat4 S = glm::scale(glm::mat4(1.0f), scale);
 
-		item.localTransforms[i] = T * R * S;
+			item.localTransforms[i] = T * R * S;
+		}
+		else {
+			item.localTransforms[i] = item.skeleton.bones[i].localBindTransform;
+		}
+
+
+		//const glm::mat4& m = item.localTransforms[i];
+		//std::cout << m[0][0] << " " << m[1][1] << " " << m[2][2] << " " << m[3][3] << "\n";
 	}
 
 }
@@ -140,8 +155,9 @@ void Animator::computeFinalMatrices(ItemInterface& item)
 
 	for (int i = 0; i < boneCount; i++)
 	{
-		item.boneMatrices[i] = item.skeleton.globalInverseTransform * item.globalTransforms[i] * 
+		item.boneMatrices[i] = item.skeleton.globalInverseTransform * item.globalTransforms[i] *
 			item.skeleton.bones[i].inverseBindMatrix;
+
 
 		//const glm::mat4& m = item.globalTransforms[i];
 		//const glm::mat4& m = item.boneMatrices[i];

@@ -37,7 +37,6 @@ ModelLoad::ModelLoad(
 {
 }
 
-// | for inverse-bind-matrix and bind-pose
 glm::mat4 ModelLoad::convert(const aiMatrix4x4& m)
 {
 	return glm::transpose(glm::mat4(
@@ -59,7 +58,8 @@ glm::quat ModelLoad::convert(const aiQuaternion& q)
 }
 
 // | Mutates 'vertices' and 'indices' and 'vertexCount' params
-void ModelLoad::modelFileParse(const aiScene* scene, aiMesh* mesh, size_t& vertexCount, 
+void ModelLoad::modelFileParse(
+	const aiScene* scene, aiMesh* mesh, size_t& vertexCount, 
 	std::vector<Vertex>& vertices, VkIndexType& indexType, std::vector<uint32_t>& indices,
 	ItemInterface& classReference, const uint32_t meshIndex) {
 
@@ -156,7 +156,7 @@ void ModelLoad::modelFileParse(const aiScene* scene, aiMesh* mesh, size_t& verte
 
 			AnimatorStruct::Bone bone;
 			bone.inverseBindMatrix = convert(aiBone->mOffsetMatrix);
-
+			bone.name = name;
 			bones.push_back(bone);
 		}
 		else
@@ -175,12 +175,13 @@ void ModelLoad::modelFileParse(const aiScene* scene, aiMesh* mesh, size_t& verte
 		}
 	}
 
-	classReference.animatorData.channels.resize(boneMap.size());
+	//classReference.animatorData.channels.resize(boneMap.size());
 
 	// | Animator
 	if (scene->HasAnimations()) {
 		// | selects animation from list
 		aiAnimation* animator = scene->mAnimations[0];
+		classReference.animatorData.channels.reserve(animator->mNumChannels);
 
 		for (uint32_t i = 0; i < animator->mNumChannels; i++)
 		{
@@ -227,7 +228,7 @@ void ModelLoad::modelFileParse(const aiScene* scene, aiMesh* mesh, size_t& verte
 					});
 			}
 
-			classReference.animatorData.channels[boneIndex] = animChannel;
+			classReference.animatorData.channels[boneName] = animChannel;
 		}
 
 		classReference.animatorData.duration = (float)animator->mDuration;
@@ -270,6 +271,8 @@ void ModelLoad::processNode(aiNode* node, int parentIndex, ItemInterface& classR
 	if (it != boneMap.end())
 	{
 		int index = it->second;
+
+		bones[index].localBindTransform = convert(node->mTransformation);
 
 		for (uint32_t i = 0; i < node->mNumChildren; i++)
 		{
