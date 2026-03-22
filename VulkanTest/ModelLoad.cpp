@@ -144,7 +144,6 @@ void ModelLoad::modelFileParse(
 
 	for (uint32_t i = 0; i < mesh->mNumBones; i++) {
 		aiBone* aiBone = mesh->mBones[i];
-
 		std::string name = aiBone->mName.C_Str();
 
 		int boneIndex;
@@ -175,12 +174,12 @@ void ModelLoad::modelFileParse(
 		}
 	}
 
-	//classReference.animatorData.channels.resize(boneMap.size());
-
 	// | Animator
 	if (scene->HasAnimations()) {
 		// | selects animation from list
+		std::cout << scene->mNumAnimations << "\n";
 		aiAnimation* animator = scene->mAnimations[0];
+		std::cout << animator->mNumChannels << "\n"; 
 		classReference.animatorData.channels.reserve(animator->mNumChannels);
 
 		for (uint32_t i = 0; i < animator->mNumChannels; i++)
@@ -188,13 +187,7 @@ void ModelLoad::modelFileParse(
 
 			aiNodeAnim* channel = animator->mChannels[i];
 
-			std::string boneName = channel->mNodeName.C_Str();
-			auto it = boneMap.find(boneName);
-			if (it == boneMap.end())
-			{
-				continue;
-			}
-			int boneIndex = it->second;
+			std::string nodeName = channel->mNodeName.C_Str();
 
 			AnimatorStruct::AnimatorChannel animChannel;
 
@@ -228,7 +221,7 @@ void ModelLoad::modelFileParse(
 					});
 			}
 
-			classReference.animatorData.channels[boneName] = animChannel;
+			classReference.animatorData.channels[nodeName] = animChannel;
 		}
 
 		classReference.animatorData.duration = (float)animator->mDuration;
@@ -260,6 +253,8 @@ void ModelLoad::addBoneWeight(Vertex& v, int boneID, float weight) {
 	}
 }
 
+// | currently only processes nodes that are bones
+// - make this process the ENTIRE node tree
 void ModelLoad::processNode(aiNode* node, int parentIndex, ItemInterface& classReference)
 {
 	auto& boneMap = classReference.skeleton.boneMap;
@@ -272,7 +267,9 @@ void ModelLoad::processNode(aiNode* node, int parentIndex, ItemInterface& classR
 	{
 		int index = it->second;
 
+
 		bones[index].localBindTransform = convert(node->mTransformation);
+		bones[index].parentIndex = parentIndex;
 
 		for (uint32_t i = 0; i < node->mNumChildren; i++)
 		{

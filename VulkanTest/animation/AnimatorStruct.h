@@ -47,8 +47,8 @@ struct AnimatorStruct {
 
 	struct AnimatorData
 	{
-		float duration;
-		float ticksPerSecond;
+		float duration = 0.0f;
+		float ticksPerSecond = 25.0f;
 
 		std::unordered_map<std::string, AnimatorChannel> channels;
 	};

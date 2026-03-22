@@ -247,9 +247,14 @@ void UniformBuffer::updateAnimationUBO(ItemInterface& item, uint32_t frameIndex)
 	auto& boneMatrices = item.boneMatrices;
 	size_t count = std::min(boneMatrices.size(), (size_t)Constants::MAX_BONES);
 
+
+	// | copy real bone data
+	memcpy(mapped, boneMatrices.data(), sizeof(glm::mat4) * count);
+
+	// | fill remaining bone data if empty
+
 	glm::mat4* matrices = reinterpret_cast<glm::mat4*>(mapped);
 
-	// | fill in bone data if empty
 	for (size_t i = 0; i < Constants::MAX_BONES; i++)
 	{
 		if (i < count)
@@ -260,11 +265,4 @@ void UniformBuffer::updateAnimationUBO(ItemInterface& item, uint32_t frameIndex)
 		}
 
 	}
-
-	matrices[0] = glm::mat4(1.0f);
-
-	// | copy real bone data
-	//memcpy(mapped, boneMatrices.data(), sizeof(glm::mat4) * count);
-
-
 }

@@ -26,7 +26,7 @@ layout(push_constant) uniform ModelLightPC {
 
 void main() {
 
-	// | beging blinn-phong
+	// | begin blinn-phong
 
 	vec4 texColor = texture(texSampler, fragTexCoord);
 	vec4 baseColor = material.baseColorFactor * texColor;

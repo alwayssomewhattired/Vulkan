@@ -169,7 +169,7 @@ private:
 	VkBuffer indexBuffer;
 	VkDeviceMemory indexBufferMemory;
 
-	uint32_t currentFrame = 0;
+	uint32_t g_currentFrame = 0;
 	bool framebufferResized = false;
 
 
@@ -471,15 +471,15 @@ private:
 
 	void drawFrame() {
 
-		vkWaitForFences(*m_device, 1, &m_SwapChain->inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
+		vkWaitForFences(*m_device, 1, &m_SwapChain->inFlightFences[g_currentFrame], VK_TRUE, UINT64_MAX);
 
 		uint32_t imageIndex;
 
 		if (g_renderTarget.renderMandelbulb) {
-			m_UniformBuffer->updateMandelbulbUBO(currentFrame);
+			m_UniformBuffer->updateMandelbulbUBO(g_currentFrame);
 		}
 		else {
-			m_UniformBuffer->updateCameraUniformBuffer(currentFrame);
+			m_UniformBuffer->updateCameraUniformBuffer(g_currentFrame);
 			for (auto& item : items) {
 				item->updatePC();
 
@@ -490,7 +490,7 @@ private:
 		// signals 'imageAvailableSemaphores[currentFrame]' when ready
 		// acquires next swapchain image (swapchain holds images, not imageviews)
 		VkResult result = vkAcquireNextImageKHR(*m_device, m_SwapChain->swapChain, UINT64_MAX, 
-			m_SwapChain->imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, &imageIndex);
+			m_SwapChain->imageAvailableSemaphores[g_currentFrame], VK_NULL_HANDLE, &imageIndex);
 
 		if (result == VK_ERROR_OUT_OF_DATE_KHR) {
 			m_SwapChain->recreateSwapChain(window, *m_Image, *m_AttachmentManager, *m_RenderPass);
@@ -505,19 +505,19 @@ private:
 		}
 
 		// track swapchain image with current frame's fence
-		m_SwapChain->imagesInFlight[imageIndex] = m_SwapChain->inFlightFences[currentFrame];
+		m_SwapChain->imagesInFlight[imageIndex] = m_SwapChain->inFlightFences[g_currentFrame];
 
 		vkResetCommandBuffer(m_CommandBuffer->commandBuffers[imageIndex], 0);
 
 		m_CommandBuffer->recordCommandBuffer(m_CommandBuffer->commandBuffers[imageIndex], imageIndex, m_RenderPass->renderPass,
-			*m_GraphicsPipeline, items, *m_DescriptorSet, currentFrame, m_StorageImageManager->m_GPUStorageImage.image(), 
+			*m_GraphicsPipeline, items, *m_DescriptorSet, g_currentFrame, m_StorageImageManager->m_GPUStorageImage.image(), 
 			*m_Triangle, *m_UniformBuffer);
 
 		VkSubmitInfo submitInfo{};
 		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
 		// for image ready
-		VkSemaphore waitSemaphores[] = { m_SwapChain->imageAvailableSemaphores[currentFrame]};
+		VkSemaphore waitSemaphores[] = { m_SwapChain->imageAvailableSemaphores[g_currentFrame]};
 
 		VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
 
@@ -533,8 +533,8 @@ private:
 		submitInfo.signalSemaphoreCount = 1;
 		submitInfo.pSignalSemaphores = signalSemaphores;
 
-		vkResetFences(*m_device, 1, &m_SwapChain->inFlightFences[currentFrame]);
-		if (vkQueueSubmit(*m_graphicsQueue, 1, &submitInfo, m_SwapChain->inFlightFences[currentFrame]) != VK_SUCCESS)
+		vkResetFences(*m_device, 1, &m_SwapChain->inFlightFences[g_currentFrame]);
+		if (vkQueueSubmit(*m_graphicsQueue, 1, &submitInfo, m_SwapChain->inFlightFences[g_currentFrame]) != VK_SUCCESS)
 			throw std::runtime_error("failed to submit draw command buffer");
 
 		VkPresentInfoKHR presentInfo{};
@@ -557,7 +557,7 @@ private:
 		else if (result != VK_SUCCESS)
 			throw std::runtime_error("failed to present swap chain image");
 
-		currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
+		g_currentFrame = (g_currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 
 	}
 
@@ -567,11 +567,10 @@ private:
 
 		while (!glfwWindowShouldClose(window))
 		{
-			float currentFrame = (float)glfwGetTime();
-			static float lastFrame = currentFrame;
-			float deltaTime = currentFrame - lastFrame;
-			lastFrame = currentFrame;
-			uint32_t frameIndex = (int)currentFrame % MAX_FRAMES_IN_FLIGHT;
+			double currentTime = (float)glfwGetTime();
+			static double lastTime = currentTime;
+			double deltaTime = currentTime - lastTime;
+			lastTime = currentTime;
 
 			glfwPollEvents();
 
@@ -607,7 +606,7 @@ private:
 			// | animation
 			for (auto& item : items) {
 				m_Animation->update(deltaTime, *item);
-				m_UniformBuffer->updateAnimationUBO(*item, frameIndex); // bones UBO upload
+				m_UniformBuffer->updateAnimationUBO(*item, g_currentFrame); // bones UBO upload
 			}
 
 			drawFrame();

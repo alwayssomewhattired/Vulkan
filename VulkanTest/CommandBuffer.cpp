@@ -134,7 +134,7 @@ void CommandBuffer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t 
 			const auto& animationDescriptorSets = item->animationDescriptorSets;
 
 			vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.pipelineLayout, 2, 1,
-				&animationDescriptorSets[currentFrame], 0, nullptr);
+				&animationDescriptorSets[0], 0, nullptr);
 
 			for (int i = 0; i < mesh.vertices.size(); i++) { // primitive iteration
 				auto& materialDescriptorSets = item->materialData.descriptorSets;

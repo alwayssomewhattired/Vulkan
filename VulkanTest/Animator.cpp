@@ -124,29 +124,32 @@ glm::mat4 computeGlobal(int i, ItemInterface& item) {
 	return computeGlobal(parent, item) * item.localTransforms[i];
 }
 
-void Animator::computeGlobalTransforms(ItemInterface& item)
-{
-	int boneCount = item.skeleton.bones.size();
-	for (int i = 0; i < boneCount; i++) {
-		item.globalTransforms[i] = computeGlobal(i, item);
+//void Animator::computeGlobalTransforms(ItemInterface& item)
+//{
+//	int boneCount = item.skeleton.bones.size();
+//	for (int i = 0; i < boneCount; i++) {
+//		item.globalTransforms[i] = computeGlobal(i, item);
+//
+//	}
+//}
 
-		//const glm::mat4& m = item.globalTransforms[i];
-		//std::cout << m[0][0] << " " << m[1][1] << " " << m[2][2] << " " << m[3][3] << "\n";
+void Animator::computeGlobalTransforms(ItemInterface& item) {
+	for (int i = 0; i < item.skeleton.bones.size(); i++) {
+
+		int parent = item.skeleton.bones[i].parentIndex;
+
+		if (parent == -1) {
+			item.globalTransforms[i] = item.localTransforms[i];
+		}
+		else {
+			// Parent is already computed because parent < i
+			// 
+			//std::cout << item.globalTransforms.size() << "\n";
+			//std::cout << parent << "\n";
+			//std::cout << item.localTransforms.size() << "\n";
+			item.globalTransforms[i] = item.globalTransforms[parent] * item.localTransforms[i];
+		}
 	}
-
-	//int parent = item.skeleton.bones[i].parentIndex;
-
-	//for (int i = 0; i < boneCount; i++)
-	//{
-	//	
-	//	int parent = item.skeleton.bones[i].parentIndex;
-
-
-		//if (parent < 0)
-		//	item.globalTransforms[i] = item.localTransforms[i];
-		//else
-		//	item.globalTransforms[i] = item.globalTransforms[parent] * item.localTransforms[i];
-	//}
 }
 
 void Animator::computeFinalMatrices(ItemInterface& item)
@@ -155,8 +158,11 @@ void Animator::computeFinalMatrices(ItemInterface& item)
 
 	for (int i = 0; i < boneCount; i++)
 	{
-		item.boneMatrices[i] = item.skeleton.globalInverseTransform * item.globalTransforms[i] *
-			item.skeleton.bones[i].inverseBindMatrix;
+		item.boneMatrices[i] = item.globalTransforms[i] *item.skeleton.bones[i].inverseBindMatrix;
+
+		// | depending on export, this might be needed
+		//item.boneMatrices[i] = item.skeleton.globalInverseTransform * item.globalTransforms[i] *
+		//	item.skeleton.bones[i].inverseBindMatrix;
 
 
 		//const glm::mat4& m = item.globalTransforms[i];
@@ -167,11 +173,13 @@ void Animator::computeFinalMatrices(ItemInterface& item)
 }
 
 void Animator::update(float deltaTime, ItemInterface& item) {
-	float tps = item.animatorData.ticksPerSecond != 0 ? item.animatorData.ticksPerSecond : 25.0f;
 
+	float tps = item.animatorData.ticksPerSecond != 0.0f ? item.animatorData.ticksPerSecond : 25.0f;
+
+	//std::cout << item.animatorData.duration << "\n";
+	//std::cout << tps << "\n";
 	item.currentTimeAnim += deltaTime * tps;
 	item.currentTimeAnim = fmod(item.currentTimeAnim, item.animatorData.duration);
-
 	computeLocalTransforms(item);
 	computeGlobalTransforms(item);
 	computeFinalMatrices(item);
