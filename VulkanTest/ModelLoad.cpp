@@ -65,60 +65,65 @@ void ModelLoad::modelFileParse(
 
 	glm::vec3 min(FLT_MAX);
 	glm::vec3 max(-FLT_MAX);
-
+	uint32_t globalVerticesIndex = 0;
 	for (uint32_t i = 0; i < mesh->mNumVertices; i++) {
-		vertices[i].pos = {
+
+		Vertex vertex{};
+		vertex.pos = {
 			mesh->mVertices[i].x,
 			mesh->mVertices[i].y,
 			mesh->mVertices[i].z
 		};
-		vertices[i].normal = {
+		vertex.normal = {
 			mesh->mNormals[i].x,
 			mesh->mNormals[i].y,
 			mesh->mNormals[i].z
 		};
 
 		if (mesh->mTextureCoords[0]) {
-			vertices[i].texCoord = {
+			vertex.texCoord = {
 				mesh->mTextureCoords[0][i].x,
 				mesh->mTextureCoords[0][i].y
 			};
 		}
 
 		for (size_t i = 0; i < vertexCount; ++i) {
-			vertices[i].color = glm::vec3(1.0f); // default color (white)
+			vertex.color = glm::vec3(1.0f); // default color (white)
 		}
 
 		if (mesh->mTangents) {
-			vertices[i].tangent = {
+			vertex.tangent = {
 				mesh->mTangents[i].x,
 				mesh->mTangents[i].y,
 				mesh->mTangents[i].z
 			};
 		}
 		else {
-			vertices[i].tangent = { 0.0f, 0.0f, 0.0f };
+			vertex.tangent = { 0.0f, 0.0f, 0.0f };
 		}
 
 		if (mesh->mBitangents) {
-			vertices[i].bitangent = {
+			vertex.bitangent = {
 				mesh->mBitangents[i].x,
 				mesh->mBitangents[i].y,
 				mesh->mBitangents[i].z
 			};
 		}
 		else {
-			vertices[i].bitangent = { 0.0f, 0.0f, 0.0f };
+			vertex.bitangent = { 0.0f, 0.0f, 0.0f };
 		}
 
 
-		min.x = std::min(min.x, vertices[i].pos.x);
-		min.y = std::min(min.y, vertices[i].pos.y);
-		min.z = std::min(min.z, vertices[i].pos.z);
+		min.x = std::min(min.x, vertex.pos.x);
+		min.y = std::min(min.y, vertex.pos.y);
+		min.z = std::min(min.z, vertex.pos.z);
 
-		max.x = std::max(max.x, vertices[i].pos.x);
-		max.y = std::max(max.y, vertices[i].pos.y);
-		max.z = std::max(max.z, vertices[i].pos.z);
+		max.x = std::max(max.x, vertex.pos.x);
+		max.y = std::max(max.y, vertex.pos.y);
+		max.z = std::max(max.z, vertex.pos.z);
+
+		vertices.push_back(std::move(vertex));
+		globalVerticesIndex++;
 
 	}
 
@@ -131,7 +136,7 @@ void ModelLoad::modelFileParse(
 	for (uint32_t i = 0; i < mesh->mNumFaces; i++) {
 		const aiFace& face = mesh->mFaces[i];
 		for (uint32_t j = 0; j < face.mNumIndices; j++) {
-			indices.push_back(face.mIndices[j]);
+			indices.push_back(face.mIndices[j] + classReference.meshData.vertexOffset[meshIndex]);
 		}
 	}
 
@@ -257,6 +262,7 @@ void ModelLoad::addBoneWeight(Vertex& v, int boneID, float weight) {
 // - make this process the ENTIRE node tree
 void ModelLoad::processNode(aiNode* node, int parentIndex, ItemInterface& classReference)
 {
+
 	auto& boneMap = classReference.skeleton.boneMap;
 	auto& bones = classReference.skeleton.bones;
 
@@ -294,8 +300,8 @@ void ModelLoad::loadModel(const std::string& path, ItemInterface& classReference
 	auto& vertexCountManager = classReference.meshData.vertexCount;
 	auto& indexCountManager = classReference.meshData.indexCount;
 	auto& indexType = classReference.meshData.indexType;
-	auto& verticesManager = classReference.meshData.vertices;
-	auto& indicesManager = classReference.meshData.indices;
+	auto& vertices = classReference.meshData.vertices;
+	auto& indices = classReference.meshData.indices;
 
 	Assimp::Importer importer;
 
@@ -314,110 +320,105 @@ void ModelLoad::loadModel(const std::string& path, ItemInterface& classReference
 	}
 	classReference.materialData.gltfMaterials.resize(scene->mNumMaterials);
 
+	uint32_t globalVertexOffset = 0;
+	uint32_t globalIndexOffset = 0;
+
 	for (uint32_t i = 0; i < scene->mNumMeshes; i++) {
 		
 		aiMesh* mesh = scene->mMeshes[i];
 
-		VkBuffer vertexBuffer;
-		VkDeviceMemory vertexMemory;
-		VkBuffer indexBuffer;
-		VkDeviceMemory indexMemory;
+		uint32_t baseVertex = globalVertexOffset;
+		uint32_t firstIndex = globalIndexOffset;
 		
-		std::vector<Vertex> vertices(mesh->mNumVertices);
-		std::vector<uint32_t> indices;
+		std::vector<Vertex>& vertices = classReference.meshData.vertices;
+		std::vector<uint32_t>& indices = classReference.meshData.indices;
 		size_t vertexCount = mesh->mNumVertices;
-		uint32_t indexCount;
+		vertices.reserve(vertexCount);
+
+		classReference.meshData.vertexOffset.push_back(baseVertex);
 
 		modelFileParse(scene, mesh, vertexCount, vertices, indexType, indices, classReference, i);
 		processNode(scene->mRootNode, -1, classReference);
 
+		classReference.meshData.firstIndex.push_back(firstIndex);
+		classReference.meshData.indexCount.push_back(indices.size() - firstIndex);
 
-		// | Vertex 
-
-		VkDeviceSize vertexSize = sizeof(Vertex) * vertices.size();
-
-		VkBuffer stagingVb;
-		VkDeviceMemory stagingVm;
-
-		// staging buffer
-		m_Buffer.createBuffer(
-			vertexSize,
-			VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-			stagingVb,
-			stagingVm
-		);
-
-		void* mapped;
-		vkMapMemory(device, stagingVm, 0, vertexSize, 0, &mapped);
-		memcpy(mapped, vertices.data(), static_cast<size_t>(vertexSize));
-		unsigned char* data = reinterpret_cast<unsigned char*>(mapped);
-		vkUnmapMemory(device, stagingVm);
-
-		m_Buffer.createBuffer(
-			vertexSize,
-			VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
-			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-			vertexBuffer,
-			vertexMemory
-		);
-
-		// copy to gpu
-		m_CommandBuffer.copyBuffer(stagingVb, vertexBuffer, vertexSize);
-
-		// destroy staging buffer
-		vkDestroyBuffer(device, stagingVb, nullptr);
-		vkFreeMemory(device, stagingVm, nullptr);
-
-
-		// indices
-
-		indexType = VK_INDEX_TYPE_UINT32;
-		indexCount = static_cast<uint32_t>(indices.size());
-
-		VkDeviceSize indexSize = sizeof(uint32_t) * indices.size();
-
-		VkBuffer stagingIb;
-		VkDeviceMemory stagingIm;
-
-		m_Buffer.createBuffer(
-			indexSize,
-			VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-			stagingIb,
-			stagingIm
-		);
-
-		vkMapMemory(device, stagingIm, 0, indexSize, 0, &mapped);
-		memcpy(mapped, indices.data(), indexSize);
-		vkUnmapMemory(device, stagingIm);
-
-		m_Buffer.createBuffer(
-			indexSize,
-			VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
-			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-			indexBuffer,
-			indexMemory
-		);
-
-		m_CommandBuffer.copyBuffer(stagingIb, indexBuffer, indexSize);
-
-		vkDestroyBuffer(device, stagingIb, nullptr);
-		vkFreeMemory(device, stagingIm, nullptr);
-
-		assert(indexType == VK_INDEX_TYPE_UINT32);
-		assert(indexSize == sizeof(uint32_t) * indexCount);
-
-
-		verticesManager.push_back(std::move(vertices));
-		indicesManager.push_back(std::move(indices));
-		vertexBufferManager.push_back(std::move(vertexBuffer));
-		vertexMemoryManager.push_back(std::move(vertexMemory));
-		indexBufferManager.push_back(std::move(indexBuffer));
-		indexMemoryManager.push_back(std::move(indexMemory));
-		vertexCountManager.push_back(std::move(vertexCount));
-		indexCountManager.push_back(std::move(indexCount));
-
+		globalVertexOffset += mesh->mNumVertices;
+		globalIndexOffset += indices.size();
 	}
+
+	VkDeviceSize vertexSize = sizeof(Vertex) * vertices.size();
+	VkBuffer stagingVb;
+	VkDeviceMemory stagingVm;
+
+	// staging buffer
+	m_Buffer.createBuffer(
+		vertexSize,
+		VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+		stagingVb,
+		stagingVm
+	);
+
+	void* mapped;
+	vkMapMemory(device, stagingVm, 0, vertexSize, 0, &mapped);
+	memcpy(mapped, vertices.data(), static_cast<size_t>(vertexSize));
+	unsigned char* data = reinterpret_cast<unsigned char*>(mapped);
+	vkUnmapMemory(device, stagingVm);
+
+	auto& vertexBuffer = classReference.meshData.vertexBuffer;
+	auto& vertexMemory = classReference.meshData.vertexMemory;
+	auto& indexBuffer = classReference.meshData.indexBuffer;
+	auto& indexMemory = classReference.meshData.indexMemory;
+
+	m_Buffer.createBuffer(
+		vertexSize,
+		VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+		vertexBuffer,
+		vertexMemory
+	);
+
+	// copy to gpu
+	m_CommandBuffer.copyBuffer(stagingVb, vertexBuffer, vertexSize);
+
+	// destroy staging buffer
+	vkDestroyBuffer(device, stagingVb, nullptr);
+	vkFreeMemory(device, stagingVm, nullptr);
+
+	// indices
+
+	indexType = VK_INDEX_TYPE_UINT32;
+	uint32_t indexCount = static_cast<uint32_t>(indices.size());
+
+	VkDeviceSize indexSize = sizeof(uint32_t) * indices.size();
+
+	VkBuffer stagingIb;
+	VkDeviceMemory stagingIm;
+
+	m_Buffer.createBuffer(
+		indexSize,
+		VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+		stagingIb,
+		stagingIm
+	);
+
+	vkMapMemory(device, stagingIm, 0, indexSize, 0, &mapped);
+	memcpy(mapped, indices.data(), indexSize);
+	vkUnmapMemory(device, stagingIm);
+
+	m_Buffer.createBuffer(
+		indexSize,
+		VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+		indexBuffer,
+		indexMemory
+	);
+
+	m_CommandBuffer.copyBuffer(stagingIb, indexBuffer, indexSize);
+
+	vkDestroyBuffer(device, stagingIb, nullptr);
+	vkFreeMemory(device, stagingIm, nullptr);
 
 }

@@ -32,7 +32,7 @@ public:
 
 	void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex, VkRenderPass& renderPass,
 		GraphicsPipeline& graphicsPipeline, std::vector<ItemInterface*>& items, DescriptorSet& descriptorSet, 
-		const uint32_t& currentFrame,
+		const uint32_t currentFrame,
 		VkImage& storageImage, ItemInterface& triangleClass, UniformBuffer& uniformBuffer);
 
 	std::vector<VkCommandBuffer> commandBuffers;

@@ -22,26 +22,35 @@ public:
 // | blueprint for all items
 struct ItemInterface {
 
+
 	struct MeshData {
-		std::vector<VkBuffer> vertexBuffer;
+		VkBuffer vertexBuffer;
 
-		std::vector<VkDeviceMemory> vertexMemory;
+		VkDeviceMemory vertexMemory;
 
-		std::vector<VkBuffer> indexBuffer;
-		std::vector<VkDeviceMemory> indexMemory;
-
-		std::vector<size_t> vertexCount;
-		std::vector<uint32_t> indexCount;
+		VkBuffer indexBuffer;
+		VkDeviceMemory indexMemory;
 
 		VkIndexType indexType;
 
-		// | vertices of primitives
-		std::vector<std::vector<Vertex>> vertices;
+		std::vector<size_t> vertexCount;
 
-		std::vector<std::vector<uint32_t>> indices;
+		// | vertices of primitives
+		std::vector<Vertex> vertices;
+
+		std::vector<uint32_t> indices;
+
+		std::vector<uint32_t> firstIndex;
+
+		// | DO add to index buffer values
+		// | DONT byte offset into vertex buffer
+		std::vector<uint32_t> vertexOffset;
+
+		std::vector<uint32_t> indexCount;
 	};
 
 	MeshData meshData;
+
 
 	struct MaterialData {
 		// | gltf material indices to gltf textures

@@ -65,7 +65,7 @@ void CommandBuffer::createCommandBuffers(CommandPool& commandPool) {
 
 void CommandBuffer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex, VkRenderPass& renderPass,
 	GraphicsPipeline& graphicsPipeline, std::vector<ItemInterface*>& items, DescriptorSet& descriptorSet, 
-	const uint32_t& currentFrame, VkImage& storageImage, ItemInterface& triangleClass, UniformBuffer& uniformBuffer) {
+	const uint32_t currentFrame, VkImage& storageImage, ItemInterface& triangleClass, UniformBuffer& uniformBuffer) {
 
 	VkCommandBufferBeginInfo beginInfo{};
 	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -121,51 +121,54 @@ void CommandBuffer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t 
 
 		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.graphicsPipeline);
 
-		for (int i = 0; i < Constants::MAX_FRAMES_IN_FLIGHT; i++) {
 
-			vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.pipelineLayout, 0, 1,
-				&descriptorSet.globalDescriptorSets[i], 0, nullptr);
-		}
+		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.pipelineLayout, 0, 1,
+			&descriptorSet.globalDescriptorSets[currentFrame], 0, nullptr);
 		
 		for (size_t itemIndex = 0; itemIndex < items.size(); itemIndex++) {
 			auto& item = items[itemIndex];
 			auto& mesh = item->meshData;
+			auto& vertexBuffer = mesh.vertexBuffer;
+			auto& indexBuffer = mesh.indexBuffer;
+
+			VkDeviceSize offsets[] = { 0 };
 
 			const auto& animationDescriptorSets = item->animationDescriptorSets;
 
-			vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.pipelineLayout, 2, 1,
-				&animationDescriptorSets[0], 0, nullptr);
+			vkCmdBindVertexBuffers(commandBuffer, 0, 1, &vertexBuffer, offsets);
+			vkCmdBindIndexBuffer(commandBuffer, indexBuffer, 0, mesh.indexType);
 
-			for (int i = 0; i < mesh.vertices.size(); i++) { // primitive iteration
+			vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.pipelineLayout, 2, 1,
+				&animationDescriptorSets[currentFrame], 0, nullptr);
+
+			struct PushConstants {
+				glm::mat4 model;
+				glm::vec4 lightPos;
+			};
+
+			PushConstants pc{};
+			pc.model = item->modelMatrix.model;
+			pc.lightPos = { 0.0f, 2.0f, 3.5f, 1.0f };
+
+			glm::vec4 lightPos = { 0.0f, 2.0f, 3.5f, 1.0f };
+
+			vkCmdPushConstants(
+				commandBuffer,
+				graphicsPipeline.pipelineLayout,
+				VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+				0,
+				sizeof(PushConstants),
+				&pc
+			);
+
+			for (int i = 0; i < mesh.indexCount.size(); i++) { // mesh iteration (per primitive)
 				auto& materialDescriptorSets = item->materialData.descriptorSets;
-				VkBuffer vertexBuffers[] = { mesh.vertexBuffer[i] };
-				VkDeviceSize offsets[] = { 0 };
-				vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
-				vkCmdBindIndexBuffer(commandBuffer, mesh.indexBuffer[i], 0, mesh.indexType);
 				vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.pipelineLayout, 1, 1,
 					&materialDescriptorSets[i], 0, nullptr);
 
-				struct PushConstants {
-					glm::mat4 model;
-					glm::vec4 lightPos;
-				};
-
-				PushConstants pc{};
-				pc.model = item->modelMatrix.model;
-				pc.lightPos = { 0.0f, 2.0f, 3.5f, 1.0f };
-
-				glm::vec4 lightPos = { 0.0f, 2.0f, 3.5f, 1.0f };
-
-				vkCmdPushConstants(
-					commandBuffer,
-					graphicsPipeline.pipelineLayout,
-					VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+				vkCmdDrawIndexed(commandBuffer, mesh.indexCount[i], 1, mesh.firstIndex[i], 
 					0,
-					sizeof(PushConstants),
-					&pc
-				);
-
-				vkCmdDrawIndexed(commandBuffer, mesh.indexCount[i], 1, 0, 0, 0);
+					0);
 			}
 		}
 	}
@@ -253,7 +256,7 @@ void CommandBuffer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t 
 	else if (renderTriangle && !renderMandelbulb) {
 		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.graphicsPipeline);
 
-		VkBuffer triangleVertexBuffers[] = { triangleClass.meshData.vertexBuffer[0]};
+		VkBuffer triangleVertexBuffers[] = { triangleClass.meshData.vertexBuffer};
 		VkDeviceSize triangleOffsets[] = { 0 };
 		vkCmdBindVertexBuffers(commandBuffer, 0, 1, triangleVertexBuffers, triangleOffsets);
 
