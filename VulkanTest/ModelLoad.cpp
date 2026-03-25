@@ -240,7 +240,7 @@ void ModelLoad::modelFileParse(
 
 	aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
 
-	classReference.materialData.gltfPrimitiveMaterialIndices.push_back(mesh->mMaterialIndex);
+	//classReference.materialData.gltfPrimitiveMaterialIndices.push_back(mesh->mMaterialIndex);
 
 	m_Texture.buildGPUMaterial(scene, material, mesh->mMaterialIndex, classReference, meshIndex);
 

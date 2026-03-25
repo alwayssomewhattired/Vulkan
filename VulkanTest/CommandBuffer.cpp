@@ -8,12 +8,13 @@
 #include "items/ItemInterface.h"
 #include "items/Home.h"
 #include "items/SilentHill3Game.h"
-#include "DescriptorSet.h"
+#include "descriptor_sets/DescriptorSet.h"
 #include "Constants.h"
 #include "UniformBuffer.h"
 
-CommandBuffer::CommandBuffer(VkCommandPool& commandPool, Devices& devices, SwapChain& swapChain) : 
-	m_commandPool(commandPool), m_devices(devices), m_SwapChain(swapChain) {};
+CommandBuffer::CommandBuffer(VkCommandPool& commandPool, Devices& devices, SwapChain& swapChain, 
+MaterialDescriptorSet& materialDescriptorSet) : 
+	m_commandPool(commandPool), m_devices(devices), m_SwapChain(swapChain), m_MaterialDescriptorSet(materialDescriptorSet) {};
 
 VkCommandBuffer CommandBuffer::beginSingleTimeCommands() {
 	VkCommandBufferAllocateInfo allocInfo{};
@@ -121,9 +122,11 @@ void CommandBuffer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t 
 
 		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.graphicsPipeline);
 
-
 		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.pipelineLayout, 0, 1,
 			&descriptorSet.globalDescriptorSets[currentFrame], 0, nullptr);
+
+		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.pipelineLayout, 3, 1,
+			&m_MaterialDescriptorSet.materialDescriptorSet, 0, nullptr);
 		
 		for (size_t itemIndex = 0; itemIndex < items.size(); itemIndex++) {
 			auto& item = items[itemIndex];
@@ -144,31 +147,58 @@ void CommandBuffer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t 
 			struct PushConstants {
 				glm::mat4 model;
 				glm::vec4 lightPos;
+				glm::uint textureIndex;
 			};
 
 			PushConstants pc{};
-			pc.model = item->modelMatrix.model;
-			pc.lightPos = { 0.0f, 2.0f, 3.5f, 1.0f };
+			//pc.model = item->modelMatrix.model;
+			//pc.lightPos = { 0.0f, 2.0f, 3.5f, 1.0f };
 
-			glm::vec4 lightPos = { 0.0f, 2.0f, 3.5f, 1.0f };
+			//glm::vec4 lightPos = { 0.0f, 2.0f, 3.5f, 1.0f };
 
-			vkCmdPushConstants(
-				commandBuffer,
-				graphicsPipeline.pipelineLayout,
-				VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-				0,
-				sizeof(PushConstants),
-				&pc
-			);
+			//vkCmdPushConstants(
+			//	commandBuffer,
+			//	graphicsPipeline.pipelineLayout,
+			//	VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+			//	0,
+			//	sizeof(PushConstants),
+			//	&pc
+			//);
 
 			for (int i = 0; i < mesh.indexCount.size(); i++) { // mesh iteration (per primitive)
+
+				// | material descriptor sets for baseColorFactor and normals
 				auto& materialDescriptorSets = item->materialData.descriptorSets;
 				vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.pipelineLayout, 1, 1,
 					&materialDescriptorSets[i], 0, nullptr);
 
-				vkCmdDrawIndexed(commandBuffer, mesh.indexCount[i], 1, mesh.firstIndex[i], 
+				// | material pc for bindless texture indexing
+				pc.textureIndex = item->materialData.gltfMaterials[i].textureIndex;
+
+				//vkCmdPushConstants(
+				//	commandBuffer,
+				//	graphicsPipeline.pipelineLayout,
+				//	VK_SHADER_STAGE_FRAGMENT_BIT,
+				//	0,
+				//	sizeof(PrimitivePushConstant),
+				//	&primitivePushConstant
+				//);
+
+				pc.model = item->modelMatrix.model;
+				pc.lightPos = { 0.0f, 2.0f, 3.5f, 1.0f };
+
+				glm::vec4 lightPos = { 0.0f, 2.0f, 3.5f, 1.0f };
+
+				vkCmdPushConstants(
+					commandBuffer,
+					graphicsPipeline.pipelineLayout,
+					VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
 					0,
-					0);
+					sizeof(PushConstants),
+					&pc
+				);
+
+				vkCmdDrawIndexed(commandBuffer, mesh.indexCount[i], 1, mesh.firstIndex[i], 0, 0);
 			}
 		}
 	}

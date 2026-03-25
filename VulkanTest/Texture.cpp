@@ -7,9 +7,12 @@
 #include "Constants.h"
 
 #include "Items/ItemInterface.h"
+#include "descriptor_sets/MaterialDescriptorSet.h"
 
-Texture::Texture(Buffer& buffer, Image& image, Devices& devices, CommandBuffer& commandBuffer) : 
-	m_Buffer(buffer), m_Image(image), m_Devices(devices), m_CommandBuffer(commandBuffer) 
+Texture::Texture(Buffer& buffer, Image& image, Devices& devices, CommandBuffer& commandBuffer, 
+	MaterialDescriptorSet& materialDescriptorSet) : 
+	m_Buffer(buffer), m_Image(image), m_Devices(devices), m_CommandBuffer(commandBuffer), 
+	m_MaterialDescriptorSet(materialDescriptorSet)
 {
 	createDefaultTextures();
 }
@@ -117,8 +120,13 @@ void Texture::createTextureSampler(const uint32_t& mipLevels, GPUTexture& outTex
 		throw std::runtime_error("failed to create texture sampler!");
 }
 
+uint32_t allocateTextureSlot() {
+	static uint32_t nextFreeTexture = 0;
+	return nextFreeTexture++;
+}
+
 int Texture::uploadAssimpTextureToVulkan(const aiScene* scene, const aiString& path, ItemInterface& classReference, 
-	const VkFormat& format) {
+	const VkFormat& format, Texture::GLTFMaterial& gltfMaterial) {
 
 	GPUTexture gpuTex(m_Devices.device);
 
@@ -166,6 +174,10 @@ int Texture::uploadAssimpTextureToVulkan(const aiScene* scene, const aiString& p
 		createTextureImage(false, path.C_Str(), nullptr, gpuTex, format, 0, 0);
 	}
 
+	uint32_t slot = allocateTextureSlot();
+	m_MaterialDescriptorSet.updateMaterialDescriptorSet(slot, gpuTex.view, gpuTex.sampler);
+	gltfMaterial.textureIndex = slot;
+
 	m_gpuTextures.push_back(std::move(gpuTex));
 
 	return static_cast<int>(m_gpuTextures.size() - 1);
@@ -178,7 +190,9 @@ int Texture::getOrCreateGpuTexture(
 	aiMaterial* material,
 	aiTextureType type,
 	ItemInterface& classReference,
-	VkFormat format)
+	VkFormat format,
+	Texture::GLTFMaterial& gltfMaterial
+	)
 {
 	aiString path;
 
@@ -186,7 +200,7 @@ int Texture::getOrCreateGpuTexture(
 		return Constants::DEFAULT_WHITE_TEXTURE_INDEX;
 	}
 
-	return uploadAssimpTextureToVulkan(scene, path, classReference, format);
+	return uploadAssimpTextureToVulkan(scene, path, classReference, format, gltfMaterial);
 }
 
 void Texture::buildGPUMaterial(
@@ -226,7 +240,7 @@ void Texture::buildGPUMaterial(
 		material->GetTexture(aiTextureType_DIFFUSE, 0, &path) == AI_SUCCESS)
 	{
 		mat.baseColorTex = getOrCreateGpuTexture(scene, material, aiTextureType_BASE_COLOR, classReference, 
-			VK_FORMAT_R8G8B8A8_SRGB);
+			VK_FORMAT_R8G8B8A8_SRGB, mat);
 	}
 
 
@@ -235,7 +249,8 @@ void Texture::buildGPUMaterial(
 	if (material->GetTexture(aiTextureType_NORMALS, 0, &path) == AI_SUCCESS)
 	{
 
-		mat.normalTex = getOrCreateGpuTexture(scene, material, aiTextureType_NORMALS, classReference, VK_FORMAT_R8G8B8A8_UNORM);
+		mat.normalTex = getOrCreateGpuTexture(scene, material, aiTextureType_NORMALS, classReference, VK_FORMAT_R8G8B8A8_UNORM,
+			mat);
 	}
 
 	classReference.materialData.gltfMaterials[materialIndex] = mat;

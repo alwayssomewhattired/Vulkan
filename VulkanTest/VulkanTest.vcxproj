@@ -141,8 +141,8 @@
     <ClCompile Include="CommandPool.cpp" />
     <ClCompile Include="items\Computer.cpp" />
     <ClCompile Include="items\CozyHouse.cpp" />
-    <ClCompile Include="DescriptorSet.cpp" />
-    <ClCompile Include="DescriptorSetLayout.cpp" />
+    <ClCompile Include="descriptor_sets\DescriptorSet.cpp" />
+    <ClCompile Include="descriptor_sets\DescriptorSetLayout.cpp" />
     <ClCompile Include="Devices.cpp" />
     <ClCompile Include="GPUTexture.cpp" />
     <ClCompile Include="GraphicsPipeline.cpp" />
@@ -185,11 +185,12 @@
     <ClInclude Include="Camera.h" />
     <ClInclude Include="CommandBuffer.h" />
     <ClInclude Include="CommandPool.h" />
+    <ClInclude Include="descriptor_sets\MaterialDescriptorSet.h" />
     <ClInclude Include="items\Computer.h" />
     <ClInclude Include="Constants.h" />
     <ClInclude Include="items\CozyHouse.h" />
-    <ClInclude Include="DescriptorSet.h" />
-    <ClInclude Include="DescriptorSetLayout.h" />
+    <ClInclude Include="descriptor_sets\DescriptorSet.h" />
+    <ClInclude Include="descriptor_sets\DescriptorSetLayout.h" />
     <ClInclude Include="Devices.h" />
     <ClInclude Include="glm_config.h" />
     <ClInclude Include="GPUTexture.h" />

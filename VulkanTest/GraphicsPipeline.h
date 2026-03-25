@@ -1,7 +1,7 @@
 #pragma once
 #include "Shaders.h"
 #include "SwapChain.h"
-#include "descriptorSetLayout.h"
+#include "descriptor_sets/DescriptorSetLayout.h"
 #include "UniformBuffer.h"
 
 #include <vulkan/vulkan.h>

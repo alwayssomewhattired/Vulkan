@@ -10,7 +10,7 @@
 #include "ValidationLayers.h"
 #include "Devices.h"
 #include "SwapChain.h"
-#include "descriptorSetLayout.h"
+#include "descriptor_sets/DescriptorSetLayout.h"
 #include "RenderPass.h"
 #include "GraphicsPipeline.h"
 #include "CommandPool.h"
@@ -26,7 +26,7 @@
 #include "Vertex.h"
 #include "Constants.h"
 #include "UniformBuffer.h"
-#include "DescriptorSet.h"
+#include "descriptor_sets/DescriptorSet.h"
 #include "StorageImageManager.h"
 #include "RenderTarget.h"
 #include "Callbacks.h"
@@ -245,6 +245,7 @@ private:
 		m_SwapChain->createImageViews(*m_Image);
 
 		m_descriptorSetLayout->createGlobalDescriptorSetLayout();
+		m_descriptorSetLayout->createMaterialDescriptorSetLayout();
 		m_descriptorSetLayout->createAnimationDescriptorSetLayout();
 		m_descriptorSetLayout->createMeshdescriptorSetLayout();
 		m_descriptorSetLayout->createMandelbulbComputedescriptorSetLayout();
@@ -629,7 +630,7 @@ private:
 		vkDestroyDescriptorPool(*m_device, m_descriptorSetLayout->computeDescriptorPool, nullptr);
 
 		vkDestroyDescriptorSetLayout(*m_device, m_descriptorSetLayout->globalDescriptorSetLayout, nullptr);
-		vkDestroyDescriptorSetLayout(*m_device, m_descriptorSetLayout->materialDescriptorSetLayout, nullptr);
+		vkDestroyDescriptorSetLayout(*m_device, m_descriptorSetLayout->meshDescriptorSetLayout, nullptr);
 		vkDestroyDescriptorSetLayout(*m_device, m_descriptorSetLayout->mandelbulbComputedescriptorSetLayout, nullptr);
 		vkDestroyDescriptorSetLayout(*m_device, m_descriptorSetLayout->mandelbulbGraphicsdescriptorSetLayout, nullptr);
 

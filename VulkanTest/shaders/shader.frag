@@ -9,26 +9,26 @@ layout(location = 5) in mat3 fragTBN;
 
 layout(location = 0) out vec4 outColor;
 
-layout(set = 1, binding = 0) uniform sampler2D texSampler;
+layout(set = 1, binding = 0) uniform sampler2D normalMap;
 
-layout(set = 1, binding = 1) uniform sampler2D normalMap;
+layout(set = 3, binding = 0) uniform sampler2D textures[];
 
-layout(set = 1, binding = 2) uniform MaterialUBO {
+layout(set = 1, binding = 1) uniform MaterialUBO {
 	vec4 baseColorFactor;
 } material;
-
 
 layout(push_constant) uniform ModelLightPC {
 	mat4 model;
     vec4 pos;
+	uint materialIndex;
 } lightPC;
 
 
 void main() {
 
 	// | begin blinn-phong
-
-	vec4 texColor = texture(texSampler, fragTexCoord);
+	#extension GL_EXT_nonuniform_qualifier : require
+	vec4 texColor = texture(textures[nonuniformEXT(lightPC.materialIndex)], fragTexCoord);
 	vec4 baseColor = material.baseColorFactor * texColor;
 	vec3 albedo = baseColor.rgb;
 	float shininess = 16.0;

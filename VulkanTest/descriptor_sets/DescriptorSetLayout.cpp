@@ -1,8 +1,12 @@
-#include "descriptorSetLayout.h"
-#include "Constants.h"
+#include "DescriptorSetLayout.h"
+
+
 #include <array>
 
-descriptorSetLayout::descriptorSetLayout(Devices& devices) : m_Devices(devices){}
+descriptorSetLayout::descriptorSetLayout(Devices& devices) : m_Devices(devices){
+	VkPhysicalDeviceDescriptorIndexingProperties props{};
+	maxTextures = std::min(10000u, props.maxDescriptorSetUpdateAfterBindSampledImages);
+}
 
 void descriptorSetLayout::createGlobalDescriptorSetLayout() {
 	VkDescriptorSetLayoutBinding cameraBinding{};
@@ -24,35 +28,28 @@ void descriptorSetLayout::createGlobalDescriptorSetLayout() {
 
 void descriptorSetLayout::createMeshdescriptorSetLayout() {
 
-	VkDescriptorSetLayoutBinding samplerBinding{};
-	samplerBinding.binding = 0;
-	samplerBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-	samplerBinding.descriptorCount = 1;
-	samplerBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-	samplerBinding.pImmutableSamplers = nullptr;
-
 	VkDescriptorSetLayoutBinding normalBinding{};
-	normalBinding.binding = 1;
+	normalBinding.binding = 0;
 	normalBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 	normalBinding.descriptorCount = 1;
 	normalBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 	normalBinding.pImmutableSamplers = nullptr;
 
-	VkDescriptorSetLayoutBinding materialBinding{};
-	materialBinding.binding = 2;
-	materialBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-	materialBinding.descriptorCount = 1;
-	materialBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-	materialBinding.pImmutableSamplers = nullptr;
+	VkDescriptorSetLayoutBinding baseColorFactorBinding{};
+	baseColorFactorBinding.binding = 1;
+	baseColorFactorBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	baseColorFactorBinding.descriptorCount = 1;
+	baseColorFactorBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+	baseColorFactorBinding.pImmutableSamplers = nullptr;
 
-	std::array<VkDescriptorSetLayoutBinding, 3> materialBindings = { samplerBinding, normalBinding, materialBinding };
+	std::array<VkDescriptorSetLayoutBinding, 2> materialBindings = { normalBinding, baseColorFactorBinding };
 
 	VkDescriptorSetLayoutCreateInfo layoutInfo{};
 	layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
 	layoutInfo.bindingCount = static_cast<uint32_t>(materialBindings.size());
 	layoutInfo.pBindings = materialBindings.data();
 
-	if (vkCreateDescriptorSetLayout(m_Devices.device, &layoutInfo, nullptr, &materialDescriptorSetLayout) != VK_SUCCESS)
+	if (vkCreateDescriptorSetLayout(m_Devices.device, &layoutInfo, nullptr, &meshDescriptorSetLayout) != VK_SUCCESS)
 		throw std::runtime_error("failed to create descriptor set layout!");
 }
 
@@ -71,6 +68,37 @@ void descriptorSetLayout::createAnimationDescriptorSetLayout() {
 	layoutInfo.pBindings = &animationBinding;
 
 	if (vkCreateDescriptorSetLayout(m_Devices.device, &layoutInfo, nullptr, &animationDescriptorSetLayout) != VK_SUCCESS)
+		throw std::runtime_error("failed to create descriptor set layout!");
+}
+
+// | bindless
+void descriptorSetLayout::createMaterialDescriptorSetLayout() {
+
+	VkDescriptorSetLayoutBinding materialBinding{};
+	materialBinding.binding = 0;
+	materialBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	materialBinding.descriptorCount = maxTextures;
+	materialBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+	materialBinding.pImmutableSamplers = nullptr;
+
+	VkDescriptorBindingFlags flags =
+		VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT | 
+		VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT |
+		VK_DESCRIPTOR_BINDING_VARIABLE_DESCRIPTOR_COUNT_BIT;
+
+	VkDescriptorSetLayoutBindingFlagsCreateInfo extended{};
+	extended.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO;
+	extended.bindingCount = 1;
+	extended.pBindingFlags = &flags;
+
+	VkDescriptorSetLayoutCreateInfo layoutInfo{};
+	layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+	layoutInfo.bindingCount = 1;
+	layoutInfo.pBindings = &materialBinding;
+	layoutInfo.pNext = &extended;
+	layoutInfo.flags = VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT;
+
+	if (vkCreateDescriptorSetLayout(m_Devices.device, &layoutInfo, nullptr, &materialDescriptorSetLayout) != VK_SUCCESS)
 		throw std::runtime_error("failed to create descriptor set layout!");
 }
 
@@ -102,6 +130,34 @@ void descriptorSetLayout::createDescriptorPool(uint32_t materialCount, uint32_t 
 	// total descriptor sets allocated from this pool
 	poolInfo.maxSets =
 		globalSetCount + materialSetCount + animSetCount;
+
+	if (vkCreateDescriptorPool(
+		m_Devices.device,
+		&poolInfo,
+		nullptr,
+		&descriptorPool) != VK_SUCCESS)
+	{
+		throw std::runtime_error("failed to create descriptor pool!");
+	}
+
+}
+
+// | BINDLESS
+void descriptorSetLayout::createMaterialDescriptorPool() {
+
+	VkDescriptorPoolSize poolSize{};
+
+	// material textures
+	poolSize.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	poolSize.descriptorCount = maxTextures;
+
+	VkDescriptorPoolCreateInfo poolInfo{};
+	poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+	poolInfo.poolSizeCount = 1;
+	poolInfo.pPoolSizes = &poolSize;
+	poolInfo.flags = VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT;
+
+	poolInfo.maxSets = 1;
 
 	if (vkCreateDescriptorPool(
 		m_Devices.device,

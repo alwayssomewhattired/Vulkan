@@ -53,11 +53,12 @@ struct ItemInterface {
 
 
 	struct MaterialData {
-		// | gltf material indices to gltf textures
+		// | gltf material indices to gltf textures (stored in GPUTexture)
 		std::vector<Texture::GLTFMaterial> gltfMaterials;
 
 		// | primitive-material indices
-		std::vector<int> gltfPrimitiveMaterialIndices;
+		// // - i dont think we need this
+		//std::vector<int> gltfPrimitiveMaterialIndices;
 
 		std::string optionalTexturePath;
 

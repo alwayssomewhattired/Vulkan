@@ -2,7 +2,8 @@
 #include <vulkan/vulkan.h>
 #include <vulkan/vulkan_core.h>
 
-#include "Devices.h"
+#include "../Devices.h"
+#include "../Constants.h"
 
 #include <stdexcept>
 
@@ -15,13 +16,17 @@ public:
 	void createGlobalDescriptorSetLayout();
 	void createMeshdescriptorSetLayout();
 	void createAnimationDescriptorSetLayout();
+	void createMaterialDescriptorSetLayout();
 	void createDescriptorPool(uint32_t materialCount, uint32_t numberModels);
+	void createMaterialDescriptorPool();
 
 	VkDescriptorSetLayout globalDescriptorSetLayout;
+	VkDescriptorSetLayout meshDescriptorSetLayout;
 	VkDescriptorSetLayout materialDescriptorSetLayout;
 	VkDescriptorSetLayout animationDescriptorSetLayout;
 
 	VkDescriptorPool descriptorPool;
+	VkDescriptorPool materialDescriptorPool;
 	VkDescriptorPool computeDescriptorPool;
 	VkDescriptorPool graphicsDescriptorPool;
 
@@ -34,6 +39,7 @@ public:
 	void createGraphicsDescriptorPool(uint32_t graphicsSetCount);
 
 private:
-	Devices& m_Devices;;
+	Devices& m_Devices;
+	uint32_t maxTextures;
 };
 

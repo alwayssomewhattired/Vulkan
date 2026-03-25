@@ -54,7 +54,7 @@
     <ClCompile Include="SwapChain.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="DescriptorSetLayout.cpp">
+    <ClCompile Include="descriptor_sets\DescriptorSetLayout.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Initialize.cpp">
@@ -75,7 +75,7 @@
     <ClCompile Include="Image.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="DescriptorSet.cpp">
+    <ClCompile Include="descriptor_sets\DescriptorSet.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="UniformBuffer.cpp">
@@ -169,7 +169,7 @@
     <ClInclude Include="SwapChain.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="DescriptorSetLayout.h">
+    <ClInclude Include="descriptor_sets\DescriptorSetLayout.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Initialize.h">
@@ -190,7 +190,7 @@
     <ClInclude Include="Image.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="DescriptorSet.h">
+    <ClInclude Include="descriptor_sets\DescriptorSet.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="UniformBuffer.h">
@@ -245,6 +245,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="animation\AnimatorStruct.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="descriptor_sets\MaterialDescriptorSet.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

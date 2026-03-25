@@ -18,12 +18,14 @@ public:
         memory(other.memory),
         view(other.view),
         sampler(other.sampler),
+        //textureIndex(other.textureIndex),
         m_device(other.m_device)
     {
         other.image = VK_NULL_HANDLE;
         other.memory = VK_NULL_HANDLE;
         other.view = VK_NULL_HANDLE;
         other.sampler = VK_NULL_HANDLE;
+        //other.textureIndex = 0;
     }
 
     GPUTexture& operator=(GPUTexture&& other) noexcept {
@@ -33,12 +35,14 @@ public:
             memory = other.memory;
             view = other.view;
             sampler = other.sampler;
+            //textureIndex = other.textureIndex;
             m_device = other.m_device;
 
             other.image = VK_NULL_HANDLE;
             other.memory = VK_NULL_HANDLE;
             other.view = VK_NULL_HANDLE;
             other.sampler = VK_NULL_HANDLE;
+            //other.textureIndex = 0;
         }
         return *this;
     }
@@ -47,6 +51,9 @@ public:
     VkDeviceMemory memory = VK_NULL_HANDLE;
     VkImageView view = VK_NULL_HANDLE;
     VkSampler sampler = VK_NULL_HANDLE;
+
+    // | index into bindless texture
+    //uint32_t textureIndex = 0;
 
 private:
     VkDevice m_device = VK_NULL_HANDLE;

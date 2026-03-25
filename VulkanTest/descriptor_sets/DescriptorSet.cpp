@@ -1,11 +1,11 @@
 #include "DescriptorSet.h"
 
-#include "descriptorSetLayout.h"
-#include "Devices.h"
-#include "UniformBuffer.h"
-#include "items/ItemInterface.h"
-#include "StorageImageManager.h"
-#include "Texture.h"
+#include "DescriptorSetLayout.h"
+#include "../Devices.h"
+#include "../UniformBuffer.h"
+#include "../items/ItemInterface.h"
+#include "../StorageImageManager.h"
+#include "../Texture.h"
 
 
 DescriptorSet::DescriptorSet(descriptorSetLayout& descriptorSetLayout, Devices& devices, UniformBuffer& uniformBuffer, 
@@ -14,7 +14,6 @@ DescriptorSet::DescriptorSet(descriptorSetLayout& descriptorSetLayout, Devices& 
 	m_StorageImageManager(storageImageManager), m_Texture(texture) {}
 
 void DescriptorSet::createGlobalDescriptorSets() {
-
 
 	auto& descriptorSets = globalDescriptorSets;
 
@@ -76,7 +75,7 @@ void DescriptorSet::createMeshDescriptorSets(ItemInterface& classReference) {
 
 	std::vector<VkDescriptorSetLayout> layouts(
 		descriptorSets.size(),
-		m_descriptorSetLayout.materialDescriptorSetLayout
+		m_descriptorSetLayout.meshDescriptorSetLayout
 	);
 
 	VkDescriptorSetAllocateInfo allocInfo{};
@@ -92,8 +91,6 @@ void DescriptorSet::createMeshDescriptorSets(ItemInterface& classReference) {
 		throw std::runtime_error("failed to allocate descriptor sets!");
 	}
 
-
-
 	for (size_t frame = 0; frame < Constants::MAX_FRAMES_IN_FLIGHT; frame++) {
 		for (size_t matIdx = 0; matIdx < materials.size(); ++matIdx) {
 
@@ -105,10 +102,6 @@ void DescriptorSet::createMeshDescriptorSets(ItemInterface& classReference) {
 			const GPUTexture& GPUBaseColorTex = textures[material.baseColorTex];
 
 			assert(material.baseColorTex < textures.size());
-			VkDescriptorImageInfo baseColorInfo{};
-			baseColorInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-			baseColorInfo.imageView = GPUBaseColorTex.view;
-			baseColorInfo.sampler = GPUBaseColorTex.sampler;
 
 			VkDescriptorImageInfo normalInfo{};
 			normalInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
@@ -120,31 +113,23 @@ void DescriptorSet::createMeshDescriptorSets(ItemInterface& classReference) {
 			materialBufferInfo.offset = 0;
 			materialBufferInfo.range = sizeof(ItemInterface::MaterialUBO);
 
-			std::array<VkWriteDescriptorSet, 3> descriptorWrites{};
+			std::array<VkWriteDescriptorSet, 2> descriptorWrites{};
 
 			descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 			descriptorWrites[0].dstSet = dstSet;
-			descriptorWrites[0].dstBinding = 0;
+			descriptorWrites[0].dstBinding = 1;
 			descriptorWrites[0].dstArrayElement = 0;
 			descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 			descriptorWrites[0].descriptorCount = 1;
-			descriptorWrites[0].pImageInfo = &baseColorInfo;
+			descriptorWrites[0].pImageInfo = &normalInfo;
 
 			descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 			descriptorWrites[1].dstSet = dstSet;
-			descriptorWrites[1].dstBinding = 1;
+			descriptorWrites[1].dstBinding = 2;
 			descriptorWrites[1].dstArrayElement = 0;
-			descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+			descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 			descriptorWrites[1].descriptorCount = 1;
-			descriptorWrites[1].pImageInfo = &normalInfo;
-
-			descriptorWrites[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			descriptorWrites[2].dstSet = dstSet;
-			descriptorWrites[2].dstBinding = 2;
-			descriptorWrites[2].dstArrayElement = 0;
-			descriptorWrites[2].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-			descriptorWrites[2].descriptorCount = 1;
-			descriptorWrites[2].pBufferInfo = &materialBufferInfo;
+			descriptorWrites[1].pBufferInfo = &materialBufferInfo;
 
 			vkUpdateDescriptorSets(m_Devices.device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(),
 				0, nullptr);
@@ -203,6 +188,7 @@ void DescriptorSet::createAnimationDescriptorSets(ItemInterface& classReference)
 
 	}
 }
+
 
 void DescriptorSet::createMandelbulbComputeDescriptorSets() {
 

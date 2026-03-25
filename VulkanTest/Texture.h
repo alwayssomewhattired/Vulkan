@@ -8,7 +8,6 @@
 #include <assimp/postprocess.h>
 #include <stb_image.h>
 
-
 #include "glm_config.h"
 #include "GPUTexture.h"
 
@@ -16,17 +15,18 @@
 #include <stdexcept>
 
 
-
 class Image;
 class Buffer;
 class Devices;
 class CommandBuffer;
 class ItemInterface;
+struct MaterialDescriptorSet;
 
 class Texture
 {
 public:
-	Texture(Buffer& buffer, Image& image, Devices& devices, CommandBuffer& commandBuffer);
+	Texture(Buffer& buffer, Image& image, Devices& devices, CommandBuffer& commandBuffer, 
+		MaterialDescriptorSet& materialDescriptorSet);
 	
 	// | central texture storage
 	// | (use indices from item class to access elements)
@@ -41,6 +41,8 @@ public:
 		int baseColorTex;
 		int normalTex;
 		glm::vec4 baseColorFactor;
+		// | texture index into bindless descriptor set
+		uint32_t textureIndex;
 	};
 
 	// | updates outTexture struct. does more than just create images...
@@ -59,18 +61,21 @@ public:
 	void buildGPUMaterial(const aiScene* scene, aiMaterial* material, unsigned int materialIndex, ItemInterface& classReference,
 		const uint32_t primitiveIdx);
 
+
 private:
 	Buffer& m_Buffer;
 	Image& m_Image;
 	Devices& m_Devices;
 	CommandBuffer& m_CommandBuffer;
+	MaterialDescriptorSet& m_MaterialDescriptorSet;
+
 	void createTextureSampler(const uint32_t& mipLevels, GPUTexture& outTex);
 
 	//int uploadGltfTextureToVulkan(tinygltf::Model& model, int& textureIndex, ItemInterface& classReference,
 	//	const VkFormat& format);
 
 	int uploadAssimpTextureToVulkan(const aiScene* scene, const aiString& path, ItemInterface& classReference,
-		const VkFormat& format);
+		const VkFormat& format, Texture::GLTFMaterial& gltfMaterial);
 
 	void createDefaultTextures();
 
@@ -79,7 +84,9 @@ private:
 		aiMaterial* material,
 		aiTextureType type,
 		ItemInterface& classReference,
-		VkFormat format);
+		VkFormat format,
+		Texture::GLTFMaterial& gltfMaterial);
 
+	uint32_t allocateTextureSlot();
 };
 

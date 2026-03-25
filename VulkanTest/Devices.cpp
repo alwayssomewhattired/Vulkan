@@ -41,6 +41,12 @@ void Devices::createLogicalDevice()
 	deviceFeatures.samplerAnisotropy = VK_TRUE;
 	deviceFeatures.sampleRateShading = VK_TRUE;
 
+	VkPhysicalDeviceDescriptorIndexingFeatures features{};
+	features.shaderSampledImageArrayNonUniformIndexing = VK_TRUE;
+	features.runtimeDescriptorArray = VK_TRUE;
+	features.descriptorBindingPartiallyBound = VK_TRUE;
+	features.descriptorBindingVariableDescriptorCount = VK_TRUE;
+
 	VkDeviceCreateInfo createInfo{};
 	createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
 
