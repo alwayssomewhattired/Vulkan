@@ -113,6 +113,7 @@ void descriptorSetLayout::createDescriptorPool(uint32_t materialCount, uint32_t 
 	// camera UBO + material UBOs + anim UBOs
 	poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 	poolSizes[0].descriptorCount =
+		//globalSetCount + animSetCount;
 		globalSetCount + materialSetCount + animSetCount;
 
 	// material textures
@@ -127,6 +128,7 @@ void descriptorSetLayout::createDescriptorPool(uint32_t materialCount, uint32_t 
 
 	// total descriptor sets allocated from this pool
 	poolInfo.maxSets =
+		//globalSetCount + animSetCount;
 		globalSetCount + materialSetCount + animSetCount;
 
 	if (vkCreateDescriptorPool(

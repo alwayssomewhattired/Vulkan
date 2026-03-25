@@ -61,7 +61,7 @@ glm::quat ModelLoad::convert(const aiQuaternion& q)
 void ModelLoad::modelFileParse(
 	const aiScene* scene, aiMesh* mesh, size_t& vertexCount, 
 	std::vector<Vertex>& vertices, VkIndexType& indexType, std::vector<uint32_t>& indices,
-	ItemInterface& classReference, const uint32_t meshIndex) {
+	ItemInterface& classReference, const uint32_t meshIndex, const uint32_t globalVertexOffset) {
 
 	glm::vec3 min(FLT_MAX);
 	glm::vec3 max(-FLT_MAX);
@@ -136,7 +136,7 @@ void ModelLoad::modelFileParse(
 	for (uint32_t i = 0; i < mesh->mNumFaces; i++) {
 		const aiFace& face = mesh->mFaces[i];
 		for (uint32_t j = 0; j < face.mNumIndices; j++) {
-			indices.push_back(face.mIndices[j] + classReference.meshData.vertexOffset[meshIndex]);
+			indices.push_back(face.mIndices[j] + globalVertexOffset);
 		}
 	}
 
@@ -238,8 +238,6 @@ void ModelLoad::modelFileParse(
 
 	aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
 
-	//classReference.materialData.gltfPrimitiveMaterialIndices.push_back(mesh->mMaterialIndex);
-
 	m_Texture.buildGPUMaterial(scene, material, mesh->mMaterialIndex, classReference, meshIndex);
 
 }
@@ -291,15 +289,15 @@ void ModelLoad::processNode(aiNode* node, int parentIndex, ItemInterface& classR
 
 void ModelLoad::loadModel(const std::string& path, ItemInterface& classReference) {
 
-	auto& vertexBufferManager = classReference.meshData.vertexBuffer;
-	auto& vertexMemoryManager = classReference.meshData.vertexMemory;
-	auto& indexBufferManager = classReference.meshData.indexBuffer;
-	auto& indexMemoryManager = classReference.meshData.indexMemory;
+	auto& vertexBufferManager = m_Buffer.globalVertexBuffer;
+	VkDeviceMemory vertexMemoryManager = VK_NULL_HANDLE;
+	auto& indexBufferManager = m_Buffer.globalIndexBuffer;
+	VkDeviceMemory indexMemoryManager = VK_NULL_HANDLE;
 	auto& vertexCountManager = classReference.meshData.vertexCount;
 	auto& indexCountManager = classReference.meshData.indexCount;
-	auto& indexType = classReference.meshData.indexType;
-	auto& vertices = classReference.meshData.vertices;
-	auto& indices = classReference.meshData.indices;
+	auto& vertices = m_Buffer.globalVertices;
+	auto& indices = m_Buffer.globalIndices;
+	VkIndexType indexType = Constants::INDEX_TYPE;
 
 	Assimp::Importer importer;
 
@@ -318,29 +316,25 @@ void ModelLoad::loadModel(const std::string& path, ItemInterface& classReference
 	}
 	classReference.materialData.gltfMaterials.resize(scene->mNumMaterials);
 
-	uint32_t globalVertexOffset = 0;
-	uint32_t globalIndexOffset = 0;
-
 	for (uint32_t i = 0; i < scene->mNumMeshes; i++) {
 		
 		aiMesh* mesh = scene->mMeshes[i];
 
-		uint32_t baseVertex = globalVertexOffset;
-		uint32_t firstIndex = globalIndexOffset;
+		uint32_t globalVertexOffset = static_cast<uint32_t>(vertices.size());
+		uint32_t globalIndexOffset = static_cast<uint32_t>(indices.size());
 		
-		std::vector<Vertex>& vertices = classReference.meshData.vertices;
-		std::vector<uint32_t>& indices = classReference.meshData.indices;
 		size_t vertexCount = mesh->mNumVertices;
 		vertices.reserve(vertexCount);
 
-		classReference.meshData.vertexOffset.push_back(baseVertex);
+		// | zero because we offset indices instead
+		classReference.meshData.vertexOffset.push_back(0);
 
-		modelFileParse(scene, mesh, vertexCount, vertices, indexType, indices, classReference, i);
+		modelFileParse(scene, mesh, vertexCount, vertices, indexType, indices, classReference, i, globalVertexOffset);
 		processNode(scene->mRootNode, -1, classReference);
 
-		classReference.meshData.firstIndex.push_back(firstIndex);
-		classReference.meshData.indexCount.push_back(indices.size() - firstIndex);
-
+		classReference.meshData.firstIndex.push_back(globalIndexOffset);
+		classReference.meshData.indexCount.push_back(indices.size() - globalIndexOffset);
+	
 		globalVertexOffset += mesh->mNumVertices;
 		globalIndexOffset += indices.size();
 	}
@@ -364,17 +358,15 @@ void ModelLoad::loadModel(const std::string& path, ItemInterface& classReference
 	unsigned char* data = reinterpret_cast<unsigned char*>(mapped);
 	vkUnmapMemory(device, stagingVm);
 
-	auto& vertexBuffer = classReference.meshData.vertexBuffer;
-	auto& vertexMemory = classReference.meshData.vertexMemory;
-	auto& indexBuffer = classReference.meshData.indexBuffer;
-	auto& indexMemory = classReference.meshData.indexMemory;
+	auto& vertexBuffer = m_Buffer.globalVertexBuffer;
+	auto& indexBuffer = m_Buffer.globalIndexBuffer;
 
 	m_Buffer.createBuffer(
 		vertexSize,
 		VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
 		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
 		vertexBuffer,
-		vertexMemory
+		vertexMemoryManager
 	);
 
 	// copy to gpu
@@ -386,7 +378,6 @@ void ModelLoad::loadModel(const std::string& path, ItemInterface& classReference
 
 	// indices
 
-	indexType = VK_INDEX_TYPE_UINT32;
 	uint32_t indexCount = static_cast<uint32_t>(indices.size());
 
 	VkDeviceSize indexSize = sizeof(uint32_t) * indices.size();
@@ -411,7 +402,7 @@ void ModelLoad::loadModel(const std::string& path, ItemInterface& classReference
 		VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
 		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
 		indexBuffer,
-		indexMemory
+		indexMemoryManager
 	);
 
 	m_CommandBuffer.copyBuffer(stagingIb, indexBuffer, indexSize);

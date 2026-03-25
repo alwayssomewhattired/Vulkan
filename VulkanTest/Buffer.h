@@ -5,10 +5,6 @@
 #include <vector>
 #include <stdexcept>
 
-//#include "Vertex.h"
-//#include "Devices.h"
-//#include "CommandBuffer.h"
-
 class Vertex;
 class Devices;
 class CommandBuffer;
@@ -26,6 +22,12 @@ public:
 	void createVertexBuffer(const std::vector<Vertex>& triangleVertices,
 		std::vector<VkBuffer>& triangleVertexBufferManager,
 		std::vector<VkDeviceMemory>& triangleVertexBufferMemoryManager);
+
+	VkBuffer globalVertexBuffer;
+	VkBuffer globalIndexBuffer;
+
+	std::vector<Vertex> globalVertices;
+	std::vector<uint32_t> globalIndices;
 
 private:
 	Devices& m_Devices;

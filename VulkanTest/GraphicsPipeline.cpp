@@ -127,9 +127,9 @@ void GraphicsPipeline::createGraphicsPipeline(UniformBuffer& uniformBuffer) {
 
 	std::array<VkDescriptorSetLayout, 4> dsLayouts = {
 		m_descriptorSetLayout.globalDescriptorSetLayout,
-		m_descriptorSetLayout.materialDescriptorSetLayout,
 		m_descriptorSetLayout.meshDescriptorSetLayout,
-		m_descriptorSetLayout.animationDescriptorSetLayout
+		m_descriptorSetLayout.animationDescriptorSetLayout,
+		m_descriptorSetLayout.materialDescriptorSetLayout
 	};
 	VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
 	pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;

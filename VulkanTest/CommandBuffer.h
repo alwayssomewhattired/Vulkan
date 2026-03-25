@@ -20,6 +20,7 @@ class SwapChain;
 	class SilentHill3Game;
 	class DescriptorSet;
 	class UniformBuffer;
+	class Buffer;
 
 
 class CommandBuffer
@@ -36,7 +37,7 @@ public:
 		GraphicsPipeline& graphicsPipeline, std::vector<ItemInterface*>& items, DescriptorSet& descriptorSet, 
 		const uint32_t currentFrame,
 		VkImage& storageImage, ItemInterface& triangleClass, UniformBuffer& uniformBuffer, 
-		MaterialDescriptorSet& materialDescriptorSet);
+		MaterialDescriptorSet& materialDescriptorSet, Buffer& buffer);
 
 	std::vector<VkCommandBuffer> commandBuffers;
 

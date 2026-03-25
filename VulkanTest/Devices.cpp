@@ -66,7 +66,8 @@ void Devices::createLogicalDevice()
 
 	vkGetPhysicalDeviceProperties2(physicalDevice, &indexingProps2);
 
-	maxTextures = indexingProps.maxDescriptorSetUpdateAfterBindSampledImages;
+	int normalsDSSize = 1;
+	maxTextures = indexingProps.maxDescriptorSetUpdateAfterBindSampledImages - normalsDSSize;
 
 	// | end bindless indexing
 

@@ -16,6 +16,7 @@ layout(set = 2, binding = 0) uniform BonesUBO {
 layout(push_constant) uniform ModelLightPC {
     mat4 model;
     vec4 pos;
+    uint materialIndex;
 } modelPC;
  
 layout(location = 0) in vec3 inPosition;

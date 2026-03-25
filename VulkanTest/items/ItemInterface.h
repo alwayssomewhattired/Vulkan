@@ -24,26 +24,26 @@ struct ItemInterface {
 
 
 	struct MeshData {
-		VkBuffer vertexBuffer;
+		//VkBuffer vertexBuffer;
 
-		VkDeviceMemory vertexMemory;
+		//VkDeviceMemory vertexMemory;
 
-		VkBuffer indexBuffer;
-		VkDeviceMemory indexMemory;
+		//VkBuffer indexBuffer;
+		//VkDeviceMemory indexMemory;
 
-		VkIndexType indexType;
+		//VkIndexType indexType;
 
 		std::vector<size_t> vertexCount;
 
 		// | vertices of primitives
-		std::vector<Vertex> vertices;
+		//std::vector<Vertex> vertices;
 
-		std::vector<uint32_t> indices;
+		//std::vector<uint32_t> indices;
 
 		std::vector<uint32_t> firstIndex;
 
 		// | DO add to index buffer values
-		// | DONT byte offset into vertex buffer
+		// | DONT byte offset into vertex buffer because we already offset indices
 		std::vector<uint32_t> vertexOffset;
 
 		std::vector<uint32_t> indexCount;

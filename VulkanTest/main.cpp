@@ -287,13 +287,6 @@ private:
 
 		m_RenderPass->createFramebuffers(m_AttachmentManager->m_GPUColor.view(), m_AttachmentManager->m_GPUDepth.view());
 
-
-		// | triangle vertex buffer 
-		//m_Buffer->createVertexBuffer(m_Triangle->triangleVertices, m_Triangle->vertexBuffer(), m_Triangle->vertexMemory());
-
-	  // - incorporate for triangle in the future
-		//createIndexBuffer();
-
 		m_StorageImageManager = std::make_unique<StorageImageManager>(*m_Image, *m_SwapChain, *m_devices);
 		m_StorageImageManager->createStorageImageResources();
 
@@ -521,7 +514,7 @@ private:
 
 		m_CommandBuffer->recordCommandBuffer(m_CommandBuffer->commandBuffers[imageIndex], imageIndex, m_RenderPass->renderPass,
 			*m_GraphicsPipeline, items, *m_DescriptorSet, g_currentFrame, m_StorageImageManager->m_GPUStorageImage.image(), 
-			*m_Triangle, *m_UniformBuffer, *m_MaterialDescriptorSet);
+			*m_Triangle, *m_UniformBuffer, *m_MaterialDescriptorSet, *m_Buffer);
 
 		VkSubmitInfo submitInfo{};
 		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
