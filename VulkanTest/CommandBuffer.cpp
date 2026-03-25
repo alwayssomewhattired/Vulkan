@@ -12,9 +12,8 @@
 #include "Constants.h"
 #include "UniformBuffer.h"
 
-CommandBuffer::CommandBuffer(VkCommandPool& commandPool, Devices& devices, SwapChain& swapChain, 
-MaterialDescriptorSet& materialDescriptorSet) : 
-	m_commandPool(commandPool), m_devices(devices), m_SwapChain(swapChain), m_MaterialDescriptorSet(materialDescriptorSet) {};
+CommandBuffer::CommandBuffer(VkCommandPool& commandPool, Devices& devices, SwapChain& swapChain) : 
+	m_commandPool(commandPool), m_devices(devices), m_SwapChain(swapChain) {};
 
 VkCommandBuffer CommandBuffer::beginSingleTimeCommands() {
 	VkCommandBufferAllocateInfo allocInfo{};
@@ -66,7 +65,8 @@ void CommandBuffer::createCommandBuffers(CommandPool& commandPool) {
 
 void CommandBuffer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex, VkRenderPass& renderPass,
 	GraphicsPipeline& graphicsPipeline, std::vector<ItemInterface*>& items, DescriptorSet& descriptorSet, 
-	const uint32_t currentFrame, VkImage& storageImage, ItemInterface& triangleClass, UniformBuffer& uniformBuffer) {
+	const uint32_t currentFrame, VkImage& storageImage, ItemInterface& triangleClass, UniformBuffer& uniformBuffer,
+	MaterialDescriptorSet& _materialDescriptorSet) {
 
 	VkCommandBufferBeginInfo beginInfo{};
 	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -126,7 +126,7 @@ void CommandBuffer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t 
 			&descriptorSet.globalDescriptorSets[currentFrame], 0, nullptr);
 
 		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.pipelineLayout, 3, 1,
-			&m_MaterialDescriptorSet.materialDescriptorSet, 0, nullptr);
+			&_materialDescriptorSet.materialDescriptorSet, 0, nullptr);
 		
 		for (size_t itemIndex = 0; itemIndex < items.size(); itemIndex++) {
 			auto& item = items[itemIndex];

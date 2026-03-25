@@ -185,7 +185,7 @@
     <ClInclude Include="Camera.h" />
     <ClInclude Include="CommandBuffer.h" />
     <ClInclude Include="CommandPool.h" />
-    <ClInclude Include="descriptor_sets\MaterialDescriptorSet.h" />
+    <ClInclude Include="descriptor_sets\MaterialDescriptorSet.hpp" />
     <ClInclude Include="items\Computer.h" />
     <ClInclude Include="Constants.h" />
     <ClInclude Include="items\CozyHouse.h" />

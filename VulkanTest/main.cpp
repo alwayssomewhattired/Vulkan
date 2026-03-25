@@ -11,6 +11,7 @@
 #include "Devices.h"
 #include "SwapChain.h"
 #include "descriptor_sets/DescriptorSetLayout.h"
+#include "descriptor_sets/MaterialDescriptorSet.hpp"
 #include "RenderPass.h"
 #include "GraphicsPipeline.h"
 #include "CommandPool.h"
@@ -129,6 +130,8 @@ private:
 
 	std::unique_ptr<Animator> m_Animation = nullptr;
 
+	std::unique_ptr<MaterialDescriptorSet> m_MaterialDescriptorSet = nullptr;
+
 	std::unique_ptr<ModelLoad> m_ModelLoad = nullptr;
 
 	std::unique_ptr<Image> m_Image = nullptr;
@@ -217,7 +220,13 @@ private:
 
 		m_CommandPool->createCommandPool(*m_devices);
 
-		m_Texture = std::make_unique<Texture>(*m_Buffer, *m_Image, *m_devices, *m_CommandBuffer);
+
+		m_MaterialDescriptorSet = std::make_unique<MaterialDescriptorSet>(*m_descriptorSetLayout, *m_devices);
+		m_descriptorSetLayout->createMaterialDescriptorPool();
+		m_descriptorSetLayout->createMaterialDescriptorSetLayout();
+		m_MaterialDescriptorSet->createMaterialDescriptorSets(m_devices->maxTextures);
+
+		m_Texture = std::make_unique<Texture>(*m_Buffer, *m_Image, *m_devices, *m_CommandBuffer, *m_MaterialDescriptorSet);
 
 		m_Animation = std::make_unique<Animator>();
 
@@ -245,7 +254,6 @@ private:
 		m_SwapChain->createImageViews(*m_Image);
 
 		m_descriptorSetLayout->createGlobalDescriptorSetLayout();
-		m_descriptorSetLayout->createMaterialDescriptorSetLayout();
 		m_descriptorSetLayout->createAnimationDescriptorSetLayout();
 		m_descriptorSetLayout->createMeshdescriptorSetLayout();
 		m_descriptorSetLayout->createMandelbulbComputedescriptorSetLayout();
@@ -457,6 +465,7 @@ private:
 		m_descriptorSetLayout->createDescriptorPool(materialsSize, items.size());
 
 		m_DescriptorSet->createGlobalDescriptorSets();
+
 		for (auto* item : items) {
 			m_DescriptorSet->createMeshDescriptorSets(*item);
 			m_DescriptorSet->createAnimationDescriptorSets(*item);
@@ -512,7 +521,7 @@ private:
 
 		m_CommandBuffer->recordCommandBuffer(m_CommandBuffer->commandBuffers[imageIndex], imageIndex, m_RenderPass->renderPass,
 			*m_GraphicsPipeline, items, *m_DescriptorSet, g_currentFrame, m_StorageImageManager->m_GPUStorageImage.image(), 
-			*m_Triangle, *m_UniformBuffer);
+			*m_Triangle, *m_UniformBuffer, *m_MaterialDescriptorSet);
 
 		VkSubmitInfo submitInfo{};
 		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;

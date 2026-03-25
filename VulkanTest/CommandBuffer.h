@@ -7,7 +7,7 @@
 #include <cstdint>
 #include <vector>
 
-#include "descriptor_sets/MaterialDescriptorSet.h"
+#include "descriptor_sets/MaterialDescriptorSet.hpp"
 
 class SwapChain;
 
@@ -25,7 +25,7 @@ class SwapChain;
 class CommandBuffer
 {
 public:
-	CommandBuffer(VkCommandPool& commandPool, Devices& devices, SwapChain& swapChain, MaterialDescriptorSet& materialDescriptorSet);
+	CommandBuffer(VkCommandPool& commandPool, Devices& devices, SwapChain& swapChain);
 	void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
 	VkCommandBuffer beginSingleTimeCommands();
 	void endSingleTimeCommands(VkCommandBuffer commandBuffer);
@@ -35,7 +35,8 @@ public:
 	void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex, VkRenderPass& renderPass,
 		GraphicsPipeline& graphicsPipeline, std::vector<ItemInterface*>& items, DescriptorSet& descriptorSet, 
 		const uint32_t currentFrame,
-		VkImage& storageImage, ItemInterface& triangleClass, UniformBuffer& uniformBuffer);
+		VkImage& storageImage, ItemInterface& triangleClass, UniformBuffer& uniformBuffer, 
+		MaterialDescriptorSet& materialDescriptorSet);
 
 	std::vector<VkCommandBuffer> commandBuffers;
 
@@ -43,6 +44,5 @@ private:
 	VkCommandPool& m_commandPool;
 	Devices& m_devices;
 	SwapChain& m_SwapChain;
-	MaterialDescriptorSet& m_MaterialDescriptorSet;
 };
 

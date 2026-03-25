@@ -2,6 +2,7 @@
 
 #include <vulkan/vulkan.h>
 #include <vulkan/vulkan_core.h>
+#include <iostream>
 
 #include "../items/ItemInterface.h"
 #include "DescriptorSetLayout.h"
@@ -15,7 +16,7 @@ struct MaterialDescriptorSet {
 
 	VkDescriptorSet materialDescriptorSet;
 
-	void createMaterialDescriptorSets(ItemInterface& classReference, const uint32_t maxTextures) {
+	void createMaterialDescriptorSets(const uint32_t maxTextures) {
 
 		VkDescriptorSetAllocateInfo allocInfo{};
 		allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
@@ -56,7 +57,6 @@ struct MaterialDescriptorSet {
 		write.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 		write.descriptorCount = 1;
 		write.pImageInfo = &imageInfo;
-
 		vkUpdateDescriptorSets(m_Devices.device, 1, &write, 0, nullptr);
 	}
 

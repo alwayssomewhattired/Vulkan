@@ -2,9 +2,12 @@
 #include <vulkan/vulkan.h>
 #include <vulkan/vulkan_core.h>
 #include <GLFW/glfw3.h>
+
 #include <vector>
 #include <optional>
 #include <cstdint>
+#include <algorithm>
+#include <iostream>
 
 class Devices {
 public:
@@ -54,6 +57,8 @@ public:
 	VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
 
 	VkSampleCountFlagBits msaaSamples = VK_SAMPLE_COUNT_1_BIT;
+
+	uint32_t maxTextures;
 
 private:
 	VkSurfaceKHR m_surface;

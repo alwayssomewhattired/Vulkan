@@ -4,8 +4,6 @@
 #include <array>
 
 descriptorSetLayout::descriptorSetLayout(Devices& devices) : m_Devices(devices){
-	VkPhysicalDeviceDescriptorIndexingProperties props{};
-	maxTextures = std::min(10000u, props.maxDescriptorSetUpdateAfterBindSampledImages);
 }
 
 void descriptorSetLayout::createGlobalDescriptorSetLayout() {
@@ -77,7 +75,7 @@ void descriptorSetLayout::createMaterialDescriptorSetLayout() {
 	VkDescriptorSetLayoutBinding materialBinding{};
 	materialBinding.binding = 0;
 	materialBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-	materialBinding.descriptorCount = maxTextures;
+	materialBinding.descriptorCount = m_Devices.maxTextures;
 	materialBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 	materialBinding.pImmutableSamplers = nullptr;
 
@@ -149,7 +147,7 @@ void descriptorSetLayout::createMaterialDescriptorPool() {
 
 	// material textures
 	poolSize.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-	poolSize.descriptorCount = maxTextures;
+	poolSize.descriptorCount = m_Devices.maxTextures;
 
 	VkDescriptorPoolCreateInfo poolInfo{};
 	poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
@@ -163,7 +161,7 @@ void descriptorSetLayout::createMaterialDescriptorPool() {
 		m_Devices.device,
 		&poolInfo,
 		nullptr,
-		&descriptorPool) != VK_SUCCESS)
+		&materialDescriptorPool) != VK_SUCCESS)
 	{
 		throw std::runtime_error("failed to create descriptor pool!");
 	}

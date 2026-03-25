@@ -247,7 +247,7 @@
     <ClInclude Include="animation\AnimatorStruct.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="descriptor_sets\MaterialDescriptorSet.h">
+    <ClInclude Include="descriptor_sets\MaterialDescriptorSet.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

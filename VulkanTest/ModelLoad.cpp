@@ -182,9 +182,7 @@ void ModelLoad::modelFileParse(
 	// | Animator
 	if (scene->HasAnimations()) {
 		// | selects animation from list
-		std::cout << scene->mNumAnimations << "\n";
 		aiAnimation* animator = scene->mAnimations[0];
-		std::cout << animator->mNumChannels << "\n"; 
 		classReference.animatorData.channels.reserve(animator->mNumChannels);
 
 		for (uint32_t i = 0; i < animator->mNumChannels; i++)

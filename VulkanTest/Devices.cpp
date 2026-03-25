@@ -36,16 +36,39 @@ void Devices::createLogicalDevice()
 		queueCreateInfos.push_back(queueCreateInfo);
 	}
 
-	// will do more with this later...
+	// | start bindless indexing
+
 	VkPhysicalDeviceFeatures deviceFeatures{};
 	deviceFeatures.samplerAnisotropy = VK_TRUE;
 	deviceFeatures.sampleRateShading = VK_TRUE;
 
-	VkPhysicalDeviceDescriptorIndexingFeatures features{};
-	features.shaderSampledImageArrayNonUniformIndexing = VK_TRUE;
-	features.runtimeDescriptorArray = VK_TRUE;
-	features.descriptorBindingPartiallyBound = VK_TRUE;
-	features.descriptorBindingVariableDescriptorCount = VK_TRUE;
+	VkPhysicalDeviceDescriptorIndexingFeatures indexingFeatures{};
+	indexingFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES;
+	indexingFeatures.pNext = nullptr;
+	indexingFeatures.shaderSampledImageArrayNonUniformIndexing = VK_TRUE;
+	indexingFeatures.runtimeDescriptorArray = VK_TRUE;
+	indexingFeatures.descriptorBindingPartiallyBound = VK_TRUE;
+	indexingFeatures.descriptorBindingVariableDescriptorCount = VK_TRUE;
+	indexingFeatures.descriptorBindingSampledImageUpdateAfterBind = VK_TRUE;
+
+	VkPhysicalDeviceFeatures2 features2{};
+	features2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+	features2.features = deviceFeatures;
+	features2.pNext = &indexingFeatures;
+
+	VkPhysicalDeviceDescriptorIndexingProperties indexingProps{};
+	indexingProps.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_PROPERTIES;
+	indexingProps.pNext = nullptr;
+
+	VkPhysicalDeviceProperties2 indexingProps2{};
+	indexingProps2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
+	indexingProps2.pNext = &indexingProps;
+
+	vkGetPhysicalDeviceProperties2(physicalDevice, &indexingProps2);
+
+	maxTextures = indexingProps.maxDescriptorSetUpdateAfterBindSampledImages;
+
+	// | end bindless indexing
 
 	VkDeviceCreateInfo createInfo{};
 	createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
@@ -53,7 +76,8 @@ void Devices::createLogicalDevice()
 	createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
 	createInfo.pQueueCreateInfos = queueCreateInfos.data();
 
-	createInfo.pEnabledFeatures = &deviceFeatures;
+	createInfo.pNext = &features2;
+	createInfo.pEnabledFeatures = nullptr;
 
 	createInfo.enabledExtensionCount = static_cast<uint32_t>(deviceExtensions.size());
 	createInfo.ppEnabledExtensionNames = deviceExtensions.data();
@@ -74,6 +98,7 @@ void Devices::createLogicalDevice()
 
 	vkGetDeviceQueue(device, indices.presentFamily.value(), 0, &presentQueue);
 	vkGetDeviceQueue(device, indices.graphicsFamily.value(), 0, &graphicsQueue);
+
 }
 
 

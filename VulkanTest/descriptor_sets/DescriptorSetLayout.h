@@ -5,6 +5,7 @@
 #include "../Devices.h"
 #include "../Constants.h"
 
+#include <iostream>
 #include <stdexcept>
 
 class Devices;
@@ -40,6 +41,5 @@ public:
 
 private:
 	Devices& m_Devices;
-	uint32_t maxTextures;
 };
 

@@ -7,7 +7,7 @@
 #include "Constants.h"
 
 #include "Items/ItemInterface.h"
-#include "descriptor_sets/MaterialDescriptorSet.h"
+#include "descriptor_sets/MaterialDescriptorSet.hpp"
 
 Texture::Texture(Buffer& buffer, Image& image, Devices& devices, CommandBuffer& commandBuffer, 
 	MaterialDescriptorSet& materialDescriptorSet) : 
@@ -120,7 +120,7 @@ void Texture::createTextureSampler(const uint32_t& mipLevels, GPUTexture& outTex
 		throw std::runtime_error("failed to create texture sampler!");
 }
 
-uint32_t allocateTextureSlot() {
+uint32_t Texture::allocateTextureSlot() {
 	static uint32_t nextFreeTexture = 0;
 	return nextFreeTexture++;
 }
