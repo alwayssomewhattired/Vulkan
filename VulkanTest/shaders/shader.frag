@@ -9,11 +9,9 @@ layout(location = 5) in mat3 fragTBN;
 
 layout(location = 0) out vec4 outColor;
 
-layout(set = 1, binding = 0) uniform sampler2D normalMap;
-
 layout(set = 3, binding = 0) uniform sampler2D textures[];
 
-layout(set = 1, binding = 1) uniform MaterialUBO {
+layout(set = 1, binding = 0) uniform MaterialUBO {
 	vec4 baseColorFactor;
 } material;
 
@@ -21,6 +19,7 @@ layout(push_constant) uniform ModelLightPC {
 	mat4 model;
     vec4 pos;
 	uint materialIndex;
+	uint normalIndex;
 } lightPC;
 
 
@@ -39,7 +38,7 @@ void main() {
 	float attenuation = clamp(1.0 - (lightDistance / radius), 0.0, 1.0);
 	attenuation *= attenuation;  // smoother falloff
 
-	vec3 tangentNormal = texture(normalMap, fragTexCoord).xyz;
+	vec3 tangentNormal = texture(textures[nonuniformEXT(lightPC.normalIndex)], fragTexCoord).xyz;
 	tangentNormal = tangentNormal * 2.0 - 1.0;
 
 	vec3 N = normalize(fragTBN * tangentNormal);

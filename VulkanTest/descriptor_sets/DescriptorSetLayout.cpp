@@ -26,26 +26,17 @@ void descriptorSetLayout::createGlobalDescriptorSetLayout() {
 
 void descriptorSetLayout::createMeshdescriptorSetLayout() {
 
-	VkDescriptorSetLayoutBinding normalBinding{};
-	normalBinding.binding = 0;
-	normalBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-	normalBinding.descriptorCount = 1;
-	normalBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-	normalBinding.pImmutableSamplers = nullptr;
-
 	VkDescriptorSetLayoutBinding baseColorFactorBinding{};
-	baseColorFactorBinding.binding = 1;
+	baseColorFactorBinding.binding = 0;
 	baseColorFactorBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 	baseColorFactorBinding.descriptorCount = 1;
 	baseColorFactorBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 	baseColorFactorBinding.pImmutableSamplers = nullptr;
 
-	std::array<VkDescriptorSetLayoutBinding, 2> materialBindings = { normalBinding, baseColorFactorBinding };
-
 	VkDescriptorSetLayoutCreateInfo layoutInfo{};
 	layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-	layoutInfo.bindingCount = static_cast<uint32_t>(materialBindings.size());
-	layoutInfo.pBindings = materialBindings.data();
+	layoutInfo.bindingCount = 1;
+	layoutInfo.pBindings = &baseColorFactorBinding;
 
 	if (vkCreateDescriptorSetLayout(m_Devices.device, &layoutInfo, nullptr, &meshDescriptorSetLayout) != VK_SUCCESS)
 		throw std::runtime_error("failed to create descriptor set layout!");
@@ -108,7 +99,7 @@ void descriptorSetLayout::createDescriptorPool(uint32_t materialCount, uint32_t 
 	uint32_t globalSetCount = frames;
 	uint32_t animSetCount = frames * numberModels;
 
-	std::array<VkDescriptorPoolSize, 2> poolSizes{};
+	std::array<VkDescriptorPoolSize, 1> poolSizes{};
 
 	// camera UBO + material UBOs + anim UBOs
 	poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -117,9 +108,9 @@ void descriptorSetLayout::createDescriptorPool(uint32_t materialCount, uint32_t 
 		globalSetCount + materialSetCount + animSetCount;
 
 	// material textures
-	poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-	poolSizes[1].descriptorCount =
-		materialSetCount * 2;
+	//poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	//poolSizes[1].descriptorCount =
+	//	materialSetCount * 2;
 
 	VkDescriptorPoolCreateInfo poolInfo{};
 	poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;

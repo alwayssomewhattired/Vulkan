@@ -120,13 +120,8 @@ void Texture::createTextureSampler(const uint32_t& mipLevels, GPUTexture& outTex
 		throw std::runtime_error("failed to create texture sampler!");
 }
 
-uint32_t Texture::allocateTextureSlot() {
-	static uint32_t nextFreeTexture = 0;
-	return nextFreeTexture++;
-}
-
 int Texture::uploadAssimpTextureToVulkan(const aiScene* scene, const aiString& path, ItemInterface& classReference, 
-	const VkFormat& format, Texture::GLTFMaterial& gltfMaterial) {
+	const VkFormat& format, Texture::ItemMaterial& gltfMaterial) {
 
 	GPUTexture gpuTex(m_Devices.device);
 
@@ -174,13 +169,15 @@ int Texture::uploadAssimpTextureToVulkan(const aiScene* scene, const aiString& p
 		createTextureImage(false, path.C_Str(), nullptr, gpuTex, format, 0, 0);
 	}
 
-	uint32_t slot = allocateTextureSlot();
-	m_MaterialDescriptorSet.updateMaterialDescriptorSet(slot, gpuTex.view, gpuTex.sampler);
-	gltfMaterial.textureIndex = slot;
-
+	uint32_t slot = static_cast<uint32_t>(m_gpuTextures.size());
 	m_gpuTextures.push_back(std::move(gpuTex));
 
-	return static_cast<int>(m_gpuTextures.size() - 1);
+	m_MaterialDescriptorSet.updateMaterialDescriptorSet(slot, m_gpuTextures.back().view, m_gpuTextures.back().sampler);
+	//m_MaterialDescriptorSet.updateMaterialDescriptorSet(slot, gpuTex.view, gpuTex.sampler);
+	//std::cout << slot << "\n";
+	//gltfMaterial.textureIndex = slot;
+	//return static_cast<int>(m_gpuTextures.size() - 1);
+	return slot;
 
 }
 
@@ -191,7 +188,7 @@ int Texture::getOrCreateGpuTexture(
 	aiTextureType type,
 	ItemInterface& classReference,
 	VkFormat format,
-	Texture::GLTFMaterial& gltfMaterial
+	Texture::ItemMaterial& gltfMaterial
 	)
 {
 	aiString path;
@@ -209,7 +206,7 @@ void Texture::buildGPUMaterial(
 	unsigned int materialIndex,
 	ItemInterface& classReference, const uint32_t primitiveIdx)
 {
-	GLTFMaterial mat{};
+	ItemMaterial mat{};
 
 	// | BASE COLOR FACTOR
 
@@ -253,23 +250,12 @@ void Texture::buildGPUMaterial(
 			mat);
 	}
 
-	classReference.materialData.gltfMaterials[materialIndex] = mat;
 
-	//for (unsigned i = 0; i < scene->mNumMeshes; i++)
-	//{
-	//	std::cout << "Mesh " << i
-	//		<< " material "
-	//		<< scene->mMeshes[i]->mMaterialIndex
-	//		<< " gltf materials count " 
-	//		<< classReference.gltfMaterials().size()
-	//		<< std::endl;
-	//}
-
+	classReference.materialData.itemMaterials[materialIndex] = mat;
 }
 
 
 void Texture::createDefaultTextures() {
-
 
 	// default base-color (default white)
 	GPUTexture whiteTex(m_Devices.device);

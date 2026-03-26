@@ -123,7 +123,7 @@ void GraphicsPipeline::createGraphicsPipeline(UniformBuffer& uniformBuffer) {
 	VkPushConstantRange pushConstantRanges{};
 	pushConstantRanges.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
 	pushConstantRanges.offset = 0;
-	pushConstantRanges.size = sizeof(glm::mat4) + sizeof(glm::vec4) + sizeof(glm::uint);
+	pushConstantRanges.size = sizeof(glm::mat4) + sizeof(glm::vec4) + (sizeof(glm::uint) * 2);
 
 	std::array<VkDescriptorSetLayout, 4> dsLayouts = {
 		m_descriptorSetLayout.globalDescriptorSetLayout,

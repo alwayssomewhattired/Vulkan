@@ -24,21 +24,8 @@ struct ItemInterface {
 
 
 	struct MeshData {
-		//VkBuffer vertexBuffer;
-
-		//VkDeviceMemory vertexMemory;
-
-		//VkBuffer indexBuffer;
-		//VkDeviceMemory indexMemory;
-
-		//VkIndexType indexType;
 
 		std::vector<size_t> vertexCount;
-
-		// | vertices of primitives
-		//std::vector<Vertex> vertices;
-
-		//std::vector<uint32_t> indices;
 
 		std::vector<uint32_t> firstIndex;
 
@@ -54,11 +41,8 @@ struct ItemInterface {
 
 	struct MaterialData {
 		// | gltf material indices to gltf textures (stored in GPUTexture)
-		std::vector<Texture::GLTFMaterial> gltfMaterials;
 
-		// | primitive-material indices
-		// // - i dont think we need this
-		//std::vector<int> gltfPrimitiveMaterialIndices;
+		std::vector<Texture::ItemMaterial> itemMaterials;
 
 		std::string optionalTexturePath;
 

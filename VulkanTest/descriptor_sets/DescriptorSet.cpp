@@ -64,7 +64,7 @@ void DescriptorSet::createGlobalDescriptorSets() {
 // | material descriptor set creator
 void DescriptorSet::createMeshDescriptorSets(ItemInterface& classReference) {
 
-	const auto& materials = classReference.materialData.gltfMaterials;
+	const auto& materials = classReference.materialData.itemMaterials;
 
 	const auto& textures = m_Texture.m_gpuTextures;
 
@@ -103,33 +103,33 @@ void DescriptorSet::createMeshDescriptorSets(ItemInterface& classReference) {
 
 			assert(material.baseColorTex < textures.size());
 
-			VkDescriptorImageInfo normalInfo{};
-			normalInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-			normalInfo.imageView = textures[material.normalTex].view;
-			normalInfo.sampler = textures[material.normalTex].sampler;
+			//VkDescriptorImageInfo normalInfo{};
+			//normalInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+			//normalInfo.imageView = textures[material.normalTex].view;
+			//normalInfo.sampler = textures[material.normalTex].sampler;
 
 			VkDescriptorBufferInfo materialBufferInfo{};
 			materialBufferInfo.buffer = materialUniformBuffers[frame * materials.size() + matIdx];
 			materialBufferInfo.offset = 0;
 			materialBufferInfo.range = sizeof(ItemInterface::MaterialUBO);
 
-			std::array<VkWriteDescriptorSet, 2> descriptorWrites{};
+			std::array<VkWriteDescriptorSet, 1> descriptorWrites{};
+
+			//descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			//descriptorWrites[0].dstSet = dstSet;
+			//descriptorWrites[0].dstBinding = 0;
+			//descriptorWrites[0].dstArrayElement = 0;
+			//descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+			//descriptorWrites[0].descriptorCount = 1;
+			//descriptorWrites[0].pImageInfo = &normalInfo;
 
 			descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 			descriptorWrites[0].dstSet = dstSet;
 			descriptorWrites[0].dstBinding = 0;
 			descriptorWrites[0].dstArrayElement = 0;
-			descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+			descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 			descriptorWrites[0].descriptorCount = 1;
-			descriptorWrites[0].pImageInfo = &normalInfo;
-
-			descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			descriptorWrites[1].dstSet = dstSet;
-			descriptorWrites[1].dstBinding = 1;
-			descriptorWrites[1].dstArrayElement = 0;
-			descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-			descriptorWrites[1].descriptorCount = 1;
-			descriptorWrites[1].pBufferInfo = &materialBufferInfo;
+			descriptorWrites[0].pBufferInfo = &materialBufferInfo;
 
 			vkUpdateDescriptorSets(m_Devices.device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(),
 				0, nullptr);

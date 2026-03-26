@@ -147,19 +147,22 @@ void CommandBuffer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t 
 				glm::mat4 model;
 				glm::vec4 lightPos;
 				glm::uint textureIndex;
+				glm::uint normalIndex;
 			};
 
 			PushConstants pc{};
 
 			for (int i = 0; i < mesh.indexCount.size(); i++) { // mesh iteration (per primitive)
 
-				// | material descriptor sets for baseColorFactor and normals
+				// | material descriptor sets for baseColorFactor
 				auto& materialDescriptorSets = item->materialData.descriptorSets;
 				vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.pipelineLayout, 1, 1,
 					&materialDescriptorSets[i], 0, nullptr);
 
 				// | material pc for bindless texture indexing
-				pc.textureIndex = item->materialData.gltfMaterials[i].textureIndex;
+
+				pc.textureIndex = item->materialData.itemMaterials[i].baseColorTex;
+				pc.normalIndex = item->materialData.itemMaterials[i].normalTex;
 
 				pc.model = item->modelMatrix.model;
 				pc.lightPos = { 0.0f, 2.0f, 3.5f, 1.0f };

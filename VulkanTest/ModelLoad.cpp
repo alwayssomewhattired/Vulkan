@@ -314,7 +314,7 @@ void ModelLoad::loadModel(const std::string& path, ItemInterface& classReference
 	if (!scene || !scene->HasMeshes()) {
 		throw std::runtime_error(importer.GetErrorString());
 	}
-	classReference.materialData.gltfMaterials.resize(scene->mNumMaterials);
+	classReference.materialData.itemMaterials.resize(scene->mNumMaterials);
 
 	for (uint32_t i = 0; i < scene->mNumMeshes; i++) {
 		

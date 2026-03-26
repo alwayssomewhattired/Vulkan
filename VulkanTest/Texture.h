@@ -37,12 +37,12 @@ public:
 	//std::unordered_map<int, int> m_gltfToGpuTexture;
 
 	// - i think this should be non-copyable as well
-	struct GLTFMaterial {
+	struct ItemMaterial {
 		int baseColorTex;
 		int normalTex;
 		glm::vec4 baseColorFactor;
 		// | texture index into bindless descriptor set
-		uint32_t textureIndex;
+		//uint32_t textureIndex;
 	};
 
 	// | updates outTexture struct. does more than just create images...
@@ -75,7 +75,7 @@ private:
 	//	const VkFormat& format);
 
 	int uploadAssimpTextureToVulkan(const aiScene* scene, const aiString& path, ItemInterface& classReference,
-		const VkFormat& format, Texture::GLTFMaterial& gltfMaterial);
+		const VkFormat& format, Texture::ItemMaterial& gltfMaterial);
 
 	void createDefaultTextures();
 
@@ -85,7 +85,7 @@ private:
 		aiTextureType type,
 		ItemInterface& classReference,
 		VkFormat format,
-		Texture::GLTFMaterial& gltfMaterial);
+		Texture::ItemMaterial& gltfMaterial);
 
 	uint32_t allocateTextureSlot();
 };

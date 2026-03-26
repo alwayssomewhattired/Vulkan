@@ -451,7 +451,7 @@ private:
 		uint32_t materialsSize = 0;
 		for (auto* item : items) {
 
-			materialsSize += item->materialData.gltfMaterials.size();
+			materialsSize += item->materialData.itemMaterials.size();
 
 		}
 
