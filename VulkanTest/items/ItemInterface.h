@@ -40,8 +40,8 @@ struct ItemInterface {
 
 
 	struct MaterialData {
-		// | gltf material indices to gltf textures (stored in GPUTexture)
 
+		// | item-owned materials
 		std::vector<Texture::ItemMaterial> itemMaterials;
 
 		std::string optionalTexturePath;
@@ -53,6 +53,9 @@ struct ItemInterface {
 		std::vector<VkBuffer> materialUniformBuffers;
 		std::vector<VkDeviceMemory> materialUniformBuffersMemory;
 		std::vector<void*> materialUniformBuffersMapped;
+
+		// | indices to globalItemMaterials
+		std::vector<uint32_t> materialIndices;
 	};
 
 	MaterialData materialData;

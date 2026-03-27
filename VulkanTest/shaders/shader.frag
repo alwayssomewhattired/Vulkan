@@ -1,5 +1,7 @@
 #version 450
 
+#extension GL_EXT_nonuniform_qualifier : enable
+
 layout(location = 0) in vec3 fragColor;
 layout(location = 1) in vec2 fragTexCoord;
 layout(location = 2) in vec3 fragNormal;
@@ -9,26 +11,33 @@ layout(location = 5) in mat3 fragTBN;
 
 layout(location = 0) out vec4 outColor;
 
-layout(set = 3, binding = 0) uniform sampler2D textures[];
-
-layout(set = 1, binding = 0) uniform MaterialUBO {
+struct Material {
 	vec4 baseColorFactor;
-} material;
+	uint baseColorTex;
+	uint normalTex;
+};
+
+layout(std430, set = 1, binding = 0) readonly buffer Materials {
+	Material materials[];
+};
+
+layout(set = 3, binding = 0) uniform sampler2D textures[];
 
 layout(push_constant) uniform ModelLightPC {
 	mat4 model;
     vec4 pos;
 	uint materialIndex;
-	uint normalIndex;
 } lightPC;
 
 
 void main() {
 
+	Material mat = materials[lightPC.materialIndex];
+
 	// | begin blinn-phong
-	#extension GL_EXT_nonuniform_qualifier : require
-	vec4 texColor = texture(textures[nonuniformEXT(lightPC.materialIndex)], fragTexCoord);
-	vec4 baseColor = material.baseColorFactor * texColor;
+
+	vec4 texColor = texture(textures[nonuniformEXT(mat.baseColorTex)], fragTexCoord);
+	vec4 baseColor = mat.baseColorFactor * texColor;
 	vec3 albedo = baseColor.rgb;
 	float shininess = 16.0;
 	vec3 lightPos = lightPC.pos.xyz;
@@ -38,7 +47,7 @@ void main() {
 	float attenuation = clamp(1.0 - (lightDistance / radius), 0.0, 1.0);
 	attenuation *= attenuation;  // smoother falloff
 
-	vec3 tangentNormal = texture(textures[nonuniformEXT(lightPC.normalIndex)], fragTexCoord).xyz;
+	vec3 tangentNormal = texture(textures[nonuniformEXT(mat.normalTex)], fragTexCoord).xyz;
 	tangentNormal = tangentNormal * 2.0 - 1.0;
 
 	vec3 N = normalize(fragTBN * tangentNormal);

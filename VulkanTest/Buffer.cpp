@@ -3,6 +3,7 @@
 #include "Vertex.h"
 #include "Devices.h"
 #include "CommandBuffer.h"
+#include "Texture.h"
 
 Buffer::Buffer(Devices& devices, CommandBuffer& commandBuffer) : m_Devices(devices), m_CommandBuffer(commandBuffer){}
 
@@ -96,5 +97,32 @@ void Buffer::createVertexBuffer(const std::vector<Vertex>& triangleVertices,
 
 	triangleVertexBufferManager.push_back(std::move(triangleVertexBuffer));
 	triangleVertexBufferMemoryManager.push_back(std::move(triangleVertexBufferMemory));
+
+}
+
+void Buffer::createSSBO(std::vector<Texture::ItemMaterial>& globalItemMaterials)
+{
+
+	VkBuffer stagingBuffer;
+	VkDeviceMemory stagingBufferMemory;
+	VkDeviceSize bufferSize = sizeof(Texture::ItemMaterial) * globalItemMaterials.size();
+	void* data;
+
+	createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+		stagingBuffer, stagingBufferMemory);
+
+	vkMapMemory(m_Devices.device, stagingBufferMemory, 0, bufferSize, 0, &data);
+	memcpy(data, globalItemMaterials.data(), (size_t)bufferSize);
+	vkUnmapMemory(m_Devices.device, stagingBufferMemory);
+
+	createBuffer(bufferSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+		materialSSBO, materialSSBOMemory);
+
+	m_CommandBuffer.copyBuffer(stagingBuffer, materialSSBO, bufferSize);
+
+	vkDestroyBuffer(m_Devices.device, stagingBuffer, nullptr);
+	vkFreeMemory(m_Devices.device, stagingBufferMemory, nullptr);
 
 }

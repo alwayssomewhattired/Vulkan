@@ -252,6 +252,8 @@ void Texture::buildGPUMaterial(
 
 
 	classReference.materialData.itemMaterials[materialIndex] = mat;
+	classReference.materialData.materialIndices.push_back(globalItemMaterials.size());
+	globalItemMaterials.push_back(mat);
 }
 
 

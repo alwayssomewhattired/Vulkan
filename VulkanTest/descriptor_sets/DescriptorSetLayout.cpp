@@ -24,21 +24,21 @@ void descriptorSetLayout::createGlobalDescriptorSetLayout() {
 
 }
 
-void descriptorSetLayout::createMeshdescriptorSetLayout() {
+void descriptorSetLayout::createMeshMaterialDescriptorSetLayout() {
 
-	VkDescriptorSetLayoutBinding baseColorFactorBinding{};
-	baseColorFactorBinding.binding = 0;
-	baseColorFactorBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-	baseColorFactorBinding.descriptorCount = 1;
-	baseColorFactorBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-	baseColorFactorBinding.pImmutableSamplers = nullptr;
+	VkDescriptorSetLayoutBinding binding{};
+	binding.binding = 0;
+	binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+	binding.descriptorCount = 1;
+	binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+	binding.pImmutableSamplers = nullptr;
 
 	VkDescriptorSetLayoutCreateInfo layoutInfo{};
 	layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
 	layoutInfo.bindingCount = 1;
-	layoutInfo.pBindings = &baseColorFactorBinding;
+	layoutInfo.pBindings = &binding;
 
-	if (vkCreateDescriptorSetLayout(m_Devices.device, &layoutInfo, nullptr, &meshDescriptorSetLayout) != VK_SUCCESS)
+	if (vkCreateDescriptorSetLayout(m_Devices.device, &layoutInfo, nullptr, &meshMaterialDescriptorSetLayout) != VK_SUCCESS)
 		throw std::runtime_error("failed to create descriptor set layout!");
 }
 
@@ -99,7 +99,7 @@ void descriptorSetLayout::createDescriptorPool(uint32_t materialCount, uint32_t 
 	uint32_t globalSetCount = frames;
 	uint32_t animSetCount = frames * numberModels;
 
-	std::array<VkDescriptorPoolSize, 1> poolSizes{};
+	std::array<VkDescriptorPoolSize, 2> poolSizes{};
 
 	// camera UBO + material UBOs + anim UBOs
 	poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -108,9 +108,8 @@ void descriptorSetLayout::createDescriptorPool(uint32_t materialCount, uint32_t 
 		globalSetCount + materialSetCount + animSetCount;
 
 	// material textures
-	//poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-	//poolSizes[1].descriptorCount =
-	//	materialSetCount * 2;
+	poolSizes[1].type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+	poolSizes[1].descriptorCount = 1;
 
 	VkDescriptorPoolCreateInfo poolInfo{};
 	poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;

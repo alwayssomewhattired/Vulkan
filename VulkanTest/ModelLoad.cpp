@@ -239,7 +239,7 @@ void ModelLoad::modelFileParse(
 	aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
 
 	m_Texture.buildGPUMaterial(scene, material, mesh->mMaterialIndex, classReference, meshIndex);
-
+	
 }
 
 void ModelLoad::addBoneWeight(Vertex& v, int boneID, float weight) {

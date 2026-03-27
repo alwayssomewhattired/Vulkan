@@ -17,7 +17,6 @@ layout(push_constant) uniform ModelLightPC {
     mat4 model;
     vec4 pos;
     uint materialIndex;
-    uint normalIndex;
 } modelPC;
  
 layout(location = 0) in vec3 inPosition;

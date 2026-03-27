@@ -20,12 +20,13 @@ public:
 
 	// | GEOMETRY
 	void createGlobalDescriptorSets();
-	void createMeshDescriptorSets(ItemInterface& classReference);
+	void createMeshMaterialDescriptorSet(VkBuffer& materialSSBO);
 	void createAnimationDescriptorSets(ItemInterface& classReference);
 	void createMandelbulbComputeDescriptorSets();
 	void createMandelbulbGraphicsDescriptorSets();
 
 	std::vector<VkDescriptorSet> globalDescriptorSets;
+	VkDescriptorSet meshMaterialDescriptorSet;
 	std::vector<VkDescriptorSet> mandelbulbComputeDescriptorSets;
 	std::vector<VkDescriptorSet> mandelbulbGraphicsDescriptorSets;
 

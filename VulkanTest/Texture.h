@@ -38,12 +38,13 @@ public:
 
 	// - i think this should be non-copyable as well
 	struct ItemMaterial {
+		glm::vec4 baseColorFactor;
 		int baseColorTex;
 		int normalTex;
-		glm::vec4 baseColorFactor;
-		// | texture index into bindless descriptor set
-		//uint32_t textureIndex;
+		int padding[2];
 	};
+
+	std::vector<ItemMaterial> globalItemMaterials{};
 
 	// | updates outTexture struct. does more than just create images...
 	// | must be called if supplying an independent texture

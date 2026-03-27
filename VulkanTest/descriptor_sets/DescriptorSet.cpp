@@ -62,80 +62,41 @@ void DescriptorSet::createGlobalDescriptorSets() {
 };
 
 // | material descriptor set creator
-void DescriptorSet::createMeshDescriptorSets(ItemInterface& classReference) {
+void DescriptorSet::createMeshMaterialDescriptorSet(VkBuffer& materialSSBO) {
 
-	const auto& materials = classReference.materialData.itemMaterials;
-
-	const auto& textures = m_Texture.m_gpuTextures;
-
-	auto& descriptorSets = classReference.materialData.descriptorSets;
-
-	descriptorSets.resize(materials.size() * Constants::MAX_FRAMES_IN_FLIGHT);
-	const std::vector<VkBuffer>& materialUniformBuffers = classReference.materialData.materialUniformBuffers;
-
-	std::vector<VkDescriptorSetLayout> layouts(
-		descriptorSets.size(),
-		m_descriptorSetLayout.meshDescriptorSetLayout
-	);
+	const auto& textures = m_Texture.globalItemMaterials;
+	VkDescriptorSetLayout& meshMaterialDescriptorSetLayout = m_descriptorSetLayout.meshMaterialDescriptorSetLayout;
 
 	VkDescriptorSetAllocateInfo allocInfo{};
 	allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
 	allocInfo.descriptorPool = m_descriptorSetLayout.descriptorPool;
-	allocInfo.descriptorSetCount = static_cast<uint32_t>(descriptorSets.size());
-	allocInfo.pSetLayouts = layouts.data();
+	allocInfo.descriptorSetCount = 1;
+	allocInfo.pSetLayouts = &meshMaterialDescriptorSetLayout;
 	if (vkAllocateDescriptorSets(
 		m_Devices.device,
 		&allocInfo,
-		descriptorSets.data()) != VK_SUCCESS)
+		&meshMaterialDescriptorSet) != VK_SUCCESS)
 	{
 		throw std::runtime_error("failed to allocate descriptor sets!");
 	}
 
-	for (size_t frame = 0; frame < Constants::MAX_FRAMES_IN_FLIGHT; frame++) {
-		for (size_t matIdx = 0; matIdx < materials.size(); ++matIdx) {
+	VkDescriptorBufferInfo materialBufferInfo{};
+	materialBufferInfo.buffer = materialSSBO;
+	materialBufferInfo.offset = 0;
+	materialBufferInfo.range = VK_WHOLE_SIZE;
 
-			size_t dsIndex = frame * materials.size() + matIdx;
+	VkWriteDescriptorSet descriptorWrite{};
 
-			VkDescriptorSet dstSet = descriptorSets[dsIndex];
+	descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+	descriptorWrite.dstSet = meshMaterialDescriptorSet;
+	descriptorWrite.dstBinding = 0;
+	descriptorWrite.dstArrayElement = 0;
+	descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+	descriptorWrite.descriptorCount = 1;
+	descriptorWrite.pBufferInfo = &materialBufferInfo;
 
-			const auto& material = materials[matIdx];
-			const GPUTexture& GPUBaseColorTex = textures[material.baseColorTex];
+	vkUpdateDescriptorSets(m_Devices.device, 1, &descriptorWrite, 0, nullptr);
 
-			assert(material.baseColorTex < textures.size());
-
-			//VkDescriptorImageInfo normalInfo{};
-			//normalInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-			//normalInfo.imageView = textures[material.normalTex].view;
-			//normalInfo.sampler = textures[material.normalTex].sampler;
-
-			VkDescriptorBufferInfo materialBufferInfo{};
-			materialBufferInfo.buffer = materialUniformBuffers[frame * materials.size() + matIdx];
-			materialBufferInfo.offset = 0;
-			materialBufferInfo.range = sizeof(ItemInterface::MaterialUBO);
-
-			std::array<VkWriteDescriptorSet, 1> descriptorWrites{};
-
-			//descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			//descriptorWrites[0].dstSet = dstSet;
-			//descriptorWrites[0].dstBinding = 0;
-			//descriptorWrites[0].dstArrayElement = 0;
-			//descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-			//descriptorWrites[0].descriptorCount = 1;
-			//descriptorWrites[0].pImageInfo = &normalInfo;
-
-			descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			descriptorWrites[0].dstSet = dstSet;
-			descriptorWrites[0].dstBinding = 0;
-			descriptorWrites[0].dstArrayElement = 0;
-			descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-			descriptorWrites[0].descriptorCount = 1;
-			descriptorWrites[0].pBufferInfo = &materialBufferInfo;
-
-			vkUpdateDescriptorSets(m_Devices.device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(),
-				0, nullptr);
-
-		}
-	}
 }
 
 void DescriptorSet::createAnimationDescriptorSets(ItemInterface& classReference) {

@@ -224,7 +224,7 @@ private:
 		m_MaterialDescriptorSet = std::make_unique<MaterialDescriptorSet>(*m_descriptorSetLayout, *m_devices);
 		m_descriptorSetLayout->createMaterialDescriptorPool();
 		m_descriptorSetLayout->createMaterialDescriptorSetLayout();
-		m_MaterialDescriptorSet->createMaterialDescriptorSets(m_devices->maxTextures);
+		m_MaterialDescriptorSet->createMaterialDescriptorSet(m_devices->maxTextures);
 
 		m_Texture = std::make_unique<Texture>(*m_Buffer, *m_Image, *m_devices, *m_CommandBuffer, *m_MaterialDescriptorSet);
 
@@ -255,7 +255,7 @@ private:
 
 		m_descriptorSetLayout->createGlobalDescriptorSetLayout();
 		m_descriptorSetLayout->createAnimationDescriptorSetLayout();
-		m_descriptorSetLayout->createMeshdescriptorSetLayout();
+		m_descriptorSetLayout->createMeshMaterialDescriptorSetLayout();
 		m_descriptorSetLayout->createMandelbulbComputedescriptorSetLayout();
 		m_descriptorSetLayout->createMandelbulbGraphicsdescriptorSetLayout();
 
@@ -272,6 +272,8 @@ private:
 		m_PhysXEngine = std::make_unique<PhysXEngine>();
 
 		createModel();
+
+		m_Buffer->createSSBO(m_Texture->globalItemMaterials);
 
 		for (auto& item : items) {
 			m_Animation->initialize(*item);
@@ -459,8 +461,9 @@ private:
 
 		m_DescriptorSet->createGlobalDescriptorSets();
 
+		m_DescriptorSet->createMeshMaterialDescriptorSet(m_Buffer->materialSSBO);
+
 		for (auto* item : items) {
-			m_DescriptorSet->createMeshDescriptorSets(*item);
 			m_DescriptorSet->createAnimationDescriptorSets(*item);
 		}
 
@@ -510,9 +513,9 @@ private:
 		// track swapchain image with current frame's fence
 		m_SwapChain->imagesInFlight[imageIndex] = m_SwapChain->inFlightFences[g_currentFrame];
 
-		vkResetCommandBuffer(m_CommandBuffer->commandBuffers[imageIndex], 0);
+		vkResetCommandBuffer(m_CommandBuffer->commandBuffers[g_currentFrame], 0);
 
-		m_CommandBuffer->recordCommandBuffer(m_CommandBuffer->commandBuffers[imageIndex], imageIndex, m_RenderPass->renderPass,
+		m_CommandBuffer->recordCommandBuffer(m_CommandBuffer->commandBuffers[g_currentFrame], imageIndex, m_RenderPass->renderPass,
 			*m_GraphicsPipeline, items, *m_DescriptorSet, g_currentFrame, m_StorageImageManager->m_GPUStorageImage.image(), 
 			*m_Triangle, *m_UniformBuffer, *m_MaterialDescriptorSet, *m_Buffer);
 
@@ -528,7 +531,7 @@ private:
 		submitInfo.pWaitSemaphores = waitSemaphores;
 		submitInfo.pWaitDstStageMask = waitStages;
 		submitInfo.commandBufferCount = 1;
-		submitInfo.pCommandBuffers = &m_CommandBuffer->commandBuffers[imageIndex];
+		submitInfo.pCommandBuffers = &m_CommandBuffer->commandBuffers[g_currentFrame];
 
 		// for render complete
 		VkSemaphore signalSemaphores[] = { m_SwapChain->renderFinishedSemaphores[imageIndex]};
@@ -537,8 +540,13 @@ private:
 		submitInfo.pSignalSemaphores = signalSemaphores;
 
 		vkResetFences(*m_device, 1, &m_SwapChain->inFlightFences[g_currentFrame]);
-		if (vkQueueSubmit(*m_graphicsQueue, 1, &submitInfo, m_SwapChain->inFlightFences[g_currentFrame]) != VK_SUCCESS)
+		
+		VkResult submitResult = vkQueueSubmit(*m_graphicsQueue, 1, &submitInfo, m_SwapChain->inFlightFences[g_currentFrame]);
+		if (submitResult != VK_SUCCESS) {
+		std::cout << "vkQueueSubmit failed: " << submitResult << "\n";
 			throw std::runtime_error("failed to submit draw command buffer");
+		}
+
 
 		VkPresentInfoKHR presentInfo{};
 		presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
@@ -632,7 +640,7 @@ private:
 		vkDestroyDescriptorPool(*m_device, m_descriptorSetLayout->computeDescriptorPool, nullptr);
 
 		vkDestroyDescriptorSetLayout(*m_device, m_descriptorSetLayout->globalDescriptorSetLayout, nullptr);
-		vkDestroyDescriptorSetLayout(*m_device, m_descriptorSetLayout->meshDescriptorSetLayout, nullptr);
+		vkDestroyDescriptorSetLayout(*m_device, m_descriptorSetLayout->meshMaterialDescriptorSetLayout, nullptr);
 		vkDestroyDescriptorSetLayout(*m_device, m_descriptorSetLayout->mandelbulbComputedescriptorSetLayout, nullptr);
 		vkDestroyDescriptorSetLayout(*m_device, m_descriptorSetLayout->mandelbulbGraphicsdescriptorSetLayout, nullptr);
 

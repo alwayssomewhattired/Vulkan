@@ -15,14 +15,14 @@ class descriptorSetLayout
 public:
 	descriptorSetLayout(Devices& devices);
 	void createGlobalDescriptorSetLayout();
-	void createMeshdescriptorSetLayout();
+	void createMeshMaterialDescriptorSetLayout();
 	void createAnimationDescriptorSetLayout();
 	void createMaterialDescriptorSetLayout();
 	void createDescriptorPool(uint32_t materialCount, uint32_t numberModels);
 	void createMaterialDescriptorPool();
 
 	VkDescriptorSetLayout globalDescriptorSetLayout;
-	VkDescriptorSetLayout meshDescriptorSetLayout;
+	VkDescriptorSetLayout meshMaterialDescriptorSetLayout;
 	VkDescriptorSetLayout materialDescriptorSetLayout;
 	VkDescriptorSetLayout animationDescriptorSetLayout;
 

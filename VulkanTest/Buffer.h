@@ -5,9 +5,12 @@
 #include <vector>
 #include <stdexcept>
 
+#include "Texture.h"
+
 class Vertex;
 class Devices;
 class CommandBuffer;
+class Texture;
 
 // | a class of some buffer stuff
 class Buffer
@@ -22,9 +25,13 @@ public:
 	void createVertexBuffer(const std::vector<Vertex>& triangleVertices,
 		std::vector<VkBuffer>& triangleVertexBufferManager,
 		std::vector<VkDeviceMemory>& triangleVertexBufferMemoryManager);
+	void createSSBO(std::vector<Texture::ItemMaterial>& globalItemMaterials);
 
 	VkBuffer globalVertexBuffer;
 	VkBuffer globalIndexBuffer;
+
+	VkBuffer materialSSBO;
+	VkDeviceMemory materialSSBOMemory;
 
 	std::vector<Vertex> globalVertices;
 	std::vector<uint32_t> globalIndices;

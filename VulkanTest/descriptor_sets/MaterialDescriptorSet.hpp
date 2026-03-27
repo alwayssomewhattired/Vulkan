@@ -16,7 +16,7 @@ struct MaterialDescriptorSet {
 
 	VkDescriptorSet materialDescriptorSet;
 
-	void createMaterialDescriptorSets(const uint32_t maxTextures) {
+	void createMaterialDescriptorSet(const uint32_t maxTextures) {
 
 		VkDescriptorSetAllocateInfo allocInfo{};
 		allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
