@@ -3,9 +3,9 @@
 Animator::Animator() {};
 
 void Animator::initialize(ItemInterface& item) {
-	int count = item.skeleton.bones.size();
+	int count = globalSkeleton.bones.size();
 
-	item.boneMatrices.resize(count);
+	globalBoneMatrices.resize(count);
 	item.localTransforms.resize(count);
 	item.globalTransforms.resize(count);
 }
@@ -158,7 +158,7 @@ void Animator::computeFinalMatrices(ItemInterface& item)
 
 	for (int i = 0; i < boneCount; i++)
 	{
-		item.boneMatrices[i] = item.globalTransforms[i] *item.skeleton.bones[i].inverseBindMatrix;
+		globalBoneMatrices[i] = item.globalTransforms[i] *item.skeleton.bones[i].inverseBindMatrix;
 
 		// | depending on export, this might be needed
 		//item.boneMatrices[i] = item.skeleton.globalInverseTransform * item.globalTransforms[i] *
@@ -176,8 +176,6 @@ void Animator::update(float deltaTime, ItemInterface& item) {
 
 	float tps = item.animatorData.ticksPerSecond != 0.0f ? item.animatorData.ticksPerSecond : 25.0f;
 
-	//std::cout << item.animatorData.duration << "\n";
-	//std::cout << tps << "\n";
 	item.currentTimeAnim += deltaTime * tps;
 	item.currentTimeAnim = fmod(item.currentTimeAnim, item.animatorData.duration);
 	computeLocalTransforms(item);

@@ -8,9 +8,13 @@ layout(set = 0, binding = 0) uniform CameraUBO {
 
 } camera;
 
-layout(set = 2, binding = 0) uniform BonesUBO {
-    mat4 bones[100];
-} bonesUBO;
+//layout(set = 2, binding = 0) uniform BonesUBO {
+//    mat4 bones[100];
+//} bonesUBO;
+
+layout(set = 2, binding = 0) readonly buffer BonesSSBO {
+    mat4 bones[];
+};
 
 // | ignore the red underlines
 layout(push_constant) uniform ModelLightPC {
@@ -46,8 +50,8 @@ void main() {
         int id = inBoneIDs[i];
         float w = inWeights[i];
 
-        if (id >= 0 && id < bonesUBO.bones.length() && w > 0.0) {
-            skinMatrix += w * bonesUBO.bones[id];
+        if (id >= 0 && id < bones.length() && w > 0.0) {
+            skinMatrix += w * bones[id];
             totalWeight += w;
         }
     }
@@ -72,10 +76,6 @@ void main() {
    fragTBN = mat3(T, B, N);
 
    vec4 skinnedPos = skinMatrix * vec4(inPosition, 1.0);
-
-
-//    vec4 skinnedPos = bonesUBO.bones[0] * vec4(inPosition, 1.0);
-//    vec4 skinnedPos = vec4(inPosition, 1.0);
 
     vec4 worldPos = modelPC.model * skinnedPos;
 

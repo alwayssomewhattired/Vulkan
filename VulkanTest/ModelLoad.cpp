@@ -142,20 +142,24 @@ void ModelLoad::modelFileParse(
 
 	// | bones
 
-	auto& boneMap = classReference.skeleton.boneMap;
-	auto& bones = classReference.skeleton.bones;
-	auto& globalInverseTransform = classReference.skeleton.globalInverseTransform;
-	globalInverseTransform = glm::inverse(convert(scene->mRootNode->mTransformation));
+	auto& boneMap = m_Animator.globalSkeleton.boneMap;
+	auto& bones = m_Animator.globalSkeleton.bones;
+	auto& globalInverseTransform = m_Animator.globalSkeleton.globalInverseTransform;
+	globalInverseTransform.push_back(glm::inverse(convert(scene->mRootNode->mTransformation)));
+	//auto& boneMap = classReference.skeleton.boneMap;
+	//auto& bones = classReference.skeleton.bones;
+	//auto& globalInverseTransform = classReference.skeleton.globalInverseTransform;
+	//globalInverseTransform = glm::inverse(convert(scene->mRootNode->mTransformation));
+
+	static int globalBoneIndex;
 
 	for (uint32_t i = 0; i < mesh->mNumBones; i++) {
 		aiBone* aiBone = mesh->mBones[i];
 		std::string name = aiBone->mName.C_Str();
 
-		int boneIndex;
-
 		if (boneMap.find(name) == boneMap.end()) {
-			boneIndex = bones.size();
-			boneMap[name] = boneIndex;
+			globalBoneIndex = bones.size();
+			boneMap[name] = globalBoneIndex;
 			
 
 			AnimatorStruct::Bone bone;
@@ -165,7 +169,7 @@ void ModelLoad::modelFileParse(
 		}
 		else
 		{
-			boneIndex = boneMap[name];
+			globalBoneIndex = boneMap[name];
 		}
 
 		// process vertex weights
@@ -175,7 +179,7 @@ void ModelLoad::modelFileParse(
 			int vertexID = weight.mVertexId;
 			float value = weight.mWeight;
 
-			addBoneWeight(vertices[vertexID], boneIndex, value);
+			addBoneWeight(vertices[vertexID], globalBoneIndex, value);
 		}
 	}
 

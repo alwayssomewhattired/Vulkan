@@ -7,6 +7,7 @@
 #include "glm_config.h"
 #include <cstdint>
 #include <vector>
+#include <iostream>
 
 #include "Camera.h"
 #include "Constants.h"
@@ -23,15 +24,15 @@ public:
 
 	void createUniformBuffers();
 
-	void createMaterialUniformBuffer(ItemInterface& item);
+	//void createMaterialUniformBuffer(ItemInterface& item);
 
 	void updateCameraUniformBuffer(uint32_t currentImage);
 
-	void createAnimationUniformBuffer(ItemInterface& item);
+	//void createAnimationUniformBuffer(ItemInterface& item);
 
 	void updateMandelbulbUBO(uint32_t currentImage);
 
-	void updateAnimationUBO(ItemInterface& item, uint32_t frameIndex);
+	//void updateAnimationUBO(ItemInterface& item, uint32_t frameIndex);
 
 	uint32_t maxPCSize;
 	uint32_t cameraUBOSize;

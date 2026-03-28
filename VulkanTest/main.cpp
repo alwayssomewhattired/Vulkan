@@ -254,8 +254,8 @@ private:
 		m_SwapChain->createImageViews(*m_Image);
 
 		m_descriptorSetLayout->createGlobalDescriptorSetLayout();
-		m_descriptorSetLayout->createAnimationDescriptorSetLayout();
 		m_descriptorSetLayout->createMeshMaterialDescriptorSetLayout();
+		m_descriptorSetLayout->createAnimationDescriptorSetLayout();
 		m_descriptorSetLayout->createMandelbulbComputedescriptorSetLayout();
 		m_descriptorSetLayout->createMandelbulbGraphicsdescriptorSetLayout();
 
@@ -281,9 +281,9 @@ private:
 				item->updatePC();
 				m_PhysXEngine->boxCollider(*item);
 			}
-			m_UniformBuffer->createMaterialUniformBuffer(*item);
-			m_UniformBuffer->createAnimationUniformBuffer(*item);
 		}
+
+		m_Buffer->createBonesSSBO(m_Animation->globalBoneMatrices);
 
 		m_GraphicsPipeline->createGraphicsPipeline(*m_UniformBuffer);
 
@@ -463,9 +463,7 @@ private:
 
 		m_DescriptorSet->createMeshMaterialDescriptorSet(m_Buffer->materialSSBO);
 
-		for (auto* item : items) {
-			m_DescriptorSet->createAnimationDescriptorSets(*item);
-		}
+		m_DescriptorSet->createAnimationDescriptorSets(m_Buffer->animationSSBO);
 
 		m_descriptorSetLayout->createComputeDescriptorPool(2);
 		m_DescriptorSet->createMandelbulbComputeDescriptorSets();
@@ -617,7 +615,7 @@ private:
 			// | animation
 			for (auto& item : items) {
 				m_Animation->update(deltaTime, *item);
-				m_UniformBuffer->updateAnimationUBO(*item, g_currentFrame); // bones UBO upload
+				//m_UniformBuffer->updateAnimationUBO(*item, g_currentFrame); // bones UBO upload
 			}
 
 			drawFrame();

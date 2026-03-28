@@ -171,12 +171,8 @@ int Texture::uploadAssimpTextureToVulkan(const aiScene* scene, const aiString& p
 
 	uint32_t slot = static_cast<uint32_t>(m_gpuTextures.size());
 	m_gpuTextures.push_back(std::move(gpuTex));
-
 	m_MaterialDescriptorSet.updateMaterialDescriptorSet(slot, m_gpuTextures.back().view, m_gpuTextures.back().sampler);
-	//m_MaterialDescriptorSet.updateMaterialDescriptorSet(slot, gpuTex.view, gpuTex.sampler);
-	//std::cout << slot << "\n";
-	//gltfMaterial.textureIndex = slot;
-	//return static_cast<int>(m_gpuTextures.size() - 1);
+
 	return slot;
 
 }
@@ -241,6 +237,7 @@ void Texture::buildGPUMaterial(
 	}
 
 
+
 	// | NORMAL MAP (unorm)
 
 	if (material->GetTexture(aiTextureType_NORMALS, 0, &path) == AI_SUCCESS)
@@ -264,18 +261,14 @@ void Texture::createDefaultTextures() {
 	createTextureImage(true, "", Constants::WHITE_PIXEL, whiteTex, VK_FORMAT_R8G8B8A8_SRGB, 1, 1);
 	Constants::DEFAULT_WHITE_TEXTURE_INDEX = m_gpuTextures.size();
 	m_gpuTextures.push_back(std::move(whiteTex));
-
-	// default (black)
-	GPUTexture blackTex(m_Devices.device);
-	createTextureImage(true, "", Constants::BLACK_PIXEL, blackTex, VK_FORMAT_R8G8B8A8_SRGB, 1, 1);
-	Constants::DEFAULT_BLACK_TEXTURE_INDEX = m_gpuTextures.size();
-	m_gpuTextures.push_back(std::move(blackTex));
+	m_MaterialDescriptorSet.updateMaterialDescriptorSet(0, m_gpuTextures[0].view, m_gpuTextures[0].sampler);
 
 	// | default normals (default flat)
 	GPUTexture normalTex(m_Devices.device);
 	createTextureImage(true, "", Constants::NORMAL_PIXEL, normalTex, VK_FORMAT_R8G8B8A8_UNORM, 1, 1);
 	Constants::DEFAULT_NORMAL_TEXTURE_INDEX = m_gpuTextures.size();
 	m_gpuTextures.push_back(std::move(normalTex));
+	m_MaterialDescriptorSet.updateMaterialDescriptorSet(1, m_gpuTextures[1].view, m_gpuTextures[1].sampler);
 
 }
 

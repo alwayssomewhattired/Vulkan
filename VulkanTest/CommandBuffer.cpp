@@ -132,6 +132,9 @@ void CommandBuffer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t 
 		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.pipelineLayout, 1, 1,
 			&descriptorSet.meshMaterialDescriptorSet, 0, nullptr);
 
+		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.pipelineLayout, 2, 1,
+			&descriptorSet.animationDescriptorSets[currentFrame], 0, nullptr);
+
 		VkDeviceSize offsets[] = { 0 };
 
 		vkCmdBindVertexBuffers(commandBuffer, 0, 1, &buffer.globalVertexBuffer, offsets);
@@ -140,11 +143,6 @@ void CommandBuffer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t 
 		for (size_t itemIndex = 0; itemIndex < items.size(); itemIndex++) {
 			auto& item = items[itemIndex];
 			auto& mesh = item->meshData;
-
-			const auto& animationDescriptorSets = item->animationDescriptorSets;
-
-			vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.pipelineLayout, 2, 1,
-				&animationDescriptorSets[currentFrame], 0, nullptr);
 
 			struct PushConstants {
 				glm::mat4 model;
@@ -170,7 +168,7 @@ void CommandBuffer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t 
 					&pc
 				);
 
-				vkCmdDrawIndexed(commandBuffer, mesh.indexCount[i], 1, mesh.firstIndex[i], 0, 0);
+				vkCmdDrawIndexed(commandBuffer, mesh.indexCount[i], 1, mesh.firstIndex[i], mesh.vertexOffset[i], 0);
 			}
 		}
 	}

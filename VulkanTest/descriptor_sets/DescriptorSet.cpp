@@ -16,7 +16,7 @@ DescriptorSet::DescriptorSet(descriptorSetLayout& descriptorSetLayout, Devices& 
 void DescriptorSet::createGlobalDescriptorSets() {
 
 	auto& descriptorSets = globalDescriptorSets;
-
+	
 	descriptorSets.resize(Constants::MAX_FRAMES_IN_FLIGHT);
 
 	std::vector<VkDescriptorSetLayout> layouts(
@@ -99,12 +99,11 @@ void DescriptorSet::createMeshMaterialDescriptorSet(VkBuffer& materialSSBO) {
 
 }
 
-void DescriptorSet::createAnimationDescriptorSets(ItemInterface& classReference) {
+void DescriptorSet::createAnimationDescriptorSets(VkBuffer& animationSSBO) {
 
-	auto& descriptorSets = classReference.animationDescriptorSets;
+	auto& descriptorSets = animationDescriptorSets;
 
 	descriptorSets.resize(Constants::MAX_FRAMES_IN_FLIGHT);
-	const std::vector<VkBuffer>& animationUniformBuffers = classReference.animationUniformBuffers;
 
 	std::vector<VkDescriptorSetLayout> layouts(
 		descriptorSets.size(),
@@ -130,9 +129,9 @@ void DescriptorSet::createAnimationDescriptorSets(ItemInterface& classReference)
 		VkDescriptorSet dstSet = descriptorSets[frame];
 
 		VkDescriptorBufferInfo animationBufferInfo{};
-		animationBufferInfo.buffer = animationUniformBuffers[frame];
+		animationBufferInfo.buffer = animationSSBO;;
 		animationBufferInfo.offset = 0;
-		animationBufferInfo.range = sizeof(glm::mat4) * Constants::MAX_BONES;
+		animationBufferInfo.range = VK_WHOLE_SIZE;
 
 		VkWriteDescriptorSet descriptorWrites{};
 
@@ -140,7 +139,7 @@ void DescriptorSet::createAnimationDescriptorSets(ItemInterface& classReference)
 		descriptorWrites.dstSet = dstSet;
 		descriptorWrites.dstBinding = 0;
 		descriptorWrites.dstArrayElement = 0;
-		descriptorWrites.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		descriptorWrites.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 		descriptorWrites.descriptorCount = 1;
 		descriptorWrites.pBufferInfo = &animationBufferInfo;
 

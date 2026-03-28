@@ -6,6 +6,7 @@
 #include <stdexcept>
 
 #include "Texture.h"
+#include "animation/AnimatorStruct.h"
 
 class Vertex;
 class Devices;
@@ -26,15 +27,20 @@ public:
 		std::vector<VkBuffer>& triangleVertexBufferManager,
 		std::vector<VkDeviceMemory>& triangleVertexBufferMemoryManager);
 	void createSSBO(std::vector<Texture::ItemMaterial>& globalItemMaterials);
+	void createBonesSSBO(std::vector<glm::mat4>& globalFinalBoneMatrices);
 
 	VkBuffer globalVertexBuffer;
 	VkBuffer globalIndexBuffer;
 
+	std::vector<Vertex> globalVertices;
+	std::vector<uint32_t> globalIndices;
+
 	VkBuffer materialSSBO;
 	VkDeviceMemory materialSSBOMemory;
 
-	std::vector<Vertex> globalVertices;
-	std::vector<uint32_t> globalIndices;
+	VkBuffer animationSSBO;
+	VkDeviceMemory animationSSBOMemory;
+
 
 private:
 	Devices& m_Devices;

@@ -21,7 +21,8 @@ public:
 	void initialize(ItemInterface& item);
 	void update(float deltaTime, ItemInterface& item);
 
-
+	AnimatorStruct::GlobalSkeleton globalSkeleton{};
+	std::vector<glm::mat4> globalBoneMatrices;
 
 
 private:

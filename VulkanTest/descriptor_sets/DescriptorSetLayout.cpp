@@ -46,7 +46,7 @@ void descriptorSetLayout::createAnimationDescriptorSetLayout() {
 
 	VkDescriptorSetLayoutBinding animationBinding{};
 	animationBinding.binding = 0;
-	animationBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	animationBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 	animationBinding.descriptorCount = 1;
 	animationBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 	animationBinding.pImmutableSamplers = nullptr;
@@ -97,19 +97,18 @@ void descriptorSetLayout::createDescriptorPool(uint32_t materialCount, uint32_t 
 
 	uint32_t materialSetCount = frames * materialCount;
 	uint32_t globalSetCount = frames;
-	uint32_t animSetCount = frames * numberModels;
+	uint32_t animSetCount = frames;
 
 	std::array<VkDescriptorPoolSize, 2> poolSizes{};
 
 	// camera UBO + material UBOs + anim UBOs
 	poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 	poolSizes[0].descriptorCount =
-		//globalSetCount + animSetCount;
-		globalSetCount + materialSetCount + animSetCount;
+		globalSetCount + materialSetCount;
 
 	// material textures
 	poolSizes[1].type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-	poolSizes[1].descriptorCount = 1;
+	poolSizes[1].descriptorCount = 1 + animSetCount;
 
 	VkDescriptorPoolCreateInfo poolInfo{};
 	poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
@@ -118,7 +117,6 @@ void descriptorSetLayout::createDescriptorPool(uint32_t materialCount, uint32_t 
 
 	// total descriptor sets allocated from this pool
 	poolInfo.maxSets =
-		//globalSetCount + animSetCount;
 		globalSetCount + materialSetCount + animSetCount;
 
 	if (vkCreateDescriptorPool(

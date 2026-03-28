@@ -29,14 +29,17 @@ layout(push_constant) uniform ModelLightPC {
 	uint materialIndex;
 } lightPC;
 
-
 void main() {
 
 	Material mat = materials[lightPC.materialIndex];
 
 	// | begin blinn-phong
 
-	vec4 texColor = texture(textures[nonuniformEXT(mat.baseColorTex)], fragTexCoord);
+	vec4 texColor = vec4(1.0);
+	if (mat.baseColorTex >= 0) {
+		texColor = texture(textures[nonuniformEXT(mat.baseColorTex)], fragTexCoord);
+	}
+
 	vec4 baseColor = mat.baseColorFactor * texColor;
 	vec3 albedo = baseColor.rgb;
 	float shininess = 16.0;
