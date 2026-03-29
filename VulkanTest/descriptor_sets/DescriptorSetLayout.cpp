@@ -95,20 +95,17 @@ void descriptorSetLayout::createDescriptorPool(uint32_t materialCount, uint32_t 
 
 	uint32_t frames = Constants::MAX_FRAMES_IN_FLIGHT;
 
-	uint32_t materialSetCount = frames * materialCount;
 	uint32_t globalSetCount = frames;
-	uint32_t animSetCount = frames;
 
 	std::array<VkDescriptorPoolSize, 2> poolSizes{};
 
 	// camera UBO + material UBOs + anim UBOs
 	poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-	poolSizes[0].descriptorCount =
-		globalSetCount + materialSetCount;
+	poolSizes[0].descriptorCount = globalSetCount;
 
-	// material textures
+	// SSBO (materials, bones)
 	poolSizes[1].type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-	poolSizes[1].descriptorCount = 1 + animSetCount;
+	poolSizes[1].descriptorCount = 2;
 
 	VkDescriptorPoolCreateInfo poolInfo{};
 	poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
@@ -116,8 +113,7 @@ void descriptorSetLayout::createDescriptorPool(uint32_t materialCount, uint32_t 
 	poolInfo.pPoolSizes = poolSizes.data();
 
 	// total descriptor sets allocated from this pool
-	poolInfo.maxSets =
-		globalSetCount + materialSetCount + animSetCount;
+	poolInfo.maxSets = globalSetCount + 2;
 
 	if (vkCreateDescriptorPool(
 		m_Devices.device,

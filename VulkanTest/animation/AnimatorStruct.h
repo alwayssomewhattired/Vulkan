@@ -18,15 +18,22 @@ struct AnimatorStruct {
 	struct Skeleton {
 		// | bone-name to bone-index
 		std::unordered_map<std::string, int> boneMap;
-		std::vector<Bone> bones;
+		//std::vector<Bone> bones;
 		glm::mat4 globalInverseTransform;
+
+		// | starting index to object in GlobalSkeleton
+		uint32_t offset;
+
+		// | size of object stored in GlobalSkeleton
+		uint32_t count;
 	};
 
 	struct GlobalSkeleton {
 		// | bone-name to bone-index
-		std::unordered_map<std::string, int> boneMap;
+		//std::unordered_map<std::string, int> boneMap;
+
 		std::vector<Bone> bones;
-		std::vector<glm::mat4> globalInverseTransform;
+		//std::vector<glm::mat4> globalInverseTransform;
 	};
 
 	struct PositionKey

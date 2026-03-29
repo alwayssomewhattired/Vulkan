@@ -131,26 +131,21 @@ void Buffer::createSSBO(std::vector<Texture::ItemMaterial>& globalItemMaterials)
 void Buffer::createBonesSSBO(std::vector<glm::mat4>& globalFinalBoneMatrices)
 {
 
-	VkBuffer stagingBuffer;
-	VkDeviceMemory stagingBufferMemory;
 	VkDeviceSize bufferSize = sizeof(glm::mat4) * globalFinalBoneMatrices.size();
-	void* data;
 
-	createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+	createBuffer(
+		bufferSize, 
+		VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, 
 		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-		stagingBuffer, stagingBufferMemory);
+		animationSSBO, 
+		animationSSBOMemory);
 
-	vkMapMemory(m_Devices.device, stagingBufferMemory, 0, bufferSize, 0, &data);
-	memcpy(data, globalFinalBoneMatrices.data(), (size_t)bufferSize);
-	vkUnmapMemory(m_Devices.device, stagingBufferMemory);
+	vkMapMemory(m_Devices.device, animationSSBOMemory, 0, bufferSize, 0, &mappedBonesPtr);
 
-	createBuffer(bufferSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-		animationSSBO, animationSSBOMemory);
+}
 
-	m_CommandBuffer.copyBuffer(stagingBuffer, animationSSBO, bufferSize);
+void Buffer::updateBonesSSBO(const std::vector<glm::mat4>& globalFinalBoneMatrices) {
+	VkDeviceSize bufferSize = sizeof(glm::mat4) * globalFinalBoneMatrices.size();
 
-	vkDestroyBuffer(m_Devices.device, stagingBuffer, nullptr);
-	vkFreeMemory(m_Devices.device, stagingBufferMemory, nullptr);
-
+	memcpy(mappedBonesPtr, globalFinalBoneMatrices.data(), bufferSize);
 }

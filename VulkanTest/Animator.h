@@ -24,8 +24,8 @@ public:
 	AnimatorStruct::GlobalSkeleton globalSkeleton{};
 	std::vector<glm::mat4> globalBoneMatrices;
 
-
 private:
+
 
 	glm::vec3 InterpolatePosition(const AnimatorStruct::AnimatorChannel& channel, float time);
 	glm::quat InterpolateRotation(const AnimatorStruct::AnimatorChannel& channel, float time);

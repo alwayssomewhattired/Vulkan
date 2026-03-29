@@ -101,52 +101,43 @@ void DescriptorSet::createMeshMaterialDescriptorSet(VkBuffer& materialSSBO) {
 
 void DescriptorSet::createAnimationDescriptorSets(VkBuffer& animationSSBO) {
 
-	auto& descriptorSets = animationDescriptorSets;
-
-	descriptorSets.resize(Constants::MAX_FRAMES_IN_FLIGHT);
 
 	std::vector<VkDescriptorSetLayout> layouts(
-		descriptorSets.size(),
+		1,
 		m_descriptorSetLayout.animationDescriptorSetLayout
 	);
 
 	VkDescriptorSetAllocateInfo allocInfo{};
 	allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
 	allocInfo.descriptorPool = m_descriptorSetLayout.descriptorPool;
-	allocInfo.descriptorSetCount = static_cast<uint32_t>(descriptorSets.size());
+	allocInfo.descriptorSetCount = 1;
 	allocInfo.pSetLayouts = layouts.data();
 	if (vkAllocateDescriptorSets(
 		m_Devices.device,
 		&allocInfo,
-		descriptorSets.data()) != VK_SUCCESS)
+		&animationDescriptorSet) != VK_SUCCESS)
 	{
 		throw std::runtime_error("failed to allocate descriptor sets!");
 	}
 
+	VkDescriptorBufferInfo animationBufferInfo{};
+	animationBufferInfo.buffer = animationSSBO;;
+	animationBufferInfo.offset = 0;
+	animationBufferInfo.range = VK_WHOLE_SIZE;
 
-	for (size_t frame = 0; frame < Constants::MAX_FRAMES_IN_FLIGHT; frame++) {
+	VkWriteDescriptorSet descriptorWrites{};
 
-		VkDescriptorSet dstSet = descriptorSets[frame];
+	descriptorWrites.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+	descriptorWrites.dstSet = animationDescriptorSet;
+	descriptorWrites.dstBinding = 0;
+	descriptorWrites.dstArrayElement = 0;
+	descriptorWrites.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+	descriptorWrites.descriptorCount = 1;
+	descriptorWrites.pBufferInfo = &animationBufferInfo;
 
-		VkDescriptorBufferInfo animationBufferInfo{};
-		animationBufferInfo.buffer = animationSSBO;;
-		animationBufferInfo.offset = 0;
-		animationBufferInfo.range = VK_WHOLE_SIZE;
+	vkUpdateDescriptorSets(m_Devices.device, 1, &descriptorWrites,
+		0, nullptr);
 
-		VkWriteDescriptorSet descriptorWrites{};
-
-		descriptorWrites.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		descriptorWrites.dstSet = dstSet;
-		descriptorWrites.dstBinding = 0;
-		descriptorWrites.dstArrayElement = 0;
-		descriptorWrites.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-		descriptorWrites.descriptorCount = 1;
-		descriptorWrites.pBufferInfo = &animationBufferInfo;
-
-		vkUpdateDescriptorSets(m_Devices.device, 1, &descriptorWrites,
-			0, nullptr);
-
-	}
 }
 
 

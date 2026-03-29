@@ -75,6 +75,7 @@ struct ItemInterface {
 	// | for UBO (final bone matrices)
 	//std::vector<glm::mat4> boneMatrices;
 
+
 	float currentTimeAnim = 0.0f;
 
 	std::vector<glm::mat4> localTransforms;

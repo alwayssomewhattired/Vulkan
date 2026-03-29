@@ -8,10 +8,6 @@ layout(set = 0, binding = 0) uniform CameraUBO {
 
 } camera;
 
-//layout(set = 2, binding = 0) uniform BonesUBO {
-//    mat4 bones[100];
-//} bonesUBO;
-
 layout(set = 2, binding = 0) readonly buffer BonesSSBO {
     mat4 bones[];
 };
@@ -21,6 +17,8 @@ layout(push_constant) uniform ModelLightPC {
     mat4 model;
     vec4 pos;
     uint materialIndex;
+    uint boneOffset;
+    uint boneCount;
 } modelPC;
  
 layout(location = 0) in vec3 inPosition;
@@ -43,21 +41,32 @@ void main() {
 
     // | animation
 
+    uint boneOffset = modelPC.boneOffset;
+    uint boneCount = modelPC.boneCount;
     mat4 skinMatrix = mat4(0.0);
-    float totalWeight = 0.0;
 
-    for (int i = 0; i < 4; i++) {
-        int id = inBoneIDs[i];
-        float w = inWeights[i];
+    if (boneCount > 0) {
+        float totalWeight = 0.0;
 
-        if (id >= 0 && id < bones.length() && w > 0.0) {
-            skinMatrix += w * bones[id];
-            totalWeight += w;
+        for (int i = 0; i < 4; i++) {
+            int id = inBoneIDs[i];
+            float w = inWeights[i];
+
+            if (w > 0.0) {
+                uint index = boneOffset + uint(id);
+
+                if (index < bones.length()) {
+                    skinMatrix += w * bones[index];
+                    totalWeight += w;
+                }
+            }
         }
-    }
 
-    if (totalWeight > 0.0) {
-        skinMatrix /= totalWeight;
+        if (totalWeight > 0.0) {
+            skinMatrix /= totalWeight;
+        } else {
+            skinMatrix = mat4(1.0);
+        }
     } else {
         skinMatrix = mat4(1.0);
     }

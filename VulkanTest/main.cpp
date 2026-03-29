@@ -301,7 +301,7 @@ private:
 		m_SwapChain->createSyncObjects();
 
 
-		std::cout << "Vulkan Engine Initialized\n";
+		printf("Vulkan Engine Initialized\n");
 	}
 
 	// | Begin Callbacks block
@@ -422,7 +422,6 @@ private:
 	}
 
 
-	// | loads .glb file(s)
 	void createModel() {
 
 		m_ModelLoad->loadModel("models/houseofmusic.glb", *m_Home);
@@ -615,7 +614,7 @@ private:
 			// | animation
 			for (auto& item : items) {
 				m_Animation->update(deltaTime, *item);
-				//m_UniformBuffer->updateAnimationUBO(*item, g_currentFrame); // bones UBO upload
+				m_Buffer->updateBonesSSBO(m_Animation->globalBoneMatrices);
 			}
 
 			drawFrame();

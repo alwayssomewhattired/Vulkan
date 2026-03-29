@@ -27,6 +27,7 @@ layout(push_constant) uniform ModelLightPC {
 	mat4 model;
     vec4 pos;
 	uint materialIndex;
+	uint boneOffset;
 } lightPC;
 
 void main() {

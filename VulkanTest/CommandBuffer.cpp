@@ -133,7 +133,7 @@ void CommandBuffer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t 
 			&descriptorSet.meshMaterialDescriptorSet, 0, nullptr);
 
 		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.pipelineLayout, 2, 1,
-			&descriptorSet.animationDescriptorSets[currentFrame], 0, nullptr);
+			&descriptorSet.animationDescriptorSet, 0, nullptr);
 
 		VkDeviceSize offsets[] = { 0 };
 
@@ -148,9 +148,14 @@ void CommandBuffer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t 
 				glm::mat4 model;
 				glm::vec4 lightPos;
 				glm::uint materialIndex;
+				glm::uint boneOffset;
+				glm::uint boneCount;
 			};
 
 			PushConstants pc{};
+
+			pc.boneOffset = item->skeleton.offset;
+			pc.boneCount = item->skeleton.count;
 
 			for (int i = 0; i < mesh.indexCount.size(); i++) { // mesh iteration (per primitive)
 

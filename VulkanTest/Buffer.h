@@ -28,6 +28,7 @@ public:
 		std::vector<VkDeviceMemory>& triangleVertexBufferMemoryManager);
 	void createSSBO(std::vector<Texture::ItemMaterial>& globalItemMaterials);
 	void createBonesSSBO(std::vector<glm::mat4>& globalFinalBoneMatrices);
+	void updateBonesSSBO(const std::vector<glm::mat4>& globalFinalBoneMatrices);
 
 	VkBuffer globalVertexBuffer;
 	VkBuffer globalIndexBuffer;
@@ -40,6 +41,7 @@ public:
 
 	VkBuffer animationSSBO;
 	VkDeviceMemory animationSSBOMemory;
+	void* mappedBonesPtr = nullptr;
 
 
 private:

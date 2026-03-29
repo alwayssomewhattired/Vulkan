@@ -27,7 +27,7 @@ public:
 
 	std::vector<VkDescriptorSet> globalDescriptorSets;
 	VkDescriptorSet meshMaterialDescriptorSet;
-	std::vector<VkDescriptorSet> animationDescriptorSets;
+	VkDescriptorSet animationDescriptorSet;
 	std::vector<VkDescriptorSet> mandelbulbComputeDescriptorSets;
 	std::vector<VkDescriptorSet> mandelbulbGraphicsDescriptorSets;
 

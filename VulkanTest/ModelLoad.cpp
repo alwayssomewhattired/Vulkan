@@ -61,11 +61,13 @@ glm::quat ModelLoad::convert(const aiQuaternion& q)
 void ModelLoad::modelFileParse(
 	const aiScene* scene, aiMesh* mesh, size_t& vertexCount, 
 	std::vector<Vertex>& vertices, VkIndexType& indexType, std::vector<uint32_t>& indices,
-	ItemInterface& classReference, const uint32_t meshIndex, const uint32_t globalVertexOffset) {
+	ItemInterface& classReference, const uint32_t meshIndex, const uint32_t globalVertexOffset) 
+{
 
 	glm::vec3 min(FLT_MAX);
 	glm::vec3 max(-FLT_MAX);
-	uint32_t globalVerticesIndex = 0;
+	static uint32_t globalVerticesIndex = 0;
+
 	for (uint32_t i = 0; i < mesh->mNumVertices; i++) {
 
 		Vertex vertex{};
@@ -142,16 +144,13 @@ void ModelLoad::modelFileParse(
 
 	// | bones
 
-	auto& boneMap = m_Animator.globalSkeleton.boneMap;
 	auto& bones = m_Animator.globalSkeleton.bones;
-	auto& globalInverseTransform = m_Animator.globalSkeleton.globalInverseTransform;
-	globalInverseTransform.push_back(glm::inverse(convert(scene->mRootNode->mTransformation)));
-	//auto& boneMap = classReference.skeleton.boneMap;
-	//auto& bones = classReference.skeleton.bones;
-	//auto& globalInverseTransform = classReference.skeleton.globalInverseTransform;
-	//globalInverseTransform = glm::inverse(convert(scene->mRootNode->mTransformation));
+	auto& boneMap = classReference.skeleton.boneMap;
+	auto& globalInverseTransform = classReference.skeleton.globalInverseTransform;
+	globalInverseTransform = glm::inverse(convert(scene->mRootNode->mTransformation));
 
 	static int globalBoneIndex;
+	classReference.skeleton.offset = bones.size();
 
 	for (uint32_t i = 0; i < mesh->mNumBones; i++) {
 		aiBone* aiBone = mesh->mBones[i];
@@ -179,9 +178,10 @@ void ModelLoad::modelFileParse(
 			int vertexID = weight.mVertexId;
 			float value = weight.mWeight;
 
-			addBoneWeight(vertices[vertexID], globalBoneIndex, value);
+			addBoneWeight(vertices[vertexID + globalVertexOffset], globalBoneIndex, value);
 		}
 	}
+	classReference.skeleton.count = bones.size() - classReference.skeleton.offset;
 
 	// | Animator
 	if (scene->HasAnimations()) {
@@ -264,7 +264,7 @@ void ModelLoad::processNode(aiNode* node, int parentIndex, ItemInterface& classR
 {
 
 	auto& boneMap = classReference.skeleton.boneMap;
-	auto& bones = classReference.skeleton.bones;
+	auto& bones = m_Animator.globalSkeleton.bones;
 
 	std::string name = node->mName.C_Str();
 
@@ -324,11 +324,11 @@ void ModelLoad::loadModel(const std::string& path, ItemInterface& classReference
 		
 		aiMesh* mesh = scene->mMeshes[i];
 
-		uint32_t globalVertexOffset = static_cast<uint32_t>(vertices.size());
-		uint32_t globalIndexOffset = static_cast<uint32_t>(indices.size());
-		
 		size_t vertexCount = mesh->mNumVertices;
 		vertices.reserve(vertexCount);
+
+		uint32_t globalVertexOffset = static_cast<uint32_t>(vertices.size());
+		uint32_t globalIndexOffset = static_cast<uint32_t>(indices.size());
 
 		// | zero because we offset indices instead
 		classReference.meshData.vertexOffset.push_back(0);
