@@ -13,7 +13,7 @@
 #include <vector>
 
 #include "items/ItemInterface.h"
-#include "Vertex.h"
+#include "Vertex.hpp"
 #include "Buffer.h"
 #include "CommandBuffer.h"
 #include "Texture.h"
@@ -30,7 +30,8 @@ public:
 		Buffer& buffer, CommandBuffer& commandBuffer, Texture& texture, Animator& animator
 		);
 
-	// | loads model and fills in class
+	// | loads model into assimp 
+	// | fills in item class AND cache
 	void loadModel(const std::string& path, ItemInterface& classReference);
 	
 
@@ -48,7 +49,7 @@ private:
 
 	void modelFileParse(const aiScene* scene, aiMesh* mesh, size_t& vertexCount, 
 		std::vector<Vertex>& vertices,
-		VkIndexType& indexType, std::vector<uint32_t>& indices, ItemInterface& classReference, const uint32_t meshIndex,
+		VkIndexType& indexType, std::vector<uint32_t>& indices, ItemInterface& classReference, const uint32_t meshOffset,
 		const uint32_t globalVertexOffset);
 
 	void addBoneWeight(Vertex& v, int boneID, float weight);
@@ -58,6 +59,7 @@ private:
 	glm::vec3 convert(const aiVector3D& v);
 	glm::quat convert(const aiQuaternion& q);
 
+	void writeCache(std::string path, ItemInterface& item);
 
 	void fileDebug(const tinygltf::Model& model);
 };

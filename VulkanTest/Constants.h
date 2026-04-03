@@ -2,7 +2,7 @@
 #include <array>
 #include <cstdint>
 #include <vector>
-#include "Vertex.h"
+#include "Vertex.hpp"
 
 namespace Constants {
 

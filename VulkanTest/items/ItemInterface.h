@@ -10,7 +10,7 @@
 #include <cstdint>
 #include <vector>
 
-#include "../Vertex.h"
+#include "../Vertex.hpp"
 #include "../Texture.h"
 #include "../animation/AnimatorStruct.h"
 
@@ -22,12 +22,19 @@ public:
 // | blueprint for all items
 struct ItemInterface {
 
-
+	// | per mesh data
+	// | 
+	// | each element of each vector is in order
+	// |
+	// | only fill data when no cache present
 	struct MeshData {
+
+		std::vector<std::vector<Vertex>> vertices;
+		std::vector<std::vector<uint32_t>> indices;
 
 		std::vector<size_t> vertexCount;
 
-		std::vector<uint32_t> firstIndex;
+		std::vector<uint32_t> meshOffset;
 
 		// | DO add to index buffer values
 		// | DONT byte offset into vertex buffer because we already offset indices
@@ -65,16 +72,6 @@ struct ItemInterface {
 
 	//
 	AnimatorStruct::Skeleton skeleton;
-
-	//std::vector<VkDescriptorSet> animationDescriptorSets;
-
-	//std::vector<VkBuffer> animationUniformBuffers;
-	//std::vector<VkDeviceMemory> animationUniformBuffersMemory;
-	//std::vector<void*> animationUniformBuffersMapped;
-
-	// | for UBO (final bone matrices)
-	//std::vector<glm::mat4> boneMatrices;
-
 
 	float currentTimeAnim = 0.0f;
 

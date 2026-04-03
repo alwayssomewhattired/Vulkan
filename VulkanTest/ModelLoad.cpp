@@ -13,7 +13,7 @@
 #include <string.h>
 #include <utility>
 
-#include "Vertex.h"
+#include "Vertex.hpp"
 
 // | transports model data from cpu to gpu storage
 ModelLoad::ModelLoad(
@@ -60,13 +60,20 @@ glm::quat ModelLoad::convert(const aiQuaternion& q)
 // | Mutates 'vertices' and 'indices' and 'vertexCount' params
 void ModelLoad::modelFileParse(
 	const aiScene* scene, aiMesh* mesh, size_t& vertexCount, 
-	std::vector<Vertex>& vertices, VkIndexType& indexType, std::vector<uint32_t>& indices,
-	ItemInterface& classReference, const uint32_t meshIndex, const uint32_t globalVertexOffset) 
+	std::vector<Vertex>& globalVertices, VkIndexType& indexType, std::vector<uint32_t>& globalIndices,
+	ItemInterface& classReference, const uint32_t meshOffset, const uint32_t globalVertexOffset) 
 {
+
+	auto& itemVertices = classReference.meshData.vertices[meshOffset];
+	auto& itemIndices = classReference.meshData.indices[meshOffset];
+
+	itemVertices.reserve(mesh->mNumVertices);
+	itemIndices.reserve(mesh->mNumFaces * 3);
 
 	glm::vec3 min(FLT_MAX);
 	glm::vec3 max(-FLT_MAX);
 	static uint32_t globalVerticesIndex = 0;
+	//std::cout << mesh->mNumVertices << "\n";
 
 	for (uint32_t i = 0; i < mesh->mNumVertices; i++) {
 
@@ -76,6 +83,7 @@ void ModelLoad::modelFileParse(
 			mesh->mVertices[i].y,
 			mesh->mVertices[i].z
 		};
+
 		vertex.normal = {
 			mesh->mNormals[i].x,
 			mesh->mNormals[i].y,
@@ -89,9 +97,8 @@ void ModelLoad::modelFileParse(
 			};
 		}
 
-		for (size_t i = 0; i < vertexCount; ++i) {
-			vertex.color = glm::vec3(1.0f); // default color (white)
-		}
+		// | default color (white)
+		vertex.color = glm::vec3(1.0f);
 
 		if (mesh->mTangents) {
 			vertex.tangent = {
@@ -124,10 +131,13 @@ void ModelLoad::modelFileParse(
 		max.y = std::max(max.y, vertex.pos.y);
 		max.z = std::max(max.z, vertex.pos.z);
 
-		vertices.push_back(std::move(vertex));
+		itemVertices.push_back(vertex);
+		globalVertices.push_back(std::move(vertex));
 		globalVerticesIndex++;
+		//std::cout << globalVerticesIndex << "\n";
 
 	}
+	std::cout << "gargonalog\n";
 
 	glm::vec3 center = (min + max) * 0.5f;
 	glm::vec3 extents = (max - min) * 0.5f;
@@ -138,7 +148,9 @@ void ModelLoad::modelFileParse(
 	for (uint32_t i = 0; i < mesh->mNumFaces; i++) {
 		const aiFace& face = mesh->mFaces[i];
 		for (uint32_t j = 0; j < face.mNumIndices; j++) {
-			indices.push_back(face.mIndices[j] + globalVertexOffset);
+			auto finalIndex = face.mIndices[j] + globalVertexOffset;
+			itemIndices.push_back(finalIndex);
+			globalIndices.push_back(finalIndex);
 		}
 	}
 
@@ -178,7 +190,7 @@ void ModelLoad::modelFileParse(
 			int vertexID = weight.mVertexId;
 			float value = weight.mWeight;
 
-			addBoneWeight(vertices[vertexID + globalVertexOffset], globalBoneIndex, value);
+			addBoneWeight(globalVertices[vertexID + globalVertexOffset], globalBoneIndex, value);
 		}
 	}
 	classReference.skeleton.count = bones.size() - classReference.skeleton.offset;
@@ -242,7 +254,7 @@ void ModelLoad::modelFileParse(
 
 	aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
 
-	m_Texture.buildGPUMaterial(scene, material, mesh->mMaterialIndex, classReference, meshIndex);
+	m_Texture.buildGPUMaterial(scene, material, mesh->mMaterialIndex, classReference, meshOffset);
 	
 }
 
@@ -297,10 +309,11 @@ void ModelLoad::loadModel(const std::string& path, ItemInterface& classReference
 	VkDeviceMemory vertexMemoryManager = VK_NULL_HANDLE;
 	auto& indexBufferManager = m_Buffer.globalIndexBuffer;
 	VkDeviceMemory indexMemoryManager = VK_NULL_HANDLE;
-	auto& vertexCountManager = classReference.meshData.vertexCount;
 	auto& indexCountManager = classReference.meshData.indexCount;
-	auto& vertices = m_Buffer.globalVertices;
-	auto& indices = m_Buffer.globalIndices;
+	auto& globalVertices = m_Buffer.globalVertices;
+	auto& itemVertices = classReference.meshData.vertices;
+	auto& globalIndices = m_Buffer.globalIndices;
+	auto& itemIndices = classReference.meshData.indices;
 	VkIndexType indexType = Constants::INDEX_TYPE;
 
 	Assimp::Importer importer;
@@ -320,30 +333,48 @@ void ModelLoad::loadModel(const std::string& path, ItemInterface& classReference
 	}
 	classReference.materialData.itemMaterials.resize(scene->mNumMaterials);
 
+	uint32_t globalVertexOffset = static_cast<uint32_t>(globalVertices.size());
+
+	size_t totalSceneVertices = 0;
+	size_t totalSceneIndices = 0;
+
+	for (uint32_t i = 0; i < scene->mNumMeshes; i++) {
+		totalSceneVertices += scene->mMeshes[i]->mNumVertices;
+		totalSceneIndices += scene->mMeshes[i]->mNumFaces * 3;
+	}
+
+	globalVertices.reserve(totalSceneVertices);
+	globalIndices.reserve(totalSceneIndices);
+	itemVertices.resize(scene->mNumMeshes);
+	itemIndices.resize(scene->mNumMeshes);
+
+	std::cout << "chulsami\n";
 	for (uint32_t i = 0; i < scene->mNumMeshes; i++) {
 		
 		aiMesh* mesh = scene->mMeshes[i];
 
-		size_t vertexCount = mesh->mNumVertices;
-		vertices.reserve(vertexCount);
+		size_t meshVertexCount = mesh->mNumVertices;
+		classReference.meshData.vertexCount.push_back(meshVertexCount);
 
-		uint32_t globalVertexOffset = static_cast<uint32_t>(vertices.size());
-		uint32_t globalIndexOffset = static_cast<uint32_t>(indices.size());
+		uint32_t globalIndexOffset = static_cast<uint32_t>(globalIndices.size());
 
-		// | zero because we offset indices instead
+		// | zero because we offset globalIndices instead
 		classReference.meshData.vertexOffset.push_back(0);
 
-		modelFileParse(scene, mesh, vertexCount, vertices, indexType, indices, classReference, i, globalVertexOffset);
-		processNode(scene->mRootNode, -1, classReference);
+		modelFileParse(scene, mesh, meshVertexCount, globalVertices, indexType, globalIndices, classReference, i, globalVertexOffset);
 
-		classReference.meshData.firstIndex.push_back(globalIndexOffset);
-		classReference.meshData.indexCount.push_back(indices.size() - globalIndexOffset);
+		classReference.meshData.meshOffset.push_back(globalIndexOffset);
+		classReference.meshData.indexCount.push_back(globalIndices.size() - globalIndexOffset);
 	
-		globalVertexOffset += mesh->mNumVertices;
-		globalIndexOffset += indices.size();
-	}
+		globalVertexOffset += meshVertexCount;
+		globalIndexOffset += globalIndices.size();
 
-	VkDeviceSize vertexSize = sizeof(Vertex) * vertices.size();
+	}
+	std::cout << "valakajala\n";
+
+	processNode(scene->mRootNode, -1, classReference);
+
+	VkDeviceSize vertexSize = sizeof(Vertex) * globalVertices.size();
 	VkBuffer stagingVb;
 	VkDeviceMemory stagingVm;
 
@@ -358,7 +389,7 @@ void ModelLoad::loadModel(const std::string& path, ItemInterface& classReference
 
 	void* mapped;
 	vkMapMemory(device, stagingVm, 0, vertexSize, 0, &mapped);
-	memcpy(mapped, vertices.data(), static_cast<size_t>(vertexSize));
+	memcpy(mapped, globalVertices.data(), static_cast<size_t>(vertexSize));
 	unsigned char* data = reinterpret_cast<unsigned char*>(mapped);
 	vkUnmapMemory(device, stagingVm);
 
@@ -380,11 +411,11 @@ void ModelLoad::loadModel(const std::string& path, ItemInterface& classReference
 	vkDestroyBuffer(device, stagingVb, nullptr);
 	vkFreeMemory(device, stagingVm, nullptr);
 
-	// indices
+	// globalIndices
 
-	uint32_t indexCount = static_cast<uint32_t>(indices.size());
+	uint32_t indexCount = static_cast<uint32_t>(globalIndices.size());
 
-	VkDeviceSize indexSize = sizeof(uint32_t) * indices.size();
+	VkDeviceSize indexSize = sizeof(uint32_t) * globalIndices.size();
 
 	VkBuffer stagingIb;
 	VkDeviceMemory stagingIm;
@@ -398,7 +429,7 @@ void ModelLoad::loadModel(const std::string& path, ItemInterface& classReference
 	);
 
 	vkMapMemory(device, stagingIm, 0, indexSize, 0, &mapped);
-	memcpy(mapped, indices.data(), indexSize);
+	memcpy(mapped, globalIndices.data(), indexSize);
 	vkUnmapMemory(device, stagingIm);
 
 	m_Buffer.createBuffer(

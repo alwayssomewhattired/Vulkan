@@ -24,7 +24,7 @@
 #include "Animator.h"
 #include "ModelLoad.h"
 #include "Camera.h"
-#include "Vertex.h"
+#include "Vertex.hpp"
 #include "Constants.h"
 #include "UniformBuffer.h"
 #include "descriptor_sets/DescriptorSet.h"
@@ -32,6 +32,7 @@
 #include "RenderTarget.h"
 #include "Callbacks.h"
 #include "PhysXEngine.h"
+#include "Cache.h"
 #include "items/ItemInterface.h"
 #include "items/Triangle.h"
 #include "items/Home.h"
@@ -145,7 +146,7 @@ private:
 	std::unique_ptr<Table> m_Table = nullptr;
 	std::unique_ptr<Computer> m_Computer = nullptr;
 	std::unique_ptr<Skeleton> m_Skeleton = nullptr;
-	//std::unique_ptr<CozyHouse> m_CozyHouse = nullptr;
+	std::unique_ptr<CozyHouse> m_CozyHouse = nullptr;
 
 	std::unique_ptr<UniformBuffer> m_UniformBuffer = nullptr;
 
@@ -154,6 +155,8 @@ private:
 	std::unique_ptr<StorageImageManager> m_StorageImageManager = nullptr;
 
 	std::unique_ptr<PhysXEngine> m_PhysXEngine = nullptr;
+
+	std::unique_ptr<Cache> m_Cache = nullptr;
 
 	/// 
 	///
@@ -240,15 +243,15 @@ private:
 		m_Table = std::make_unique<Table>(m_devices->device, m_devices->physicalDevice);
 		m_Computer = std::make_unique<Computer>(m_devices->device, m_devices->physicalDevice);
 		m_Skeleton = std::make_unique<Skeleton>(m_devices->device, m_devices->physicalDevice);
-		//m_CozyHouse = std::make_unique<CozyHouse>(m_devices->device, m_devices->physicalDevice);
+		m_CozyHouse = std::make_unique<CozyHouse>(m_devices->device, m_devices->physicalDevice);
 
+		items.push_back(m_CozyHouse.get());
 		items.push_back(m_Home.get());
 		items.push_back(m_SilentHill3Game.get());
 		items.push_back(m_StringLight.get());
 		items.push_back(m_Table.get());
 		items.push_back(m_Computer.get());
 		items.push_back(m_Skeleton.get());
-		//items.push_back(m_CozyHouse.get());
 
 		m_SwapChain->createSwapChain();
 		m_SwapChain->createImageViews(*m_Image);
@@ -300,6 +303,7 @@ private:
 		m_CommandBuffer->createCommandBuffers(*m_CommandPool);
 		m_SwapChain->createSyncObjects();
 
+		m_Cache = std::make_unique<Cache>();
 
 		printf("Vulkan Engine Initialized\n");
 	}
@@ -424,25 +428,34 @@ private:
 
 	void createModel() {
 
-		m_ModelLoad->loadModel("models/houseofmusic.glb", *m_Home);
+		modelLoadPath("models/cozy_house/cozy_houseGLB/cozy_house.glb", * m_CozyHouse);
+		
+		modelLoadPath("models/houseofmusic.glb", *m_Home);
+		
+		modelLoadPath("models/silent-hill-3-ps2-game-cover/source/SilentHill3ps2Game.glb", *m_SilentHill3Game);
+		
+		modelLoadPath("models/lightbulb/scene.gltf", *m_StringLight);
+		
+		modelLoadPath("models/Table.glb", *m_Table);
+		
+		modelLoadPath("models/computer/source/myComputer.glb", *m_Computer);
+		
+		modelLoadPath("models/skeleton/skeleton_animated.FBX", *m_Skeleton);
 
-		m_ModelLoad->loadModel("models/silent-hill-3-ps2-game-cover/source/SilentHill3ps2Game.glb", *m_SilentHill3Game);
+	}
 
-		m_ModelLoad->loadModel("models/lightbulb/scene.gltf", *m_StringLight);
+	void modelLoadPath(const std::string path, ItemInterface& item) {
 
-		m_ModelLoad->loadModel("models/Table.glb", *m_Table);
+		if (m_Cache->cacheExists(path)) {
+			m_Cache->loadCache(path, item);
+		}
+		else {
+			m_ModelLoad->loadModel(path, item);
+			std::string cachePath = path + ".cache";
+			m_Cache->writeCache(path, cachePath, item);
+		}
 
-		m_ModelLoad->loadModel("models/computer/source/myComputer.glb", *m_Computer);
-
-		m_ModelLoad->loadModel("models/skeleton/skeleton_animated.FBX", *m_Skeleton);
-
-
-
-		// - we crash when loading this.
-		// - optimize and check where we are crashing?
-		// - this model rules so hard
-		//m_ModelLoad->loadModel("models/cozy_house/cozy_houseGLB/cozy_house.glb", * m_CozyHouse);
-
+		//m_ModelLoad->loadModel(path, item);
 	}
 
 	// creates descriptor sets for models

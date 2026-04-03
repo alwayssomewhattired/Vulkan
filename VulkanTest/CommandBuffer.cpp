@@ -173,7 +173,7 @@ void CommandBuffer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t 
 					&pc
 				);
 
-				vkCmdDrawIndexed(commandBuffer, mesh.indexCount[i], 1, mesh.firstIndex[i], mesh.vertexOffset[i], 0);
+				vkCmdDrawIndexed(commandBuffer, mesh.indexCount[i], 1, mesh.meshOffset[i], mesh.vertexOffset[i], 0);
 			}
 		}
 	}

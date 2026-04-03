@@ -1,6 +1,6 @@
 #include "Buffer.h"
 
-#include "Vertex.h"
+#include "Vertex.hpp"
 #include "Devices.h"
 #include "CommandBuffer.h"
 #include "Texture.h"

@@ -14,7 +14,7 @@
 #include <chrono>
 
 #include "ItemInterface.h"
-#include "../Vertex.h"
+#include "../Vertex.hpp"
 #include "../glm_config.h"
 #include "../Texture.h"
 #include "../GPUTexture.h"

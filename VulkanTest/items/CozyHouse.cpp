@@ -18,11 +18,10 @@ void CozyHouse::updatePC() {
 	glm::mat4& modelMatrixModel = modelMatrix.model;
 	modelMatrixModel = glm::mat4(1.0f);
 
-	modelMatrixModel = glm::translate(modelMatrixModel, glm::vec3(1.7f, 0.0f, 0.75f));
+	modelMatrixModel = glm::translate(modelMatrixModel, glm::vec3(-4.0f, 0.0f, 0.75f));
 
 	modelMatrixModel = glm::rotate(modelMatrixModel, glm::radians(-90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-	modelMatrixModel = glm::rotate(modelMatrixModel, glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
 
 	// | scaling
-	modelMatrixModel = glm::scale(modelMatrixModel, glm::vec3(0.019f, 0.019f, 0.019f));
+	modelMatrixModel = glm::scale(modelMatrixModel, glm::vec3(0.5f, 0.5f, 0.5f));
 }

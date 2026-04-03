@@ -1,5 +1,5 @@
 #include "GraphicsPipeline.h"
-#include "Vertex.h"
+#include "Vertex.hpp"
 
 #include <vulkan/vulkan.h>
 #include <vulkan/vulkan_core.h>
