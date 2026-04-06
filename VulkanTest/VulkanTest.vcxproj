@@ -218,6 +218,7 @@
     <ClInclude Include="Texture.h" />
     <ClInclude Include="items\Triangle.h" />
     <ClInclude Include="UniformBuffer.h" />
+    <ClInclude Include="utils\Hash.hpp" />
     <ClInclude Include="ValidationLayers.h" />
     <ClInclude Include="Vertex.hpp" />
   </ItemGroup>

@@ -8,7 +8,9 @@
 #include "items/ItemInterface.h"
 #include "Buffer.h"
 #include "Animator.h"
+#include "utils/Hash.hpp"
 
+class Buffer;
 
 class Cache
 {
@@ -24,6 +26,10 @@ public:
 
 		AnimatorStruct::Skeleton skeleton;
 		AnimatorStruct::AnimatorData animatorData;
+	};
+
+	struct CacheVec3 {
+		float x, y, z;
 	};
 
 	struct CacheHeader {
@@ -42,16 +48,22 @@ public:
 
 		uint64_t skeletonOffset;
 		uint64_t animationOffset;
+
+		CacheVec3 center;
+		CacheVec3 extents;
 	};
 
 	struct MeshEntry {
 		uint32_t meshIndex;
 		uint32_t indexCount;
-		uint32_t materialIndex;
+
+		//uint32_t materialIndex;
 	};
 
+
+
 	void loadCache(std::string originalPath, std::string cachePath, ItemInterface& item);
-	void writeCache(std::string originalPath, std::string cachePath, ItemInterface& item, int meshOffset);
+	void writeCache(std::string originalPath, std::string cachePath, ItemInterface& item);
 	bool cacheExists(const std::string path);
 
 private:

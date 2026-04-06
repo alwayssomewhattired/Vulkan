@@ -32,7 +32,7 @@ public:
 
 	// | loads model into assimp 
 	// | fills in item class AND cache
-	void loadModel(const std::string& path, ItemInterface& classReference);
+	void loadModel(const std::string& path, ItemInterface& classReference, const bool isCache);
 	
 
 private:
@@ -54,12 +54,14 @@ private:
 
 	void addBoneWeight(Vertex& v, int boneID, float weight);
 	void processNode(aiNode* node, int parentIndex, ItemInterface& classReference);
+	void vertexExtractor(aiMesh* mesh, ItemInterface& item, const uint32_t globalVertexOffset);
+	void indexExtractor(aiMesh* mesh, const uint32_t globalVertexOffset);
+
+	//void uploadToGPU();
 
 	glm::mat4 convert(const aiMatrix4x4& m);
 	glm::vec3 convert(const aiVector3D& v);
 	glm::quat convert(const aiQuaternion& q);
-
-	void writeCache(std::string path, ItemInterface& item);
 
 	void fileDebug(const tinygltf::Model& model);
 };

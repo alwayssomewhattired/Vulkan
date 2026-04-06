@@ -57,23 +57,26 @@ glm::quat ModelLoad::convert(const aiQuaternion& q)
 	return glm::quat(q.w, q.x, q.y, q.z);
 }
 
-// | Mutates 'vertices' and 'indices' and 'vertexCount' params
-void ModelLoad::modelFileParse(
-	const aiScene* scene, aiMesh* mesh, size_t& vertexCount, 
-	std::vector<Vertex>& globalVertices, VkIndexType& indexType, std::vector<uint32_t>& globalIndices,
-	ItemInterface& classReference, const uint32_t meshOffset, const uint32_t globalVertexOffset) 
+void ModelLoad::indexExtractor(aiMesh* mesh, const uint32_t globalVertexOffset)
 {
+	auto& globalIndices = m_Buffer.globalIndices;
+	for (uint32_t i = 0; i < mesh->mNumFaces; i++) {
+		const aiFace& face = mesh->mFaces[i];
+		for (uint32_t j = 0; j < face.mNumIndices; j++) {
+			auto finalIndex = face.mIndices[j] + globalVertexOffset;
+			//itemIndices.push_back(finalIndex);
+			globalIndices.push_back(finalIndex);
+		}
+	}
+}
 
-	auto& itemVertices = classReference.meshData.vertices[meshOffset];
-	auto& itemIndices = classReference.meshData.indices[meshOffset];
-
-	itemVertices.reserve(mesh->mNumVertices);
-	itemIndices.reserve(mesh->mNumFaces * 3);
+void ModelLoad::vertexExtractor(aiMesh* mesh, ItemInterface& item, const uint32_t globalVertexOffset)
+{
+	auto& globalVertices = m_Buffer.globalVertices;
 
 	glm::vec3 min(FLT_MAX);
 	glm::vec3 max(-FLT_MAX);
 	static uint32_t globalVerticesIndex = 0;
-	//std::cout << mesh->mNumVertices << "\n";
 
 	for (uint32_t i = 0; i < mesh->mNumVertices; i++) {
 
@@ -131,10 +134,10 @@ void ModelLoad::modelFileParse(
 		max.y = std::max(max.y, vertex.pos.y);
 		max.z = std::max(max.z, vertex.pos.z);
 
-		itemVertices.push_back(vertex);
+		//itemVertices.push_back(vertex);
+
 		globalVertices.push_back(std::move(vertex));
 		globalVerticesIndex++;
-		//std::cout << globalVerticesIndex << "\n";
 
 	}
 	std::cout << "gargonalog\n";
@@ -142,17 +145,110 @@ void ModelLoad::modelFileParse(
 	glm::vec3 center = (min + max) * 0.5f;
 	glm::vec3 extents = (max - min) * 0.5f;
 
-	classReference.center = center;
-	classReference.extents = extents;
+	item.center = center;
+	item.extents = extents;
 
-	for (uint32_t i = 0; i < mesh->mNumFaces; i++) {
-		const aiFace& face = mesh->mFaces[i];
-		for (uint32_t j = 0; j < face.mNumIndices; j++) {
-			auto finalIndex = face.mIndices[j] + globalVertexOffset;
-			itemIndices.push_back(finalIndex);
-			globalIndices.push_back(finalIndex);
-		}
-	}
+}
+
+// | Mutates 'vertices' and 'indices' and 'vertexCount' params
+void ModelLoad::modelFileParse(
+	const aiScene* scene, aiMesh* mesh, size_t& vertexCount, 
+	std::vector<Vertex>& globalVertices, VkIndexType& indexType, std::vector<uint32_t>& globalIndices,
+	ItemInterface& classReference, const uint32_t meshOffset, const uint32_t globalVertexOffset) 
+{
+
+	// | For cache
+	//auto& itemVertices = classReference.meshData.vertices[meshOffset];
+	//auto& itemIndices = classReference.meshData.indices[meshOffset];
+
+	//itemVertices.reserve(mesh->mNumVertices);
+	//itemIndices.reserve(mesh->mNumFaces * 3);
+	// | END CACHE SEGMENT
+
+	//glm::vec3 min(FLT_MAX);
+	//glm::vec3 max(-FLT_MAX);
+	//static uint32_t globalVerticesIndex = 0;
+
+	//for (uint32_t i = 0; i < mesh->mNumVertices; i++) {
+
+	//	Vertex vertex{};
+	//	vertex.pos = {
+	//		mesh->mVertices[i].x,
+	//		mesh->mVertices[i].y,
+	//		mesh->mVertices[i].z
+	//	};
+
+	//	vertex.normal = {
+	//		mesh->mNormals[i].x,
+	//		mesh->mNormals[i].y,
+	//		mesh->mNormals[i].z
+	//	};
+
+	//	if (mesh->mTextureCoords[0]) {
+	//		vertex.texCoord = {
+	//			mesh->mTextureCoords[0][i].x,
+	//			mesh->mTextureCoords[0][i].y
+	//		};
+	//	}
+
+	//	// | default color (white)
+	//	vertex.color = glm::vec3(1.0f);
+
+	//	if (mesh->mTangents) {
+	//		vertex.tangent = {
+	//			mesh->mTangents[i].x,
+	//			mesh->mTangents[i].y,
+	//			mesh->mTangents[i].z
+	//		};
+	//	}
+	//	else {
+	//		vertex.tangent = { 0.0f, 0.0f, 0.0f };
+	//	}
+
+	//	if (mesh->mBitangents) {
+	//		vertex.bitangent = {
+	//			mesh->mBitangents[i].x,
+	//			mesh->mBitangents[i].y,
+	//			mesh->mBitangents[i].z
+	//		};
+	//	}
+	//	else {
+	//		vertex.bitangent = { 0.0f, 0.0f, 0.0f };
+	//	}
+
+
+	//	min.x = std::min(min.x, vertex.pos.x);
+	//	min.y = std::min(min.y, vertex.pos.y);
+	//	min.z = std::min(min.z, vertex.pos.z);
+
+	//	max.x = std::max(max.x, vertex.pos.x);
+	//	max.y = std::max(max.y, vertex.pos.y);
+	//	max.z = std::max(max.z, vertex.pos.z);
+
+	//	//itemVertices.push_back(vertex);
+
+	//	globalVertices.push_back(std::move(vertex));
+	//	globalVerticesIndex++;
+
+	//}
+	//std::cout << "gargonalog\n";
+
+	//glm::vec3 center = (min + max) * 0.5f;
+	//glm::vec3 extents = (max - min) * 0.5f;
+
+	//classReference.center = center;
+	//classReference.extents = extents;
+
+	//for (uint32_t i = 0; i < mesh->mNumFaces; i++) {
+	//	const aiFace& face = mesh->mFaces[i];
+	//	for (uint32_t j = 0; j < face.mNumIndices; j++) {
+	//		auto finalIndex = face.mIndices[j] + globalVertexOffset;
+	//		//itemIndices.push_back(finalIndex);
+	//		globalIndices.push_back(finalIndex);
+	//	}
+	//}
+
+
 
 	// | bones
 
@@ -303,17 +399,15 @@ void ModelLoad::processNode(aiNode* node, int parentIndex, ItemInterface& classR
 
 }
 
-void ModelLoad::loadModel(const std::string& path, ItemInterface& classReference) {
+void ModelLoad::loadModel(const std::string& path, ItemInterface& classReference, const bool isCache) {
 
 	auto& vertexBufferManager = m_Buffer.globalVertexBuffer;
-	VkDeviceMemory vertexMemoryManager = VK_NULL_HANDLE;
 	auto& indexBufferManager = m_Buffer.globalIndexBuffer;
-	VkDeviceMemory indexMemoryManager = VK_NULL_HANDLE;
 	auto& indexCountManager = classReference.meshData.indexCount;
 	auto& globalVertices = m_Buffer.globalVertices;
-	auto& itemVertices = classReference.meshData.vertices;
+	//auto& itemVertices = classReference.meshData.vertices;
 	auto& globalIndices = m_Buffer.globalIndices;
-	auto& itemIndices = classReference.meshData.indices;
+	//auto& itemIndices = classReference.meshData.indices;
 	VkIndexType indexType = Constants::INDEX_TYPE;
 
 	Assimp::Importer importer;
@@ -345,12 +439,14 @@ void ModelLoad::loadModel(const std::string& path, ItemInterface& classReference
 
 	globalVertices.reserve(totalSceneVertices);
 	globalIndices.reserve(totalSceneIndices);
-	itemVertices.resize(scene->mNumMeshes);
-	itemIndices.resize(scene->mNumMeshes);
+
+	// | For cache
+	//itemVertices.resize(scene->mNumMeshes);
+	//itemIndices.resize(scene->mNumMeshes);
 
 	std::cout << "chulsami\n";
 	for (uint32_t i = 0; i < scene->mNumMeshes; i++) {
-		
+
 		aiMesh* mesh = scene->mMeshes[i];
 
 		size_t meshVertexCount = mesh->mNumVertices;
@@ -361,11 +457,18 @@ void ModelLoad::loadModel(const std::string& path, ItemInterface& classReference
 		// | zero because we offset globalIndices instead
 		classReference.meshData.vertexOffset.push_back(0);
 
-		modelFileParse(scene, mesh, meshVertexCount, globalVertices, indexType, globalIndices, classReference, i, globalVertexOffset);
+		if (!isCache) {
+			vertexExtractor(mesh, classReference, globalVertexOffset);
+			indexExtractor(mesh, globalVertexOffset);
+		}
+
+		modelFileParse(scene, mesh, meshVertexCount, globalVertices, indexType, globalIndices, 
+			classReference, i, globalVertexOffset);
+		
 
 		classReference.meshData.meshOffset.push_back(globalIndexOffset);
 		classReference.meshData.indexCount.push_back(globalIndices.size() - globalIndexOffset);
-	
+
 		globalVertexOffset += meshVertexCount;
 		globalIndexOffset += globalIndices.size();
 
@@ -373,76 +476,4 @@ void ModelLoad::loadModel(const std::string& path, ItemInterface& classReference
 	std::cout << "valakajala\n";
 
 	processNode(scene->mRootNode, -1, classReference);
-
-	VkDeviceSize vertexSize = sizeof(Vertex) * globalVertices.size();
-	VkBuffer stagingVb;
-	VkDeviceMemory stagingVm;
-
-	// staging buffer
-	m_Buffer.createBuffer(
-		vertexSize,
-		VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-		stagingVb,
-		stagingVm
-	);
-
-	void* mapped;
-	vkMapMemory(device, stagingVm, 0, vertexSize, 0, &mapped);
-	memcpy(mapped, globalVertices.data(), static_cast<size_t>(vertexSize));
-	unsigned char* data = reinterpret_cast<unsigned char*>(mapped);
-	vkUnmapMemory(device, stagingVm);
-
-	auto& vertexBuffer = m_Buffer.globalVertexBuffer;
-	auto& indexBuffer = m_Buffer.globalIndexBuffer;
-
-	m_Buffer.createBuffer(
-		vertexSize,
-		VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
-		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-		vertexBuffer,
-		vertexMemoryManager
-	);
-
-	// copy to gpu
-	m_CommandBuffer.copyBuffer(stagingVb, vertexBuffer, vertexSize);
-
-	// destroy staging buffer
-	vkDestroyBuffer(device, stagingVb, nullptr);
-	vkFreeMemory(device, stagingVm, nullptr);
-
-	// globalIndices
-
-	uint32_t indexCount = static_cast<uint32_t>(globalIndices.size());
-
-	VkDeviceSize indexSize = sizeof(uint32_t) * globalIndices.size();
-
-	VkBuffer stagingIb;
-	VkDeviceMemory stagingIm;
-
-	m_Buffer.createBuffer(
-		indexSize,
-		VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-		stagingIb,
-		stagingIm
-	);
-
-	vkMapMemory(device, stagingIm, 0, indexSize, 0, &mapped);
-	memcpy(mapped, globalIndices.data(), indexSize);
-	vkUnmapMemory(device, stagingIm);
-
-	m_Buffer.createBuffer(
-		indexSize,
-		VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
-		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-		indexBuffer,
-		indexMemoryManager
-	);
-
-	m_CommandBuffer.copyBuffer(stagingIb, indexBuffer, indexSize);
-
-	vkDestroyBuffer(device, stagingIb, nullptr);
-	vkFreeMemory(device, stagingIm, nullptr);
-
 }

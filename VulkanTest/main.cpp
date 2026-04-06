@@ -140,13 +140,13 @@ private:
 	std::unique_ptr<Texture> m_Texture = nullptr;
 
 	std::unique_ptr<Triangle> m_Triangle = nullptr;
+	std::unique_ptr<CozyHouse> m_CozyHouse = nullptr;
 	std::unique_ptr<Home> m_Home = nullptr;
 	std::unique_ptr<SilentHill3Game> m_SilentHill3Game = nullptr;
 	std::unique_ptr<StringLight> m_StringLight = nullptr;
 	std::unique_ptr<Table> m_Table = nullptr;
 	std::unique_ptr<Computer> m_Computer = nullptr;
 	std::unique_ptr<Skeleton> m_Skeleton = nullptr;
-	std::unique_ptr<CozyHouse> m_CozyHouse = nullptr;
 
 	std::unique_ptr<UniformBuffer> m_UniformBuffer = nullptr;
 
@@ -237,16 +237,16 @@ private:
 			m_devices->graphicsQueue, *m_Buffer, *m_CommandBuffer, *m_Texture, *m_Animation);
 
 		m_Triangle = std::make_unique<Triangle>();
+		m_CozyHouse = std::make_unique<CozyHouse>(m_devices->device, m_devices->physicalDevice);
 		m_Home = std::make_unique<Home>();
 		m_SilentHill3Game = std::make_unique<SilentHill3Game>(m_devices->device, m_devices->physicalDevice);
 		m_StringLight = std::make_unique<StringLight>(m_devices->device, m_devices->physicalDevice);
 		m_Table = std::make_unique<Table>(m_devices->device, m_devices->physicalDevice);
 		m_Computer = std::make_unique<Computer>(m_devices->device, m_devices->physicalDevice);
 		m_Skeleton = std::make_unique<Skeleton>(m_devices->device, m_devices->physicalDevice);
-		m_CozyHouse = std::make_unique<CozyHouse>(m_devices->device, m_devices->physicalDevice);
 
-		items.push_back(m_CozyHouse.get());
 		items.push_back(m_Home.get());
+		items.push_back(m_CozyHouse.get());
 		items.push_back(m_SilentHill3Game.get());
 		items.push_back(m_StringLight.get());
 		items.push_back(m_Table.get());
@@ -273,6 +273,8 @@ private:
 		m_UniformBuffer->createUniformBuffers();
 
 		m_PhysXEngine = std::make_unique<PhysXEngine>();
+
+		m_Cache = std::make_unique<Cache>(*m_Buffer, *m_Animation);
 
 		createModel();
 
@@ -302,8 +304,6 @@ private:
 
 		m_CommandBuffer->createCommandBuffers(*m_CommandPool);
 		m_SwapChain->createSyncObjects();
-
-		m_Cache = std::make_unique<Cache>();
 
 		printf("Vulkan Engine Initialized\n");
 	}
@@ -428,9 +428,9 @@ private:
 
 	void createModel() {
 
-		modelLoadPath("models/cozy_house/cozy_houseGLB/cozy_house.glb", * m_CozyHouse);
-		
 		modelLoadPath("models/houseofmusic.glb", *m_Home);
+		
+		modelLoadPath("models/cozy_house/cozy_houseGLB/cozy_house.glb", * m_CozyHouse);
 		
 		modelLoadPath("models/silent-hill-3-ps2-game-cover/source/SilentHill3ps2Game.glb", *m_SilentHill3Game);
 		
@@ -442,17 +442,26 @@ private:
 		
 		modelLoadPath("models/skeleton/skeleton_animated.FBX", *m_Skeleton);
 
+		// | AFTER we've loaded all models
+		m_Buffer->createIndexAndVertexBuffer();
+
 	}
 
 	void modelLoadPath(const std::string path, ItemInterface& item) {
 
-		if (m_Cache->cacheExists(path)) {
-			m_Cache->loadCache(path, item);
+		// | Temporarily commented out.
+		// | This is a Cache check
+		std::string cachePath = path + ".cache";
+		if (m_Cache->cacheExists(cachePath)) {
+			m_Cache->loadCache(path, cachePath, item);
+		  m_ModelLoad->loadModel(path, item, true);
 		}
 		else {
-			m_ModelLoad->loadModel(path, item);
-			std::string cachePath = path + ".cache";
-			m_Cache->writeCache(path, cachePath, item);
+			m_ModelLoad->loadModel(path, item, false);
+			int meshOffset = 0; // | temporarily zeroed
+			std::cout << "before cache write\n";
+			m_Cache->writeCache(path, cachePath, item, meshOffset);
+			std::cout << "after the cache write\n";
 		}
 
 		//m_ModelLoad->loadModel(path, item);

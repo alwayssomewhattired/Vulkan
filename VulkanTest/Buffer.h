@@ -19,6 +19,7 @@ class Buffer
 public:
 	Buffer(Devices& devices, CommandBuffer& commandBuffer);
 
+	void createIndexAndVertexBuffer();
 	void createIndexBuffer(const std::vector<Vertex>& triangleVertices, VkBuffer& indexBuffer,
 		VkDeviceMemory& indexBufferMemory);
 	void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer,

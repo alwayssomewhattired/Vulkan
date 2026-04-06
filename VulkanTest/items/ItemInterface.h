@@ -95,7 +95,8 @@ struct ItemInterface {
 	bool hasCollision = false;
 	physx::PxRigidStatic* collisionBody = nullptr;
 
-
+	// | These two vecs should be stored PER MESH
+	// | NOT PER MODEL
 	glm::vec3 center;
 	glm::vec3 extents;
 

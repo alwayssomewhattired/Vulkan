@@ -7,6 +7,82 @@
 
 Buffer::Buffer(Devices& devices, CommandBuffer& commandBuffer) : m_Devices(devices), m_CommandBuffer(commandBuffer){}
 
+void Buffer::createIndexAndVertexBuffer()
+{
+	VkDevice device = m_Devices.device;
+	VkDeviceMemory vertexMemoryManager = VK_NULL_HANDLE;
+	VkDeviceMemory indexMemoryManager = VK_NULL_HANDLE;
+
+	VkDeviceSize vertexSize = sizeof(Vertex) * globalVertices.size();
+	VkBuffer stagingVb;
+	VkDeviceMemory stagingVm;
+
+	// staging buffer
+	createBuffer(
+		vertexSize,
+		VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+		stagingVb,
+		stagingVm
+	);
+
+	void* mapped;
+	vkMapMemory(device, stagingVm, 0, vertexSize, 0, &mapped);
+	memcpy(mapped, globalVertices.data(), static_cast<size_t>(vertexSize));
+	vkUnmapMemory(device, stagingVm);
+
+	auto& vertexBuffer = globalVertexBuffer;
+	auto& indexBuffer = globalIndexBuffer;
+
+	createBuffer(
+		vertexSize,
+		VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+		vertexBuffer,
+		vertexMemoryManager
+	);
+
+	// copy to gpu
+	m_CommandBuffer.copyBuffer(stagingVb, vertexBuffer, vertexSize);
+
+	// destroy staging buffer
+	vkDestroyBuffer(device, stagingVb, nullptr);
+	vkFreeMemory(device, stagingVm, nullptr);
+
+	// globalIndices
+
+	uint32_t indexCount = static_cast<uint32_t>(globalIndices.size());
+
+	VkDeviceSize indexSize = sizeof(uint32_t) * globalIndices.size();
+
+	VkBuffer stagingIb;
+	VkDeviceMemory stagingIm;
+
+	createBuffer(
+		indexSize,
+		VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+		stagingIb,
+		stagingIm
+	);
+
+	vkMapMemory(device, stagingIm, 0, indexSize, 0, &mapped);
+	memcpy(mapped, globalIndices.data(), indexSize);
+	vkUnmapMemory(device, stagingIm);
+
+	createBuffer(
+		indexSize,
+		VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+		indexBuffer,
+		indexMemoryManager
+	);
+
+	m_CommandBuffer.copyBuffer(stagingIb, indexBuffer, indexSize);
+
+	vkDestroyBuffer(device, stagingIb, nullptr);
+	vkFreeMemory(device, stagingIm, nullptr);
+}
 
 // | outdated and we don't use it
 void Buffer::createIndexBuffer(const std::vector<Vertex>& triangleVertices, VkBuffer& indexBuffer, 
